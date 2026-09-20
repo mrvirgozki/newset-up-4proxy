@@ -120,7 +120,6 @@ wait_for_port() {
 
     while [ "$(date +%s)" -lt "$END_TIME" ]
     do
-
         # Check process first
         if ! check_pid "$NAME" "$PID"; then
             echo "[virgozki] $NAME died before port $CHECK_PORT became ready"
@@ -131,10 +130,8 @@ wait_for_port() {
         if python3 - "$HOST" "$CHECK_PORT" <<'PY'
 import socket
 import sys
-
 host = sys.argv[1]
 port = int(sys.argv[2])
-
 try:
     with socket.create_connection((host, port), timeout=1):
         sys.exit(0)
@@ -169,7 +166,7 @@ on_exit() {
         echo " LAST STEP : $LAST_STEP"
         echo " PUBLIC    : $PORT"
         echo " HAProxy   : $HAPROXY_PORT"
-        echo " OpenResty : $OPENRESTY_PORT"
+        echo " OpenResty : $OPENResty_PORT"
         echo " Apache    : $APACHE_PORT"
         echo " HAProxy gRPC   : $HAPROXY_GRPC_PORT"
         echo " OpenResty gRPC : $OPENRESTY_GRPC_PORT"
@@ -177,16 +174,12 @@ on_exit() {
 
         show_log envoy-test
         show_log envoy
-
         show_log haproxy-test
         show_log haproxy
-
         show_log openresty-test
         show_log openresty
-
         show_log apache-test
         show_log apache
-
         show_log xray-test
         show_log xray
 
@@ -194,9 +187,7 @@ on_exit() {
     fi
 
     trap - EXIT
-
     cleanup
-
     exit "$RC"
 }
 
@@ -255,12 +246,7 @@ log "All required binaries OK"
 
 step "Testing Xray configuration"
 
-if ! xray \
-    run \
-    -test \
-    -c /etc/xray/config.json \
-    >"$LOG_DIR/xray-test.log" 2>&1
-then
+if ! xray run -test -c /etc/xray/config.json >"$LOG_DIR/xray-test.log" 2>&1; then
     echo "[virgozki] XRAY CONFIGURATION FAILED"
     cat "$LOG_DIR/xray-test.log"
     exit 1
@@ -275,10 +261,7 @@ log "Xray configuration OK"
 
 step "Testing Apache configuration"
 
-if ! apache2ctl \
-    -t \
-    >"$LOG_DIR/apache-test.log" 2>&1
-then
+if ! apache2ctl -t >"$LOG_DIR/apache-test.log" 2>&1; then
     echo "[virgozki] APACHE CONFIGURATION FAILED"
     cat "$LOG_DIR/apache-test.log"
     exit 1
@@ -293,11 +276,7 @@ log "Apache configuration OK"
 
 step "Testing OpenResty configuration"
 
-if ! openresty \
-    -t \
-    -c /etc/openresty/nginx.conf \
-    >"$LOG_DIR/openresty-test.log" 2>&1
-then
+if ! openresty -t -c /etc/openresty/nginx.conf >"$LOG_DIR/openresty-test.log" 2>&1; then
     echo "[virgozki] OPENRESTY CONFIGURATION FAILED"
     cat "$LOG_DIR/openresty-test.log"
     exit 1
@@ -312,11 +291,7 @@ log "OpenResty configuration OK"
 
 step "Testing HAProxy configuration"
 
-if ! haproxy \
-    -c \
-    -f /etc/haproxy/haproxy.cfg \
-    >"$LOG_DIR/haproxy-test.log" 2>&1
-then
+if ! haproxy -c -f /etc/haproxy/haproxy.cfg >"$LOG_DIR/haproxy-test.log" 2>&1; then
     echo "[virgozki] HAPROXY CONFIGURATION FAILED"
     cat "$LOG_DIR/haproxy-test.log"
     exit 1
@@ -326,157 +301,90 @@ log "HAProxy configuration OK"
 
 
 # ============================================================
-# CREATE ENVOY CONFIGURATION
+# CREATE ENVOY CONFIGURATION (FIXED: VARIABLES WORK NOW)
 # ============================================================
 
 step "Creating Envoy configuration"
 
 cat > /tmp/envoy-front.yaml <<YAML
 static_resources:
-
   listeners:
-
   - name: public_listener
-
     address:
       socket_address:
         address: 0.0.0.0
         port_value: ${PORT}
-
     filter_chains:
-
     - filters:
-
       - name: envoy.filters.network.http_connection_manager
-
         typed_config:
           "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-
           stat_prefix: public
-
           codec_type: AUTO
-
           use_remote_address: true
-
           stream_idle_timeout: 3600s
-
           normalize_path: true
-
-          # WebSocket / HTTP Upgrade
           upgrade_configs:
           - upgrade_type: websocket
-
           request_headers_to_add:
-
           - header:
               key: X-Forwarded-Proto
               value: http
-
           route_config:
-
             name: public_routes
-
             virtual_hosts:
-
             - name: public
-
               domains:
               - "*"
-
               routes:
-
-              # ==================================================
-              # gRPC
-              # ==================================================
-
               - match:
                   prefix: "/openresty/"
                   grpc: {}
-
                 route:
                   cluster: haproxy_grpc
                   timeout: 3600s
-
-              # ==================================================
-              # HTTP / WS / HTTPUPGRADE / XHTTP
-              # ==================================================
-
               - match:
                   prefix: "/"
-
                 route:
                   cluster: haproxy_http
                   timeout: 3600s
-
           http_filters:
-
           - name: envoy.filters.http.router
-
             typed_config:
               "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
 
-
   clusters:
-
-  # ==========================================================
-  # HAProxy HTTP
-  # ==========================================================
-
   - name: haproxy_http
-
     connect_timeout: 10s
-
     type: STATIC
-
     lb_policy: ROUND_ROBIN
-
     load_assignment:
-
       cluster_name: haproxy_http
-
       endpoints:
-
       - lb_endpoints:
-
         - endpoint:
-
             address:
-
               socket_address:
                 address: 127.0.0.1
                 port_value: ${HAPROXY_PORT}
 
-
-  # ==========================================================
-  # HAProxy gRPC
-  # ==========================================================
-
   - name: haproxy_grpc
-
     connect_timeout: 10s
-
     type: STATIC
-
     lb_policy: ROUND_ROBIN
-
     http2_protocol_options: {}
-
     load_assignment:
-
       cluster_name: haproxy_grpc
-
       endpoints:
-
       - lb_endpoints:
-
         - endpoint:
-
             address:
-
               socket_address:
                 address: 127.0.0.1
                 port_value: ${HAPROXY_GRPC_PORT}
 YAML
+
+log "Envoy config generated OK"
 
 
 # ============================================================
@@ -485,11 +393,7 @@ YAML
 
 step "Testing Envoy configuration"
 
-if ! envoy \
-    --mode validate \
-    -c /tmp/envoy-front.yaml \
-    >"$LOG_DIR/envoy-test.log" 2>&1
-then
+if ! envoy --mode validate -c /tmp/envoy-front.yaml >"$LOG_DIR/envoy-test.log" 2>&1; then
     echo "[virgozki] ENVOY CONFIGURATION FAILED"
     cat "$LOG_DIR/envoy-test.log"
     exit 1
@@ -504,20 +408,10 @@ log "Envoy configuration OK"
 
 step "Starting Xray"
 
-xray \
-    run \
-    -c /etc/xray/config.json \
-    >"$LOG_DIR/xray.log" 2>&1 &
-
+xray run -c /etc/xray/config.json >"$LOG_DIR/xray.log" 2>&1 &
 XRAY_PID=$!
 
-if ! wait_for_port \
-    "Xray" \
-    "127.0.0.1" \
-    10000 \
-    "$XRAY_PID" \
-    30
-then
+if ! wait_for_port "Xray" "127.0.0.1" 10000 "$XRAY_PID" 30; then
     echo "[virgozki] XRAY FAILED TO START"
     cat "$LOG_DIR/xray.log"
     exit 1
@@ -532,10 +426,7 @@ log "Xray started"
 
 step "Starting Apache on 127.0.0.1:${APACHE_PORT}"
 
-apache2ctl \
-    -D FOREGROUND \
-    >"$LOG_DIR/apache.log" 2>&1 &
-
+apache2ctl -D FOREGROUND >"$LOG_DIR/apache.log" 2>&1 &
 APACHE_PID=$!
 
 if ! check_pid "Apache" "$APACHE_PID"; then
@@ -544,13 +435,7 @@ if ! check_pid "Apache" "$APACHE_PID"; then
     exit 1
 fi
 
-if ! wait_for_port \
-    "Apache" \
-    "127.0.0.1" \
-    "$APACHE_PORT" \
-    "$APACHE_PID" \
-    30
-then
+if ! wait_for_port "Apache" "127.0.0.1" "$APACHE_PORT" "$APACHE_PID" 30; then
     echo "[virgozki] APACHE PORT FAILED"
     cat "$LOG_DIR/apache.log"
     exit 1
@@ -565,11 +450,7 @@ log "Apache started"
 
 step "Starting OpenResty"
 
-openresty \
-    -g "daemon off;" \
-    -c /etc/openresty/nginx.conf \
-    >"$LOG_DIR/openresty.log" 2>&1 &
-
+openresty -g "daemon off;" -c /etc/openresty/nginx.conf >"$LOG_DIR/openresty.log" 2>&1 &
 OPENRESTY_PID=$!
 
 if ! check_pid "OpenResty" "$OPENRESTY_PID"; then
@@ -578,24 +459,12 @@ if ! check_pid "OpenResty" "$OPENRESTY_PID"; then
     exit 1
 fi
 
-if ! wait_for_port \
-    "OpenResty HTTP" \
-    "127.0.0.1" \
-    "$OPENRESTY_PORT" \
-    "$OPENRESTY_PID" \
-    30
-then
+if ! wait_for_port "OpenResty HTTP" "127.0.0.1" "$OPENRESTY_PORT" "$OPENRESTY_PID" 30; then
     cat "$LOG_DIR/openresty.log"
     exit 1
 fi
 
-if ! wait_for_port \
-    "OpenResty gRPC" \
-    "127.0.0.1" \
-    "$OPENRESTY_GRPC_PORT" \
-    "$OPENRESTY_PID" \
-    30
-then
+if ! wait_for_port "OpenResty gRPC" "127.0.0.1" "$OPENRESTY_GRPC_PORT" "$OPENRESTY_PID" 30; then
     cat "$LOG_DIR/openresty.log"
     exit 1
 fi
@@ -609,11 +478,7 @@ log "OpenResty started"
 
 step "Starting HAProxy"
 
-haproxy \
-    -f /etc/haproxy/haproxy.cfg \
-    -db \
-    >"$LOG_DIR/haproxy.log" 2>&1 &
-
+haproxy -f /etc/haproxy/haproxy.cfg -db >"$LOG_DIR/haproxy.log" 2>&1 &
 HAPROXY_PID=$!
 
 if ! check_pid "HAProxy" "$HAPROXY_PID"; then
@@ -622,24 +487,12 @@ if ! check_pid "HAProxy" "$HAPROXY_PID"; then
     exit 1
 fi
 
-if ! wait_for_port \
-    "HAProxy HTTP" \
-    "127.0.0.1" \
-    "$HAPROXY_PORT" \
-    "$HAPROXY_PID" \
-    30
-then
+if ! wait_for_port "HAProxy HTTP" "127.0.0.1" "$HAPROXY_PORT" "$HAPROXY_PID" 30; then
     cat "$LOG_DIR/haproxy.log"
     exit 1
 fi
 
-if ! wait_for_port \
-    "HAProxy gRPC" \
-    "127.0.0.1" \
-    "$HAPROXY_GRPC_PORT" \
-    "$HAPROXY_PID" \
-    30
-then
+if ! wait_for_port "HAProxy gRPC" "127.0.0.1" "$HAPROXY_GRPC_PORT" "$HAPROXY_PID" 30; then
     cat "$LOG_DIR/haproxy.log"
     exit 1
 fi
@@ -648,17 +501,12 @@ log "HAProxy started"
 
 
 # ============================================================
-# START ENVOY
+# START ENVOY (MAIN ENTRY FOR CLOUD RUN)
 # ============================================================
 
 step "Starting Envoy on 0.0.0.0:${PORT}"
 
-envoy \
-    -c /tmp/envoy-front.yaml \
-    --disable-hot-restart \
-    --log-level info \
-    >"$LOG_DIR/envoy.log" 2>&1 &
-
+envoy -c /tmp/envoy-front.yaml --disable-hot-restart --log-level info >"$LOG_DIR/envoy.log" 2>&1 &
 ENVOY_PID=$!
 
 if ! check_pid "Envoy" "$ENVOY_PID"; then
@@ -669,18 +517,12 @@ fi
 
 
 # ============================================================
-# WAIT FOR CLOUD RUN PUBLIC PORT
+# WAIT FOR PUBLIC PORT (FIXED CHECK)
 # ============================================================
 
 step "Waiting for public port ${PORT}"
 
-if ! wait_for_port \
-    "Envoy PUBLIC" \
-    "127.0.0.1" \
-    "$PORT" \
-    "$ENVOY_PID" \
-    60
-then
+if ! wait_for_port "Envoy PUBLIC" "localhost" "$PORT" "$ENVOY_PID" 60; then
     echo "[virgozki] ENVOY PUBLIC PORT FAILED"
     cat "$LOG_DIR/envoy.log"
     exit 1
@@ -694,7 +536,6 @@ log "Envoy public port ${PORT} READY"
 # ============================================================
 
 step "Running final health checks"
-
 check_pid "Envoy" "$ENVOY_PID"
 check_pid "HAProxy" "$HAPROXY_PID"
 check_pid "OpenResty" "$OPENRESTY_PID"
@@ -718,8 +559,7 @@ echo " HAProxy gRPC   : 127.0.0.1:${HAPROXY_GRPC_PORT}"
 echo " OpenResty gRPC : 127.0.0.1:${OPENRESTY_GRPC_PORT}"
 echo " Xray           : 127.0.0.1:10000-10015"
 echo "=============================================="
-echo " CHAIN"
-echo " Envoy -> HAProxy -> OpenResty -> Apache -> Xray"
+echo " CHAIN: Envoy -> HAProxy -> OpenResty -> Apache -> Xray"
 echo "=============================================="
 echo ""
 
@@ -730,11 +570,10 @@ echo ""
 
 while true
 do
-    check_pid "Envoy" "$ENVOY_PID"
-    check_pid "HAProxy" "$HAPROXY_PID"
-    check_pid "OpenResty" "$OPENRESTY_PID"
-    check_pid "Apache" "$APACHE_PID"
-    check_pid "Xray" "$XRAY_PID"
-
+    check_pid "Envoy" "$ENVOY_PID" || exit 1
+    check_pid "HAProxy" "$HAPROXY_PID" || exit 1
+    check_pid "OpenResty" "$OPENRESTY_PID" || exit 1
+    check_pid "Apache" "$APACHE_PID" || exit 1
+    check_pid "Xray" "$XRAY_PID" || exit 1
     sleep 5
 done
