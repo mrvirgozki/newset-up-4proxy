@@ -45,6 +45,7 @@ echo "========================================"
 echo " Virgozki Multi-Proxy Container"
 echo "========================================"
 echo "[entrypoint] PORT=$PORT"
+echo "[entrypoint] BIND_ADDR=$BIND_ADDR"
 echo "[entrypoint] HAProxy HTTP=$HAPROXY_PORT"
 echo "[entrypoint] OpenResty HTTP=$OPENRESTY_PORT"
 echo "[entrypoint] Apache HTTP=$APACHE_PORT"
@@ -113,21 +114,33 @@ command -v apache2 >/dev/null 2>&1 || {
     exit 1
 }
 
-echo "[entrypoint] Validating Xray configuration..."
+echo "[entrypoint] Validating Xray..."
 
-xray -test -config "$XRAY_CONFIG"
+if ! xray -test -config "$XRAY_CONFIG"; then
+    echo "[ERROR] Xray configuration validation failed."
+    exit 1
+fi
 
-echo "[entrypoint] Validating OpenResty configuration..."
+echo "[entrypoint] Validating OpenResty..."
 
-nginx -t -c "$NGINX_CONFIG"
+if ! nginx -t -c "$NGINX_CONFIG"; then
+    echo "[ERROR] OpenResty configuration validation failed."
+    exit 1
+fi
 
-echo "[entrypoint] Validating HAProxy configuration..."
+echo "[entrypoint] Validating HAProxy..."
 
-haproxy -c -f "$HAPROXY_CONFIG"
+if ! haproxy -c -f "$HAPROXY_CONFIG"; then
+    echo "[ERROR] HAProxy configuration validation failed."
+    exit 1
+fi
 
-echo "[entrypoint] Validating Apache configuration..."
+echo "[entrypoint] Validating Apache..."
 
-apache2ctl -t
+if ! apache2ctl -t; then
+    echo "[ERROR] Apache configuration validation failed."
+    exit 1
+fi
 
 echo "[entrypoint] Generating Envoy configuration..."
 
@@ -135,15 +148,20 @@ cat > "$ENVOY_CONFIG" <<EOF
 static_resources:
 
   listeners:
+
   - name: public_listener
+
     address:
       socket_address:
         address: ${BIND_ADDR}
         port_value: ${PORT}
 
     filter_chains:
+
     - filters:
+
       - name: envoy.filters.network.http_connection_manager
+
         typed_config:
           "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
 
@@ -152,14 +170,18 @@ static_resources:
           codec_type: AUTO
 
           access_log:
+
           - name: envoy.access_loggers.stdout
+
             typed_config:
               "@type": type.googleapis.com/envoy.extensions.access_loggers.stream.v3.StdoutAccessLog
 
           route_config:
+
             name: local_route
 
             virtual_hosts:
+
             - name: backend
 
               domains:
@@ -176,14 +198,17 @@ static_resources:
                   timeout: 3600s
 
                 request_headers_to_add:
+
                 - header:
                     key: X-Forwarded-Proto
                     value: "http"
+
                   append_action: OVERWRITE_IF_EXISTS_OR_ADD
 
                 - header:
                     key: X-Forwarded-Port
                     value: "${PORT}"
+
                   append_action: OVERWRITE_IF_EXISTS_OR_ADD
 
               - match:
@@ -194,66 +219,96 @@ static_resources:
                   timeout: 3600s
 
                 request_headers_to_add:
+
                 - header:
                     key: X-Forwarded-Proto
                     value: "http"
+
                   append_action: OVERWRITE_IF_EXISTS_OR_ADD
 
                 - header:
                     key: X-Forwarded-Port
                     value: "${PORT}"
+
                   append_action: OVERWRITE_IF_EXISTS_OR_ADD
 
           http_filters:
+
           - name: envoy.filters.http.router
+
             typed_config:
               "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+
 
   clusters:
 
   - name: haproxy_http
+
     type: STATIC
+
     connect_timeout: 5s
 
     load_assignment:
+
       cluster_name: haproxy_http
 
       endpoints:
+
       - lb_endpoints:
+
         - endpoint:
+
             address:
               socket_address:
                 address: 127.0.0.1
                 port_value: ${HAPROXY_PORT}
 
+
   - name: haproxy_grpc
+
     type: STATIC
+
     connect_timeout: 5s
 
     http2_protocol_options: {}
 
     load_assignment:
+
       cluster_name: haproxy_grpc
 
       endpoints:
+
       - lb_endpoints:
+
         - endpoint:
+
             address:
               socket_address:
                 address: 127.0.0.1
                 port_value: ${HAPROXY_GRPC_PORT}
 
+
 admin:
+
   access_log_path: /tmp/envoy-admin-access.log
 
   address:
+
     socket_address:
       address: 127.0.0.1
       port_value: 9901
 
 EOF
 
-echo "[entrypoint] Envoy configuration generated."
+echo "[entrypoint] Validating generated Envoy configuration..."
+
+if ! envoy --mode validate -c "$ENVOY_CONFIG"; then
+    echo "[ERROR] Envoy configuration validation failed."
+    cat "$ENVOY_CONFIG"
+    exit 1
+fi
+
+echo "[entrypoint] Envoy configuration OK."
 
 echo "[entrypoint] Starting Xray..."
 
@@ -300,12 +355,12 @@ PIDS+=("$HAPROXY_PID")
 
 echo "[entrypoint] HAProxy PID=$HAPROXY_PID"
 
-echo "[entrypoint] Waiting for internal services..."
-
 wait_for_port() {
     local host="$1"
     local port="$2"
     local name="$3"
+
+    echo "[entrypoint] Waiting for $name on $host:$port..."
 
     for i in $(seq 1 60); do
 
@@ -318,12 +373,37 @@ wait_for_port() {
     done
 
     echo "[ERROR] $name failed to listen on $host:$port"
+
+    echo "========== PROCESS STATUS =========="
+    ps aux || true
+
+    echo "========== SOCKETS =========="
+    ss -lntp || true
+
+    echo "========== XRAY LOG =========="
+    cat /tmp/virgozki-logs/xray.log 2>/dev/null || true
+
+    echo "========== APACHE LOG =========="
+    cat /tmp/virgozki-logs/apache.log 2>/dev/null || true
+
+    echo "========== OPENRESTY LOG =========="
+    cat /tmp/virgozki-logs/openresty.log 2>/dev/null || true
+
+    echo "========== HAPROXY LOG =========="
+    cat /tmp/virgozki-logs/haproxy.log 2>/dev/null || true
+
+    echo "========== ENVOY LOG =========="
+    cat /tmp/virgozki-logs/envoy.log 2>/dev/null || true
+
     return 1
 }
 
 wait_for_port 127.0.0.1 "$APACHE_PORT" "Apache"
+
 wait_for_port 127.0.0.1 "$OPENRESTY_PORT" "OpenResty"
+
 wait_for_port 127.0.0.1 "$HAPROXY_PORT" "HAProxy HTTP"
+
 wait_for_port 127.0.0.1 "$HAPROXY_GRPC_PORT" "HAProxy gRPC"
 
 echo "[entrypoint] Starting Envoy on ${BIND_ADDR}:${PORT}..."
@@ -338,26 +418,61 @@ PIDS+=("$ENVOY_PID")
 
 echo "[entrypoint] Envoy PID=$ENVOY_PID"
 
-wait_for_port "$BIND_ADDR" "$PORT" "Envoy"
+sleep 1
+
+if ! kill -0 "$ENVOY_PID" 2>/dev/null; then
+    echo "[ERROR] Envoy exited immediately."
+
+    echo "========== ENVOY LOG =========="
+    cat /tmp/virgozki-logs/envoy.log 2>/dev/null || true
+
+    exit 1
+fi
+
+wait_for_port 127.0.0.1 "$PORT" "Envoy"
 
 echo "========================================"
-echo " All services are running"
+echo " ALL SERVICES ARE RUNNING"
 echo "========================================"
-echo " Envoy       : ${BIND_ADDR}:${PORT}"
-echo " HAProxy HTTP: 127.0.0.1:${HAPROXY_PORT}"
-echo " OpenResty   : 127.0.0.1:${OPENRESTY_PORT}"
-echo " Apache      : 127.0.0.1:${APACHE_PORT}"
-echo " HAProxy gRPC: 127.0.0.1:${HAPROXY_GRPC_PORT}"
-echo " OpenResty gRPC: 127.0.0.1:${OPENRESTY_GRPC_PORT}"
+echo " Envoy          : ${BIND_ADDR}:${PORT}"
+echo " HAProxy HTTP   : 127.0.0.1:${HAPROXY_PORT}"
+echo " OpenResty HTTP : 127.0.0.1:${OPENRESTY_PORT}"
+echo " Apache         : 127.0.0.1:${APACHE_PORT}"
+echo " HAProxy gRPC   : 127.0.0.1:${HAPROXY_GRPC_PORT}"
+echo " OpenResty gRPC : 127.0.0.1:${OPENRESTY_GRPC_PORT}"
 echo "========================================"
 
 while true; do
 
     for pid in "${PIDS[@]}"; do
+
         if ! kill -0 "$pid" 2>/dev/null; then
+
             echo "[ERROR] Process $pid stopped."
+
+            echo "========== CURRENT SOCKETS =========="
+            ss -lntp || true
+
+            echo "========== LOGS =========="
+
+            echo "--- Xray ---"
+            cat /tmp/virgozki-logs/xray.log 2>/dev/null || true
+
+            echo "--- Apache ---"
+            cat /tmp/virgozki-logs/apache.log 2>/dev/null || true
+
+            echo "--- OpenResty ---"
+            cat /tmp/virgozki-logs/openresty.log 2>/dev/null || true
+
+            echo "--- HAProxy ---"
+            cat /tmp/virgozki-logs/haproxy.log 2>/dev/null || true
+
+            echo "--- Envoy ---"
+            cat /tmp/virgozki-logs/envoy.log 2>/dev/null || true
+
             exit 1
         fi
+
     done
 
     sleep 5
