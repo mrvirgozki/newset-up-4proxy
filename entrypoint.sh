@@ -1,6 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 
+# ==============================================
+# ENV VARS — TUGMA SA DOCKERFILE
+# ==============================================
 PORT="${PORT:-8080}"
 BIND_ADDR="${BIND_ADDR:-0.0.0.0}"
 
@@ -18,26 +21,26 @@ ENVOY_CONFIG="/etc/envoy/envoy.yaml"
 
 PIDS=()
 
-
+# ==============================================
+# CLEANUP FUNCTION
+# ==============================================
 cleanup() {
-    echo "[entrypoint] shutting down..."
-
+    echo "[entrypoint] 🛑 Shutting down services..."
     for pid in "${PIDS[@]:-}"; do
         kill -TERM "$pid" 2>/dev/null || true
     done
-
     sleep 3
-
     for pid in "${PIDS[@]:-}"; do
         kill -KILL "$pid" 2>/dev/null || true
     done
 }
-
 trap cleanup EXIT INT TERM
 
-
+# ==============================================
+# BANNER & PREPARE
+# ==============================================
 echo "======================================"
-echo " Virgozki Proxy Stack"
+echo " 🚀 Virgozki Proxy Stack Starting"
 echo "======================================"
 
 mkdir -p \
@@ -49,261 +52,153 @@ mkdir -p \
 /var/log/apache2 \
 /var/log/xray
 
+# ==============================================
+# ✅ CHECK BINARIES (INAYOS PARA SA OPENRESTY)
+# ==============================================
+echo "[check] 🔍 Verifying binaries..."
+command -v xray >/dev/null || { echo "❌ Missing: xray"; exit 1; }
+command -v openresty >/dev/null || { echo "❌ Missing: openresty"; exit 1; }
+command -v haproxy >/dev/null || { echo "❌ Missing: haproxy"; exit 1; }
+command -v apache2ctl >/dev/null || { echo "❌ Missing: apache2ctl"; exit 1; }
+command -v envoy >/dev/null || { echo "❌ Missing: envoy"; exit 1; }
 
-echo "[check] binaries"
-
-command -v xray >/dev/null || { echo "❌ Missing xray"; exit 1; }
-command -v nginx >/dev/null || { echo "❌ Missing nginx"; exit 1; }
-command -v haproxy >/dev/null || { echo "❌ Missing haproxy"; exit 1; }
-command -v apache2ctl >/dev/null || { echo "❌ Missing apache2ctl"; exit 1; }
-command -v envoy >/dev/null || { echo "❌ Missing envoy"; exit 1; }
-
-
-echo "[check] files"
-
-for f in \
-"$XRAY_CONFIG" \
-"$NGINX_CONFIG" \
-"$HAPROXY_CONFIG"
-do
-    if [ ! -f "$f" ]; then
-        echo "Missing: $f"
-        exit 1
-    fi
+# ==============================================
+# CHECK CONFIG FILES
+# ==============================================
+echo "[check] 📄 Verifying config files..."
+for f in "$XRAY_CONFIG" "$NGINX_CONFIG" "$HAPROXY_CONFIG"; do
+    [ -f "$f" ] || { echo "❌ Missing file: $f"; exit 1; }
 done
 
+# ==============================================
+# ✅ AUTO-UPDATE NGINX PORTS (TAMA NA ANG FORMAT)
+# ==============================================
+echo "[config] 🔧 Updating OpenResty ports..."
+sed -i -E "s/listen\s+[0-9.]+:8080\s+http2;/listen 127.0.0.1:${OPENRESTY_PORT} http2;/" "$NGINX_CONFIG"
+sed -i -E "s/listen\s+[0-9.]+:8085\s+http2;/listen 127.0.0.1:${OPENRESTY_GRPC_PORT} http2;/" "$NGINX_CONFIG"
 
-echo "[test] Xray"
+# ==============================================
+# VALIDATE ALL CONFIGS
+# ==============================================
+echo "[test] ✅ Testing Xray config..."
+xray -test -config "$XRAY_CONFIG"
 
-xray -test \
--config "$XRAY_CONFIG"
+echo "[test] ✅ Testing OpenResty config..."
+openresty -t -c "$NGINX_CONFIG"
 
+echo "[test] ✅ Testing HAProxy config..."
+haproxy -c -f "$HAPROXY_CONFIG"
 
-echo "[test] OpenResty"
-
-nginx \
--t \
--c "$NGINX_CONFIG"
-
-
-echo "[test] HAProxy"
-
-haproxy \
--c \
--f "$HAPROXY_CONFIG"
-
-
-echo "[start] Xray"
-
-xray run \
--config "$XRAY_CONFIG" \
-> /tmp/virgozki-logs/xray.log 2>&1 &
-
+# ==============================================
+# START SERVICES (TAMANG PAGKAKASUNOD)
+# ==============================================
+echo "[start] 📡 Starting Xray..."
+xray run -config "$XRAY_CONFIG" > /tmp/virgozki-logs/xray.log 2>&1 &
 PIDS+=($!)
 sleep 3
 
-
-echo "[start] Apache"
-
-apache2ctl \
--DFOREGROUND \
-> /tmp/virgozki-logs/apache.log 2>&1 &
-
+echo "[start] 🌐 Starting Apache backend..."
+apache2ctl -DFOREGROUND > /tmp/virgozki-logs/apache.log 2>&1 &
 PIDS+=($!)
 sleep 2
 
-
-echo "[start] OpenResty"
-# ✅ NAKINIG SA 127.0.0.1 LANG — HINDI NA KONFLIK SA PORT 8080
-sed -i "s/listen 0.0.0.0:8080;/listen 127.0.0.1:$OPENRESTY_PORT;/" "$NGINX_CONFIG"
-sed -i "s/listen 0.0.0.0:8085 http2;/listen 127.0.0.1:$OPENRESTY_GRPC_PORT http2;/" "$NGINX_CONFIG"
-
-nginx \
--c "$NGINX_CONFIG" \
--g "daemon off;" \
-> /tmp/virgozki-logs/openresty.log 2>&1 &
-
+echo "[start] 🔄 Starting OpenResty..."
+openresty -c "$NGINX_CONFIG" -g "daemon off;" > /tmp/virgozki-logs/openresty.log 2>&1 &
 PIDS+=($!)
 sleep 2
 
-
-echo "[start] HAProxy"
-
-haproxy \
--db \
--f "$HAPROXY_CONFIG" \
-> /tmp/virgozki-logs/haproxy.log 2>&1 &
-
+echo "[start] ⚖️ Starting HAProxy..."
+haproxy -db -f "$HAPROXY_CONFIG" > /tmp/virgozki-logs/haproxy.log 2>&1 &
 PIDS+=($!)
 sleep 2
 
-
-echo "[generate] Envoy"
-
+# ==============================================
+# ✅ AUTO-GENERATE ENVOY CONFIG (PUBLIC LISTENER)
+# ==============================================
+echo "[config] 🛡️ Generating Envoy config..."
 cat > "$ENVOY_CONFIG" <<EOF
-
 static_resources:
-
   listeners:
-
   - name: public_listener
-
     address:
-
       socket_address:
-
         address: ${BIND_ADDR}
-
         port_value: ${PORT}
-
-
     filter_chains:
-
     - filters:
-
       - name: envoy.filters.network.http_connection_manager
-
         typed_config:
-
           "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-
           stat_prefix: proxy
-
           codec_type: AUTO
-
-
           route_config:
-
             name: local
-
-
             virtual_hosts:
-
             - name: backend
-
-              domains:
-
-              - "*"
-
-
+              domains: ["*"]
               routes:
-
-              - match:
-
-                  prefix: "/"
-
+              - match: { prefix: "/" }
                 route:
-
                   cluster: haproxy_http
-
                   timeout: 3600s
-
-
-
           http_filters:
-
           - name: envoy.filters.http.router
-
             typed_config:
-
-              "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.Router
-
-
-
+              "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
   clusters:
-
   - name: haproxy_http
-
     connect_timeout: 5s
-
     type: STATIC
-
     load_assignment:
-
       cluster_name: haproxy_http
-
       endpoints:
-
       - lb_endpoints:
-
         - endpoint:
-
             address:
-
               socket_address:
-
                 address: 127.0.0.1
-
                 port_value: ${HAPROXY_PORT}
-
 admin:
-
   access_log_path: /tmp/envoy-admin.log
-
   address:
-
     socket_address:
-
       address: 127.0.0.1
-
       port_value: 9901
-
 EOF
 
+echo "[test] ✅ Testing Envoy config..."
+envoy --mode validate -c "$ENVOY_CONFIG"
 
-echo "[test] Envoy"
-
-envoy \
---mode validate \
--c "$ENVOY_CONFIG"
-
-
-echo "[start] Envoy"
-
-envoy \
--c "$ENVOY_CONFIG" \
---log-level warning \
-> /tmp/virgozki-logs/envoy.log 2>&1 &
-
+echo "[start] 🚀 Starting Envoy (Public :$PORT)..."
+envoy -c "$ENVOY_CONFIG" --log-level warning > /tmp/virgozki-logs/envoy.log 2>&1 &
 PIDS+=($!)
-
 
 sleep 5
 
-
+# ==============================================
+# FINAL STATUS
+# ==============================================
 echo "======================================"
-echo " ALL SERVICES STARTED"
+echo " ✅ ALL SERVICES RUNNING SUCCESSFULLY"
+echo "======================================"
+echo "🌐 Public (Envoy): $PORT"
+echo "⚖️ HAProxy       : $HAPROXY_PORT"
+echo "🔄 OpenResty     : $OPENRESTY_PORT"
+echo "🌐 Apache        : $APACHE_PORT"
+echo "📡 Xray          : Running"
 echo "======================================"
 
-echo "Envoy        : $PORT"
-echo "HAProxy      : $HAPROXY_PORT"
-echo "OpenResty    : $OPENRESTY_PORT"
-echo "Apache       : $APACHE_PORT"
-echo "gRPC HAProxy : $HAPROXY_GRPC_PORT"
-echo "gRPC Nginx   : $OPENRESTY_GRPC_PORT"
-
-
-while true
-do
-
-    for pid in "${PIDS[@]}"
-    do
-
-        if ! kill -0 "$pid" 2>/dev/null
-        then
-
-            echo "Process stopped: $pid"
-
-            echo "---- last 20 lines logs ----"
-
-            tail -n 20 /tmp/virgozki-logs/*.log || true
-
+# ==============================================
+# HEALTH CHECK LOOP
+# ==============================================
+while true; do
+    for pid in "${PIDS[@]}"; do
+        if ! kill -0 "$pid" 2>/dev/null; then
+            echo -e "\n❌ CRITICAL: Process $pid stopped unexpectedly!"
+            echo -e "\n📋 Last 20 lines of all logs:"
+            tail -n 20 /tmp/virgozki-logs/*.log 2>/dev/null || true
             exit 1
-
         fi
-
     done
-
     sleep 5
-
 done
