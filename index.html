@@ -256,10 +256,6 @@
             color: var(--neon-green);
         }
 
-        .monitor-value.warn {
-            color: var(--neon-yellow);
-        }
-
         .graph-container {
             width: 100%;
             height: 55px;
@@ -1340,695 +1336,281 @@ WAITING FOR INPUT...
     for (let i = 0; i < graphBars; i++) {
         const bar = document.createElement('div');
 
-        bar.className = 'graph-dot';
-        bar.style.left = `${(i / graphBars) * 100}%`;
-        bar.style.height = '0%';
+            bar.className = 'graph-dot';
+            bar.style.left = `${(i / graphBars) * 100}%`;
+            bar.style.height = '0%';
 
-        sysGraph.appendChild(bar);
-    }
-
-    const graphBarsEl =
-        sysGraph.querySelectorAll('.graph-dot');
-
-    function updateGraph() {
-        graphPoints.shift();
-        graphPoints.push(
-            Math.floor(Math.random() * 70) + 20
-        );
-
-        graphPoints.forEach((val, i) => {
-            graphBarsEl[i].style.height = val + '%';
-        });
-    }
-
-    const loadingScreen =
-        document.getElementById('loading-screen');
-
-    const mainContent =
-        document.getElementById('main-content');
-
-    const infoHost =
-        document.getElementById('info-host');
-
-    const infoSni =
-        document.getElementById('info-sni');
-
-    const infoProto =
-        document.getElementById('info-proto');
-
-    const infoTransport =
-        document.getElementById('info-transport');
-
-    const infoProxy =
-        document.getElementById('info-proxy');
-
-    const configDisplay =
-        document.getElementById('config-display');
-
-    const copyBtn =
-        document.getElementById('copy-btn');
-
-    const addressBtn =
-        document.getElementById('address-btn');
-
-    const addressBtnTxt =
-        document.getElementById('address-btn-txt');
-
-    const addressSelected =
-        document.getElementById('address-selected');
-
-    const addressModal =
-        document.getElementById('address-modal');
-
-    const addressListEl =
-        document.getElementById('address-list');
-
-    const addressClose =
-        document.getElementById('address-close');
-
-    const sniBtn =
-        document.getElementById('sni-btn');
-
-    const sniBtnTxt =
-        document.getElementById('sni-btn-txt');
-
-    const sniSelected =
-        document.getElementById('sni-selected');
-
-    const sniModal =
-        document.getElementById('sni-modal');
-
-    const sniListEl =
-        document.getElementById('sni-list');
-
-    const sniClose =
-        document.getElementById('sni-close');
-
-    const proxyButtons =
-        document.getElementById('proxy-buttons');
-
-    const protoButtons =
-        document.getElementById('proto-buttons');
-
-    const transButtons =
-        document.getElementById('trans-buttons');
-
-    const player =
-        document.getElementById('floating-player');
-
-    let isDragging = false;
-    let offsetX;
-    let offsetY;
-
-    function dragStart(e) {
-        if (e.target.closest('.ctrl-btn')) {
-            return;
+            sysGraph.appendChild(bar);
         }
 
-        isDragging = true;
+        const graphBarsEl = sysGraph.querySelectorAll('.graph-dot');
 
-        const rect = player.getBoundingClientRect();
+        function updateGraph() {
+            graphPoints.shift();
+            graphPoints.push(Math.floor(Math.random() * 70) + 20);
 
-        const clientX =
-            e.touches ? e.touches[0].clientX : e.clientX;
-
-        const clientY =
-            e.touches ? e.touches[0].clientY : e.clientY;
-
-        offsetX = clientX - rect.left;
-        offsetY = clientY - rect.top;
-
-        player.style.transition = 'none';
-    }
-
-    function dragMove(e) {
-        if (!isDragging) {
-            return;
+            graphPoints.forEach((val, i) => {
+                graphBarsEl[i].style.height = val + '%';
+            });
         }
 
-        e.preventDefault();
+        const loadingScreen = document.getElementById('loading-screen');
+        const mainContent = document.getElementById('main-content');
+        const infoHost = document.getElementById('info-host');
+        const infoSni = document.getElementById('info-sni');
+        const infoProto = document.getElementById('info-proto');
+        const infoTransport = document.getElementById('info-transport');
+        const infoProxy = document.getElementById('info-proxy');
+        const configDisplay = document.getElementById('config-display');
+        const copyBtn = document.getElementById('copy-btn');
+        const addressBtn = document.getElementById('address-btn');
+        const addressBtnTxt = document.getElementById('address-btn-txt');
+        const addressSelected = document.getElementById('address-selected');
+        const addressModal = document.getElementById('address-modal');
+        const addressListEl = document.getElementById('address-list');
+        const addressClose = document.getElementById('address-close');
+        const sniBtn = document.getElementById('sni-btn');
+        const sniBtnTxt = document.getElementById('sni-btn-txt');
+        const sniSelected = document.getElementById('sni-selected');
+        const sniModal = document.getElementById('sni-modal');
+        const sniListEl = document.getElementById('sni-list');
+        const sniClose = document.getElementById('sni-close');
+        const proxyButtons = document.getElementById('proxy-buttons');
+        const protoButtons = document.getElementById('proto-buttons');
+        const transButtons = document.getElementById('trans-buttons');
+        const player = document.getElementById('floating-player');
 
-        const clientX =
-            e.touches ? e.touches[0].clientX : e.clientX;
+        let isDragging = false;
+        let offsetX;
+        let offsetY;
 
-        const clientY =
-            e.touches ? e.touches[0].clientY : e.clientY;
+        function dragStart(e) {
+            if (e.target.closest('.ctrl-btn')) return;
+            isDragging = true;
 
-        const newX =
-            Math.max(
-                0,
-                Math.min(
-                    window.innerWidth - player.offsetWidth,
-                    clientX - offsetX
-                )
-            );
+            const rect = player.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
 
-        const newY =
-            Math.max(
-                0,
-                Math.min(
-                    window.innerHeight - player.offsetHeight,
-                    clientY - offsetY
-                )
-            );
+            offsetX = clientX - rect.left;
+            offsetY = clientY - rect.top;
+            player.style.transition = 'none';
+        }
 
-        player.style.left = newX + 'px';
-        player.style.top = newY + 'px';
-        player.style.right = 'auto';
-        player.style.bottom = 'auto';
-    }
+        function dragMove(e) {
+            if (!isDragging) return;
+            e.preventDefault();
 
-    function dragEnd() {
-        isDragging = false;
-        player.style.transition = 'all 0.2s ease';
-    }
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
 
-    player.addEventListener('mousedown', dragStart);
-    player.addEventListener('touchstart', dragStart);
+            const newX = Math.max(0, Math.min(window.innerWidth - player.offsetWidth, clientX - offsetX));
+            const newY = Math.max(0, Math.min(window.innerHeight - player.offsetHeight, clientY - offsetY));
 
-    document.addEventListener('mousemove', dragMove);
-    document.addEventListener(
-        'touchmove',
-        dragMove,
-        { passive:false }
-    );
+            player.style.left = newX + 'px';
+            player.style.top = newY + 'px';
+            player.style.right = 'auto';
+            player.style.bottom = 'auto';
+        }
 
-    document.addEventListener('mouseup', dragEnd);
-    document.addEventListener('touchend', dragEnd);
+        function dragEnd() {
+            isDragging = false;
+            player.style.transition = 'all 0.2s ease';
+        }
 
-    function getPublicPath() {
-        const prefix =
-            PROXY_PREFIXES[selectedProxy];
+        player.addEventListener('mousedown', dragStart);
+        player.addEventListener('touchstart', dragStart);
+        document.addEventListener('mousemove', dragMove);
+        document.addEventListener('touchmove', dragMove, { passive: false });
+        document.addEventListener('mouseup', dragEnd);
+        document.addEventListener('touchend', dragEnd);
 
-        const internalPath =
-            PATHS[selectedProtocol][selectedTransport];
+        function getPublicPath() {
+            const prefix = PROXY_PREFIXES[selectedProxy];
+            const internalPath = PATHS[selectedProtocol][selectedTransport];
+            return prefix + internalPath;
+        }
 
-        return prefix + internalPath;
-    }
+        function getGrpcService() {
+            return `${PROXY_PREFIXES[selectedProxy]}/${GRPC_SERVICES[selectedProtocol]}`;
+        }
 
-    function getGrpcService() {
-        return `${PROXY_PREFIXES[selectedProxy]}/${GRPC_SERVICES[selectedProtocol]}`;
-    }
+        function buildConfig() {
+            const addr = selectedAddress;
+            const sni = selectedSNI;
+            const host = currentHost;
 
-    function buildConfig() {
+            if (selectedTransport === 'grpc') {
+                const grpcService = getGrpcService();
+                switch(selectedProtocol) {
+                    case 'vless':
+                        return `vless://${UUID}@${addr}:443?encryption=none&security=tls&type=grpc&serviceName=${encodeURIComponent(grpcService)}&authority=${encodeURIComponent(host)}&sni=${encodeURIComponent(sni)}&alpn=h2&fp=chrome#VLESS-GRPC-${PROXY_LABELS[selectedProxy]}`;
+                    case 'trojan':
+                        return `trojan://${SS_PASSWORD}@${addr}:443?security=tls&type=grpc&serviceName=${encodeURIComponent(grpcService)}&authority=${encodeURIComponent(host)}&sni=${encodeURIComponent(sni)}&alpn=h2&fp=chrome#TROJAN-GRPC-${PROXY_LABELS[selectedProxy]}`;
+                    case 'vmess':
+                        return `vmess://${btoa(JSON.stringify({
+                            v:'2', ps:`VMESS-GRPC-${PROXY_LABELS[selectedProxy]}`, add:addr, port:'443', id:UUID, aid:'0',
+                            scy:'auto', net:'grpc', host:host, path:grpcService, tls:'tls', sni:sni, fp:'chrome', alpn:'h2'
+                        })).replace(/=+$/,'')}`;
+                    case 'shadowsocks':
+                        const ssGrpcCred = btoa(`${SS_METHOD}:${SS_PASSWORD}`).replace(/=+$/,'');
+                        return `ss://${ssGrpcCred}@${addr}:443?type=grpc&serviceName=${encodeURIComponent(grpcService)}&security=tls&sni=${encodeURIComponent(sni)}&alpn=h2#SS-GRPC-${PROXY_LABELS[selectedProxy]}`;
+                }
+            }
 
-        const addr = selectedAddress;
-        const sni = selectedSNI;
-        const host = currentHost;
-
-        if (selectedTransport === 'grpc') {
-
-            const grpcService = getGrpcService();
+            const path = getPublicPath();
+            let transportParam = '';
+            switch(selectedTransport) {
+                case 'ws': transportParam = `type=ws&path=${encodeURIComponent(path)}&host=${encodeURIComponent(host)}`; break;
+                case 'httpupgrade': transportParam = `type=httpupgrade&path=${encodeURIComponent(path)}&host=${encodeURIComponent(host)}`; break;
+                case 'xhttp': transportParam = `type=xhttp&path=${encodeURIComponent(path)}&host=${encodeURIComponent(host)}&mode=packet-upstream`; break;
+            }
 
             switch(selectedProtocol) {
-
                 case 'vless':
-                    return `vless://${UUID}@${addr}:443?encryption=none&security=tls&type=grpc&serviceName=${encodeURIComponent(grpcService)}&authority=${encodeURIComponent(host)}&sni=${encodeURIComponent(sni)}&alpn=h2&fp=chrome#VLESS-GRPC-${PROXY_LABELS[selectedProxy]}`;
-
+                    const vlessAlpn = selectedTransport === 'xhttp' ? 'h2%2Chttp%2F1.1' : 'http%2F1.1';
+                    return `vless://${UUID}@${addr}:443?encryption=none&${transportParam}&security=tls&fp=chrome&sni=${encodeURIComponent(sni)}&alpn=${vlessAlpn}#VLESS-${selectedTransport.toUpperCase()}-${PROXY_LABELS[selectedProxy]}`;
                 case 'trojan':
-                    return `trojan://${SS_PASSWORD}@${addr}:443?security=tls&type=grpc&serviceName=${encodeURIComponent(grpcService)}&authority=${encodeURIComponent(host)}&sni=${encodeURIComponent(sni)}&alpn=h2&fp=chrome#TROJAN-GRPC-${PROXY_LABELS[selectedProxy]}`;
-
+                    const trojanAlpn = selectedTransport === 'xhttp' ? 'h2%2Chttp%2F1.1' : 'http%2F1.1';
+                    return `trojan://${SS_PASSWORD}@${addr}:443?${transportParam}&security=tls&fp=chrome&sni=${encodeURIComponent(sni)}&alpn=${trojanAlpn}#TROJAN-${selectedTransport.toUpperCase()}-${PROXY_LABELS[selectedProxy]}`;
                 case 'vmess':
+                    const alpnVal = selectedTransport === 'xhttp' ? 'h2,http/1.1' : 'http/1.1';
                     return `vmess://${btoa(JSON.stringify({
-                        v:'2',
-                        ps:`VMESS-GRPC-${PROXY_LABELS[selectedProxy]}`,
-                        add:addr,
-                        port:'443',
-                        id:UUID,
-                        aid:'0',
-                        scy:'auto',
-                        net:'grpc',
-                        host:host,
-                        path:grpcService,
-                        tls:'tls',
-                        sni:sni,
-                        fp:'chrome',
-                        alpn:'h2'
+                        v:'2', ps:`VMESS-${selectedTransport.toUpperCase()}-${PROXY_LABELS[selectedProxy]}`, add:addr, port:'443', id:UUID, aid:'0',
+                        scy:'auto', net:selectedTransport, host:host, path:path, tls:'tls', sni:sni, fp:'chrome', alpn:alpnVal
                     })).replace(/=+$/,'')}`;
-
                 case 'shadowsocks':
-                    const ssGrpcCred =
-                        btoa(`${SS_METHOD}:${SS_PASSWORD}`)
-                        .replace(/=+$/,'');
-
-                    return `ss://${ssGrpcCred}@${addr}:443?type=grpc&serviceName=${encodeURIComponent(grpcService)}&security=tls&sni=${encodeURIComponent(sni)}&alpn=h2#SS-GRPC-${PROXY_LABELS[selectedProxy]}`;
+                    const ssCred = btoa(`${SS_METHOD}:${SS_PASSWORD}`).replace(/=+$/,'');
+                    return `ss://${ssCred}@${addr}:443?${transportParam}&security=tls&sni=${encodeURIComponent(sni)}#SS-${selectedTransport.toUpperCase()}-${PROXY_LABELS[selectedProxy]}`;
             }
         }
 
-        const path = getPublicPath();
-
-        let transportParam = '';
-
-        switch(selectedTransport) {
-
-            case 'ws':
-                transportParam =
-                    `type=ws&path=${encodeURIComponent(path)}&host=${encodeURIComponent(host)}`;
-                break;
-
-            case 'httpupgrade':
-                transportParam =
-                    `type=httpupgrade&path=${encodeURIComponent(path)}&host=${encodeURIComponent(host)}`;
-                break;
-
-            case 'xhttp':
-                transportParam =
-                    `type=xhttp&path=${encodeURIComponent(path)}&host=${encodeURIComponent(host)}&mode=packet-upstream`;
-                break;
+        function buildList(container, items, type) {
+            container.innerHTML = '';
+            items.forEach(item => {
+                const el = document.createElement('div');
+                el.className = 'modal-item';
+                el.textContent = item;
+                el.addEventListener('click', () => {
+                    if (type === 'address') {
+                        selectedAddress = item;
+                        addressSelected.textContent = 'TARGET SET: ' + item;
+                        addressBtnTxt.textContent = item;
+                        addLog(`Target address set: ${item}`, 'success');
+                        addressModal.classList.remove('show');
+                    } else {
+                        selectedSNI = item;
+                        sniSelected.textContent = 'SNI SET: ' + item;
+                        sniBtnTxt.textContent = item;
+                        addLog(`SNI set: ${item}`, 'success');
+                        sniModal.classList.remove('show');
+                    }
+                    updateUI();
+                });
+                container.appendChild(el);
+            });
         }
 
-        switch(selectedProtocol) {
-
-            case 'vless':
-
-                const vlessAlpn =
-                    selectedTransport === 'xhttp'
-                        ? 'h2%2Chttp%2F1.1'
-                        : 'http%2F1.1';
-
-                return `vless://${UUID}@${addr}:443?encryption=none&${transportParam}&security=tls&fp=chrome&sni=${encodeURIComponent(sni)}&alpn=${vlessAlpn}#VLESS-${selectedTransport.toUpperCase()}-${PROXY_LABELS[selectedProxy]}`;
-
-            case 'trojan':
-
-                const trojanAlpn =
-                    selectedTransport === 'xhttp'
-                        ? 'h2%2Chttp%2F1.1'
-                        : 'http%2F1.1';
-
-                return `trojan://${SS_PASSWORD}@${addr}:443?${transportParam}&security=tls&fp=chrome&sni=${encodeURIComponent(sni)}&alpn=${trojanAlpn}#TROJAN-${selectedTransport.toUpperCase()}-${PROXY_LABELS[selectedProxy]}`;
-
-            case 'vmess':
-
-                const alpnVal =
-                    selectedTransport === 'xhttp'
-                        ? 'h2,http/1.1'
-                        : 'http/1.1';
-
-                return `vmess://${btoa(JSON.stringify({
-                    v:'2',
-                    ps:`VMESS-${selectedTransport.toUpperCase()}-${PROXY_LABELS[selectedProxy]}`,
-                    add:addr,
-                    port:'443',
-                    id:UUID,
-                    aid:'0',
-                    scy:'auto',
-                    net:selectedTransport,
-                    host:host,
-                    path:path,
-                    tls:'tls',
-                    sni:sni,
-                    fp:'chrome',
-                    alpn:alpnVal
-                })).replace(/=+$/,'')}`;
-
-            case 'shadowsocks':
-
-                const ssCred =
-                    btoa(`${SS_METHOD}:${SS_PASSWORD}`)
-                    .replace(/=+$/,'');
-
-                return `ss://${ssCred}@${addr}:443?${transportParam}&security=tls&sni=${encodeURIComponent(sni)}#SS-${selectedTransport.toUpperCase()}-${PROXY_LABELS[selectedProxy]}`;
+        function buildOptions(container, items, activeItem, labels) {
+            container.innerHTML = '';
+            items.forEach(item => {
+                const b = document.createElement('button');
+                b.className = 'switch-btn' + (item === activeItem ? ' active' : '');
+                b.textContent = labels[item] || item;
+                b.addEventListener('click', () => {
+                    if (isProcessing) return;
+                    isProcessing = true;
+                    container.querySelectorAll('.switch-btn').forEach(btn => btn.classList.remove('active'));
+                    b.classList.add('active');
+                    if (container === proxyButtons) selectedProxy = item;
+                    if (container === protoButtons) selectedProtocol = item;
+                    if (container === transButtons) selectedTransport = item;
+                    addLog(`Switched to: ${labels[item] || item}`, 'success');
+                    updateUI();
+                    setTimeout(() => isProcessing = false, 200);
+                });
+                container.appendChild(b);
+            });
         }
-    }
 
-    function buildList(container, items, type) {
+        function updateUI() {
+            infoHost.textContent = selectedAddress;
+            infoSni.textContent = selectedSNI;
+            infoProto.textContent = PROTOCOL_LABELS[selectedProtocol];
+            infoTransport.textContent = TRANSPORT_LABELS[selectedTransport];
+            infoProxy.textContent = PROXY_LABELS[selectedProxy];
+            configDisplay.value = buildConfig();
+            buildOptions(proxyButtons, PROXY_ENGINES, selectedProxy, PROXY_LABELS);
+            buildOptions(protoButtons, PROTOCOLS, selectedProtocol, PROTOCOL_LABELS);
+            buildOptions(transButtons, TRANSPORTS, selectedTransport, TRANSPORT_LABELS);
+        }
 
-        container.innerHTML = '';
-
-        items.forEach(item => {
-
-            const el =
-                document.createElement('div');
-
-            el.className = 'modal-item';
-            el.textContent = item;
-
-            el.addEventListener('click', () => {
-
-                if (type === 'address') {
-
-                    selectedAddress = item;
-
-                    addressSelected.textContent =
-                        'TARGET SET: ' + item;
-
-                    addressBtnTxt.textContent = item;
-
-                    addLog(
-                        `Target address set: ${item}`,
-                        'success'
-                    );
-
-                    addressModal.classList.remove('show');
-
-                } else {
-
-                    selectedSNI = item;
-
-                    sniSelected.textContent =
-                        'SNI SET: ' + item;
-
-                    sniBtnTxt.textContent = item;
-
-                    addLog(
-                        `SNI set: ${item}`,
-                        'success'
-                    );
-
-                    sniModal.classList.remove('show');
-                }
-
-                updateUI();
-            });
-
-            container.appendChild(el);
+        copyBypassBtn1.addEventListener('click', () => {
+            navigator.clipboard.writeText(bypassConfig1.value)
+                .then(() => {
+                    copyBypassBtn1.textContent = 'COPIED ✓';
+                    setTimeout(() => copyBypassBtn1.textContent = 'COPY', 2000);
+                    addLog('Bypass Config 1 copied!', 'success');
+                })
+                .catch(() => addLog('Copy failed', 'info'));
         });
-    }
 
-    function buildOptions(
-        container,
-        items,
-        activeItem,
-        labels
-    ) {
-
-        container.innerHTML = '';
-
-        items.forEach(item => {
-
-            const b =
-                document.createElement('button');
-
-            b.className =
-                'switch-btn' +
-                (item === activeItem ? ' active' : '');
-
-            b.textContent =
-                labels[item] || item;
-
-            b.addEventListener('click', () => {
-
-                if (isProcessing) {
-                    return;
-                }
-
-                isProcessing = true;
-
-                container
-                    .querySelectorAll('.switch-btn')
-                    .forEach(btn =>
-                        btn.classList.remove('active')
-                    );
-
-                b.classList.add('active');
-
-                if (container === proxyButtons) {
-                    selectedProxy = item;
-                }
-
-                if (container === protoButtons) {
-                    selectedProtocol = item;
-                }
-
-                if (container === transButtons) {
-                    selectedTransport = item;
-                }
-
-                addLog(
-                    `Switched to: ${labels[item] || item}`,
-                    'success'
-                );
-
-                updateUI();
-
-                setTimeout(
-                    () => isProcessing = false,
-                    200
-                );
-            });
-
-            container.appendChild(b);
+        copyBypassBtn2.addEventListener('click', () => {
+            navigator.clipboard.writeText(bypassConfig2.value)
+                .then(() => {
+                    copyBypassBtn2.textContent = 'COPIED ✓';
+                    setTimeout(() => copyBypassBtn2.textContent = 'COPY', 2000);
+                    addLog('Bypass Config 2 copied!', 'success');
+                })
+                .catch(() => addLog('Copy failed', 'info'));
         });
-    }
 
-    function updateUI() {
-
-        infoHost.textContent =
-            selectedAddress;
-
-        infoSni.textContent =
-            selectedSNI;
-
-        infoProto.textContent =
-            PROTOCOL_LABELS[selectedProtocol];
-
-        infoTransport.textContent =
-            TRANSPORT_LABELS[selectedTransport];
-
-        infoProxy.textContent =
-            PROXY_LABELS[selectedProxy];
-
-        configDisplay.value =
-            buildConfig();
-
-        buildOptions(
-            proxyButtons,
-            PROXY_ENGINES,
-            selectedProxy,
-            PROXY_LABELS
-        );
-
-        buildOptions(
-            protoButtons,
-            PROTOCOLS,
-            selectedProtocol,
-            PROTOCOL_LABELS
-        );
-
-        buildOptions(
-            transButtons,
-            TRANSPORTS,
-            selectedTransport,
-            TRANSPORT_LABELS
-        );
-    }
-
-    // ==================== COPY BYPASS 1 ====================
-
-    copyBypassBtn1.addEventListener('click', () => {
-
-        navigator.clipboard
-            .writeText(bypassConfig1.value)
-            .then(() => {
-
-                copyBypassBtn1.textContent =
-                    'COPIED ✓';
-
-                setTimeout(
-                    () => copyBypassBtn1.textContent = 'COPY',
-                    2000
-                );
-
-                addLog(
-                    'Bypass Config 1 copied!',
-                    'success'
-                );
-
-            })
-            .catch(() =>
-                addLog('Copy failed', 'info')
-            );
-    });
-
-    // ==================== COPY BYPASS 2 ====================
-
-    copyBypassBtn2.addEventListener('click', () => {
-
-        navigator.clipboard
-            .writeText(bypassConfig2.value)
-            .then(() => {
-
-                copyBypassBtn2.textContent =
-                    'COPIED ✓';
-
-                setTimeout(
-                    () => copyBypassBtn2.textContent = 'COPY',
-                    2000
-                );
-
-                addLog(
-                    'Bypass Config 2 copied!',
-                    'success'
-                );
-
-            })
-            .catch(() =>
-                addLog('Copy failed', 'info')
-            );
-    });
-
-    // ==================== COPY GENERATED CONFIG ====================
-
-    copyBtn.addEventListener('click', () => {
-
-        navigator.clipboard
-            .writeText(configDisplay.value)
-            .then(() => {
-
-                copyBtn.textContent =
-                    'COPIED ✓';
-
-                setTimeout(
-                    () => copyBtn.textContent = 'COPY',
-                    2000
-                );
-
-                addLog(
-                    'Generated Config copied!',
-                    'success'
-                );
-
-            })
-            .catch(() =>
-                addLog(
-                    'Copy permission denied',
-                    'info'
-                )
-            );
-    });
-
-    // ==================== ADDRESS ====================
-
-    addressBtn.addEventListener('click', () => {
-
-        buildList(
-            addressListEl,
-            addressList,
-            'address'
-        );
-
-        addressModal.classList.add('show');
-
-        addLog(
-            'Opening address list',
-            'info'
-        );
-    });
-
-    addressClose.addEventListener(
-        'click',
-        () => addressModal.classList.remove('show')
-    );
-
-    // ==================== SNI ====================
-
-    sniBtn.addEventListener('click', () => {
-
-        buildList(
-            sniListEl,
-            sniList,
-            'sni'
-        );
-
-        sniModal.classList.add('show');
-
-        addLog(
-            'Opening SNI list',
-            'info'
-        );
-    });
-
-    sniClose.addEventListener(
-        'click',
-        () => sniModal.classList.remove('show')
-    );
-
-    // ==================== SYSTEM START ====================
-
-    window.addEventListener('load', () => {
-
-        setTimeout(() => {
-
-            loadingScreen.classList.add('hidden');
-
-            mainContent.style.display = 'flex';
-
-            buildOptions(
-                proxyButtons,
-                PROXY_ENGINES,
-                selectedProxy,
-                PROXY_LABELS
-            );
-
-            buildOptions(
-                protoButtons,
-                PROTOCOLS,
-                selectedProtocol,
-                PROTOCOL_LABELS
-            );
-
-            buildOptions(
-                transButtons,
-                TRANSPORTS,
-                selectedTransport,
-                TRANSPORT_LABELS
-            );
-
-            updateUI();
-
-            fetchUserInfo();
-            measurePing();
-
-            setInterval(
-                updateMonitorUptime,
-                1000
-            );
-
-            setInterval(
-                updateGraph,
-                1200
-            );
-
-            setInterval(
-                measurePing,
-                10000
-            );
-
-            addLog(
-                'System interface loaded successfully',
-                'success'
-            );
-
-            addLog(
-                'Encryption modules active',
-                'success'
-            );
-
-            addLog(
-                'Real-time monitor initialized',
-                'success'
-            );
-
-            addLog(
-                '4 proxy engines available',
-                'success'
-            );
-
-            addLog(
-                'gRPC transport initialized',
-                'success'
-            );
-
-            addLog(
-                'Ready for configuration generation',
-                'info'
-            );
-
-        }, 3500);
-    });
-
-})();
+        copyBtn.addEventListener('click', () => {
+            navigator.clipboard.writeText(configDisplay.value)
+                .then(() => {
+                    copyBtn.textContent = 'COPIED ✓';
+                    setTimeout(() => copyBtn.textContent = 'COPY', 2000);
+                    addLog('Generated Config copied!', 'success');
+                })
+                .catch(() => addLog('Copy permission denied', 'info'));
+        });
+
+        addressBtn.addEventListener('click', () => {
+            buildList(addressListEl, addressList, 'address');
+            addressModal.classList.add('show');
+            addLog('Opening address list', 'info');
+        });
+        addressClose.addEventListener('click', () => addressModal.classList.remove('show'));
+
+        sniBtn.addEventListener('click', () => {
+            buildList(sniListEl, sniList, 'sni');
+            sniModal.classList.add('show');
+            addLog('Opening SNI list', 'info');
+        });
+        sniClose.addEventListener('click', () => sniModal.classList.remove('show'));
+
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                loadingScreen.classList.add('hidden');
+                mainContent.style.display = 'flex';
+                updateUI();
+                fetchUserInfo();
+                measurePing();
+                setInterval(updateMonitorUptime, 1000);
+                setInterval(updateGraph, 1200);
+                setInterval(measurePing, 10000);
+                addLog('System interface loaded successfully', 'success');
+                addLog('Encryption modules active', 'success');
+                addLog('Real-time monitor initialized', 'success');
+                addLog('4 proxy engines available', 'success');
+                addLog('gRPC transport initialized', 'success');
+                addLog('Ready for configuration generation', 'info');
+            }, 3500);
+        });
+
+    })();
 </script>
 
 </body>
 </html>
+   
