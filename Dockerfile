@@ -4,7 +4,6 @@ FROM openresty/openresty:1.31.1.1-bookworm-fat
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# ✅ Dagdag: Required variables (tugma sa script at Cloud Run)
 ENV PORT="${PORT:-8080}"
 ENV BIND_ADDR="${BIND_ADDR:-0.0.0.0}"
 
@@ -41,6 +40,8 @@ proxy_wstunnel \
 headers \
 rewrite \
 http2 && \
+# ✅ Idinagdag: Tanggalin default Apache site para walang conflict
+a2dissite 000-default && \
 mkdir -p \
 /etc/xray \
 /etc/haproxy \
@@ -57,12 +58,10 @@ mkdir -p \
 /var/log/apache2 && \
 rm -rf /var/lib/apt/lists/*
 
-# ✅ Copy binaries + assets
 COPY --from=envoy /usr/local/bin/envoy /usr/local/bin/envoy
 COPY --from=xray /usr/local/bin/xray /usr/local/bin/xray
 COPY --from=xray /usr/local/share/xray/. /usr/local/share/xray/
 
-# ✅ Copy config files (tugma sa path)
 COPY config.json /etc/xray/config.json
 COPY nginx.conf /etc/openresty/nginx.conf
 COPY haproxy.cfg /etc/haproxy/haproxy.cfg
