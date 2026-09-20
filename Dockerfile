@@ -3,14 +3,26 @@
 # Envoy -> HAProxy -> OpenResty -> Apache -> Xray
 # ============================================================
 
+# ------------------------------------------------------------
+# ENVOY
+# ------------------------------------------------------------
 FROM envoyproxy/envoy:v1.39.1 AS envoy
+
+# ------------------------------------------------------------
+# XRAY
+# ------------------------------------------------------------
 FROM ghcr.io/xtls/xray-core:25.12.8 AS xray
+
+# ------------------------------------------------------------
+# MAIN IMAGE
+# ------------------------------------------------------------
 FROM openresty/openresty:1.31.1.1-bookworm-fat
 
-# ============================================================
-# GLOBAL ENV VARS
-# ============================================================
 ENV DEBIAN_FRONTEND=noninteractive
+
+# ============================================================
+# ENVIRONMENT
+# ============================================================
 
 ENV XRAY_LOCATION_ASSET=/usr/local/share/xray
 ENV XRAY_LOCATION_CONFIG=/etc/xray
@@ -28,9 +40,11 @@ ENV OPENRESTY_GRPC_PORT=8085
 WORKDIR /opt/virgozki
 
 # ============================================================
-# ✅ FIXED: WALANG NAWAWALANG DIRECTORY ERROR NA
+# INSTALL PACKAGES
 # ============================================================
-RUN apt-get update && apt-get install -y --no-install-recommends \
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
         apache2 \
         apache2-utils \
         haproxy \
@@ -43,72 +57,135 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         procps \
         iproute2 \
         net-tools \
-        openssl \
-    # Enable Apache modules (hindi na nagdudulot ng error kahit naka-enable na)
-    && a2enmod proxy proxy_http proxy_http2 proxy_wstunnel headers rewrite http2 || true \
-    # ✅ Gumawa muna ng directory BAGO mag-set ng permissions
-    && mkdir -p /var/lib/haproxy /run/haproxy /var/run/haproxy \
-    # ✅ Siguraduhin lang na tama ang ownership, iwas error
-    && chown -R haproxy:haproxy /var/lib/haproxy /run/haproxy \
-    # Cleanup
-    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+        openssl && \
+    a2enmod \
+        proxy \
+        proxy_http \
+        proxy_http2 \
+        proxy_wstunnel \
+        headers \
+        rewrite \
+        http2 || true && \
+    mkdir -p \
+        /var/lib/haproxy \
+        /run/haproxy \
+        /var/run/haproxy \
+        /run/apache2 \
+        /var/run/apache2 \
+        /etc/xray \
+        /etc/haproxy \
+        /etc/envoy \
+        /tmp/virgozki \
+        /tmp/virgozki-logs \
+        /var/log/xray && \
+    chown -R haproxy:haproxy \
+        /var/lib/haproxy \
+        /run/haproxy \
+        /var/run/haproxy && \
+    chmod 777 \
+        /tmp/virgozki \
+        /tmp/virgozki-logs \
+        /run/apache2 \
+        /var/run/apache2 \
+        /var/run/haproxy && \
+    rm -rf \
+        /var/lib/apt/lists/* \
+        /tmp/* \
+        /var/tmp/*
 
 # ============================================================
-# KOPYA NG MGA BINARY
+# COPY ENVOY
 # ============================================================
-COPY --from=envoy /usr/local/bin/envoy /usr/local/bin/envoy
-COPY --from=xray /usr/local/bin/xray /usr/local/bin/xray
-COPY --from=xray /usr/local/share/xray /usr/local/share/xray
+
+COPY --from=envoy \
+    /usr/local/bin/envoy \
+    /usr/local/bin/envoy
 
 # ============================================================
-# IBA PANG DIRECTORY
+# COPY XRAY
 # ============================================================
+
+COPY --from=xray \
+    /usr/local/bin/xray \
+    /usr/local/bin/xray
+
+COPY --from=xray \
+    /usr/local/share/xray \
+    /usr/local/share/xray
+
+# ============================================================
+# CONFIG DIRECTORIES
+# ============================================================
+
 RUN mkdir -p \
         /etc/xray \
         /etc/haproxy \
+        /etc/envoy \
         /etc/apache2/conf-available \
         /etc/apache2/conf-enabled \
         /var/log/xray \
         /var/log/apache2 \
         /var/lock/apache2 \
         /var/run/apache2 \
-        /tmp/virgozki-logs \
         /tmp/virgozki \
-    && chmod 777 \
-        /tmp \
-        /run \
-        /var/run \
-        /tmp/virgozki-logs \
-        /tmp/virgozki
+        /tmp/virgozki-logs && \
+    chmod 755 \
+        /etc/xray \
+        /etc/haproxy \
+        /etc/envoy
 
 # ============================================================
 # CONFIGURATION FILES
 # ============================================================
-COPY config.json /etc/xray/config.json
-COPY nginx.conf /etc/openresty/nginx.conf
-COPY haproxy.cfg /etc/haproxy/haproxy.cfg
-COPY httpd.conf /etc/apache2/conf-available/virgozki.conf
+
+COPY config.json \
+    /etc/xray/config.json
+
+COPY nginx.conf \
+    /etc/openresty/nginx.conf
+
+COPY haproxy.cfg \
+    /etc/haproxy/haproxy.cfg
+
+COPY httpd.conf \
+    /etc/apache2/conf-available/virgozki.conf
+
+COPY index.html \
+    /usr/share/nginx/html/index.html
+
+COPY entrypoint.sh \
+    /usr/local/bin/entrypoint.sh
+
+# ============================================================
+# ENABLE APACHE CONFIG
+# ============================================================
 
 RUN a2enconf virgozki || true
-
-COPY index.html /usr/share/nginx/html/index.html
-COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 
 # ============================================================
 # PERMISSIONS
 # ============================================================
-RUN chmod +x /usr/local/bin/entrypoint.sh \
-    && chmod 644 \
+
+RUN chmod +x \
+        /usr/local/bin/entrypoint.sh && \
+    chmod 644 \
         /etc/xray/config.json \
         /etc/openresty/nginx.conf \
         /etc/haproxy/haproxy.cfg \
-        /etc/apache2/conf-available/virgozki.conf \
-    && chmod -R 755 /usr/share/nginx/html
+        /etc/apache2/conf-available/virgozki.conf && \
+    chmod -R 755 \
+        /usr/share/nginx/html
 
 # ============================================================
-# CLOUD RUN SETTINGS
+# CLOUD RUN
 # ============================================================
+
 EXPOSE 8080
 
+# ============================================================
+# INIT
+# ============================================================
+
 ENTRYPOINT ["/usr/bin/tini", "--"]
+
 CMD ["/usr/local/bin/entrypoint.sh"]
