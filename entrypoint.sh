@@ -52,11 +52,11 @@ mkdir -p \
 
 echo "[check] binaries"
 
-command -v xray >/dev/null
-command -v nginx >/dev/null
-command -v haproxy >/dev/null
-command -v apache2ctl >/dev/null
-command -v envoy >/dev/null
+command -v xray >/dev/null || { echo "❌ Missing xray"; exit 1; }
+command -v nginx >/dev/null || { echo "❌ Missing nginx"; exit 1; }
+command -v haproxy >/dev/null || { echo "❌ Missing haproxy"; exit 1; }
+command -v apache2ctl >/dev/null || { echo "❌ Missing apache2ctl"; exit 1; }
+command -v envoy >/dev/null || { echo "❌ Missing envoy"; exit 1; }
 
 
 echo "[check] files"
@@ -100,6 +100,7 @@ xray run \
 > /tmp/virgozki-logs/xray.log 2>&1 &
 
 PIDS+=($!)
+sleep 3
 
 
 echo "[start] Apache"
@@ -109,9 +110,13 @@ apache2ctl \
 > /tmp/virgozki-logs/apache.log 2>&1 &
 
 PIDS+=($!)
+sleep 2
 
 
 echo "[start] OpenResty"
+# ✅ NAKINIG SA 127.0.0.1 LANG — HINDI NA KONFLIK SA PORT 8080
+sed -i "s/listen 0.0.0.0:8080;/listen 127.0.0.1:$OPENRESTY_PORT;/" "$NGINX_CONFIG"
+sed -i "s/listen 0.0.0.0:8085 http2;/listen 127.0.0.1:$OPENRESTY_GRPC_PORT http2;/" "$NGINX_CONFIG"
 
 nginx \
 -c "$NGINX_CONFIG" \
@@ -119,6 +124,7 @@ nginx \
 > /tmp/virgozki-logs/openresty.log 2>&1 &
 
 PIDS+=($!)
+sleep 2
 
 
 echo "[start] HAProxy"
@@ -129,10 +135,10 @@ haproxy \
 > /tmp/virgozki-logs/haproxy.log 2>&1 &
 
 PIDS+=($!)
+sleep 2
 
 
 echo "[generate] Envoy"
-
 
 cat > "$ENVOY_CONFIG" <<EOF
 
@@ -182,7 +188,6 @@ static_resources:
 
               routes:
 
-
               - match:
 
                   prefix: "/"
@@ -197,69 +202,49 @@ static_resources:
 
           http_filters:
 
-
           - name: envoy.filters.http.router
 
             typed_config:
 
-              "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+              "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.Router
 
 
 
   clusters:
 
-
   - name: haproxy_http
-
 
     connect_timeout: 5s
 
-
     type: STATIC
-
 
     load_assignment:
 
-
       cluster_name: haproxy_http
-
 
       endpoints:
 
-
       - lb_endpoints:
-
 
         - endpoint:
 
-
             address:
-
 
               socket_address:
 
-
                 address: 127.0.0.1
-
 
                 port_value: ${HAPROXY_PORT}
 
-
-
 admin:
-
 
   access_log_path: /tmp/envoy-admin.log
 
-
   address:
-
 
     socket_address:
 
-
       address: 127.0.0.1
-
 
       port_value: 9901
 
@@ -273,15 +258,12 @@ envoy \
 -c "$ENVOY_CONFIG"
 
 
-
 echo "[start] Envoy"
-
 
 envoy \
 -c "$ENVOY_CONFIG" \
 --log-level warning \
 > /tmp/virgozki-logs/envoy.log 2>&1 &
-
 
 PIDS+=($!)
 
@@ -312,16 +294,15 @@ do
 
             echo "Process stopped: $pid"
 
-            echo "---- logs ----"
+            echo "---- last 20 lines logs ----"
 
-            cat /tmp/virgozki-logs/*.log || true
+            tail -n 20 /tmp/virgozki-logs/*.log || true
 
             exit 1
 
         fi
 
     done
-
 
     sleep 5
 
