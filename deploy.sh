@@ -97,7 +97,8 @@ gcloud run deploy "$SERVICE_NAME" \
     --cpu "$CPU" --memory "$RAM" \
     --port 8080 --concurrency 800 --timeout 3600 \
     --min-instances 0 --max-instances "$MAX_INST" \
-    --session-affinity=on --allow-unauthenticated --quiet || { echo -e "${RED}DEPLOY FAILED${RESET}"; exit 1; }
+    --session-affinity \
+    --allow-unauthenticated --quiet || { echo -e "${RED}DEPLOY FAILED${RESET}"; exit 1; }
 
 # 7. Done
 SERVICE_URL=$(gcloud run services describe "$SERVICE_NAME" --format='value(status.url)')
@@ -105,3 +106,4 @@ echo -e "\n${GREEN}========================================${RESET}"
 echo -e "${GREEN}✅ DEPLOY SUCCESS!${RESET}"
 echo -e "${CYAN}URL: ${BOLD}${SERVICE_URL}${RESET}"
 echo -e "${GREEN}========================================${RESET}"
+
