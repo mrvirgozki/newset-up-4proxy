@@ -82,6 +82,7 @@ echo -e "  ${YELLOW}0) ${GREEN}${REGION} (Default)${RESET}"
 
 for item in "${ALL_REGIONS[@]}"; do
     IFS=':' read -r num reg_name country <<< "$item"
+
     printf "  ${YELLOW}%s) ${GREEN}%-25s ${CYAN}(%s)${RESET}\n" \
         "$num" "$reg_name" "$country"
 done
@@ -207,6 +208,7 @@ REQUIRED_FILES=(
 )
 
 for f in "${REQUIRED_FILES[@]}"; do
+
     if [[ ! -f "$f" ]]; then
         echo -e "  ${RED}MISSING FILE: $f${RESET}"
         exit 1
@@ -222,14 +224,17 @@ done
 echo
 echo -e "  ${CYAN}Validating configuration...${RESET}"
 
-python3 -m json.tool config.json >/dev/null
+if ! python3 -m json.tool config.json >/dev/null 2>&1; then
+    echo -e "  ${RED}config.json is invalid JSON.${RESET}"
+    exit 1
+fi
 
 if ! bash -n deploy.sh; then
     echo -e "  ${RED}deploy.sh syntax error${RESET}"
     exit 1
 fi
 
-if ! sh -n entrypoint.sh; then
+if ! bash -n entrypoint.sh; then
     echo -e "  ${RED}entrypoint.sh syntax error${RESET}"
     exit 1
 fi
@@ -260,6 +265,7 @@ if ! gcloud builds submit \
 then
     echo
     echo -e "  ${RED}BUILD FAILED${RESET}"
+    echo
     echo -e "  ${YELLOW}Last 80 lines of build.log:${RESET}"
     tail -n 80 build.log || true
     exit 1
@@ -281,12 +287,9 @@ rm -f deploy.log
 # IMPORTANT:
 # Do NOT use --use-http2 here.
 #
-# Cloud Run receives normal HTTP/1.1 traffic at the public container
-# interface while the internal Envoy/OpenResty/HAProxy/Apache layers
-# handle the required gRPC/HTTP2 traffic.
-#
-# WebSocket support and native gRPC remain available through the
-# application-level proxy configuration.
+# Cloud Run public container interface listens on PORT=8080.
+# Internal Envoy/OpenResty/HAProxy/Apache layers handle
+# HTTP/2 and gRPC according to their own configuration.
 
 if ! gcloud run deploy "$SERVICE_NAME" \
     --image "$IMAGE" \
@@ -304,10 +307,59 @@ if ! gcloud run deploy "$SERVICE_NAME" \
     --project "$PROJECT_ID" \
     --quiet >deploy.log 2>&1
 then
+
     echo
+    echo -e "  ${RED}========================================${RESET}"
     echo -e "  ${RED}CLOUD RUN DEPLOYMENT FAILED${RESET}"
-    echo -e "  ${YELLOW}Last 80 lines of deploy.log:${RESET}"
+    echo -e "  ${RED}========================================${RESET}"
+
+    echo
+    echo -e "  ${YELLOW}--- DEPLOY ERROR ---${RESET}"
     tail -n 80 deploy.log || true
+
+    echo
+    echo -e "  ${YELLOW}--- REVISION STATUS ---${RESET}"
+
+    gcloud run revisions list \
+        --service="$SERVICE_NAME" \
+        --region="$REGION" \
+        --project="$PROJECT_ID" \
+        --limit=3 \
+        --format="table(
+            metadata.name,
+            status.conditions[0].status,
+            status.conditions[0].message
+        )" 2>/dev/null || true
+
+    echo
+    echo -e "  ${YELLOW}--- CLOUD RUN CONTAINER LOGS ---${RESET}"
+
+    gcloud logging read \
+        "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"${SERVICE_NAME}\"" \
+        --project="$PROJECT_ID" \
+        --limit=50 \
+        --format="value(timestamp,severity,textPayload)" \
+        2>/dev/null || true
+
+    echo
+    echo -e "  ${YELLOW}--- STRUCTURED CLOUD RUN LOGS ---${RESET}"
+
+    gcloud logging read \
+        "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"${SERVICE_NAME}\"" \
+        --project="$PROJECT_ID" \
+        --limit=20 \
+        --format="table(
+            timestamp,
+            severity,
+            resource.labels.revision_name,
+            textPayload
+        )" 2>/dev/null || true
+
+    echo
+    echo -e "  ${RED}The container did not successfully become ready on PORT=8080.${RESET}"
+    echo -e "  ${YELLOW}The container logs above should identify the failing component.${RESET}"
+    echo
+
     exit 1
 fi
 
@@ -333,6 +385,7 @@ fi
 HOST=$(echo "$SERVICE_URL" | sed 's|https://||')
 
 echo -e "  ${GREEN}SERVICE URL:${RESET} ${SERVICE_URL}"
+echo -e "  ${GREEN}HOST:${RESET} ${HOST}"
 
 # ============================================================
 # BASIC HEALTH CHECK
@@ -341,21 +394,27 @@ echo -e "  ${GREEN}SERVICE URL:${RESET} ${SERVICE_URL}"
 echo
 echo -e "  ${CYAN}Running public endpoint check...${RESET}"
 
-HTTP_CODE=$(curl \
-    -L \
-    -k \
-    -sS \
-    -o /tmp/virgozki-health.html \
-    -w '%{http_code}' \
-    --max-time 30 \
-    "$SERVICE_URL/" 2>/dev/null || true)
+HTTP_CODE=$(
+    curl \
+        -L \
+        -k \
+        -sS \
+        -o /tmp/virgozki-health.html \
+        -w '%{http_code}' \
+        --max-time 30 \
+        "$SERVICE_URL/" 2>/dev/null || true
+)
 
 if [[ "$HTTP_CODE" == "200" ]]; then
+
     echo -e "  ${GREEN}PUBLIC PANEL CHECK: HTTP ${HTTP_CODE} OK${RESET}"
+
 else
+
     echo -e "  ${YELLOW}PUBLIC PANEL CHECK: HTTP ${HTTP_CODE}${RESET}"
     echo -e "  ${YELLOW}The service is deployed, but the panel did not return HTTP 200.${RESET}"
     echo -e "  ${YELLOW}Check Cloud Run logs if necessary.${RESET}"
+
 fi
 
 rm -f /tmp/virgozki-health.html
@@ -412,11 +471,11 @@ according to the prefix generated by index.html.
 
 CLOUD RUN
 ---------
-Container port: 8080
-Concurrency   : 800
-Timeout       : 3600 seconds
-Min instances : 0
-Max instances : ${MAX_INSTANCES}
+Container port : 8080
+Concurrency    : 800
+Timeout        : 3600 seconds
+Min instances  : 0
+Max instances  : ${MAX_INSTANCES}
 Session affinity: enabled
 
 HTTP/2
@@ -447,7 +506,7 @@ INFO
 
 echo
 echo -e "  ${GREEN}========================================${RESET}"
-echo -e "  ${GREEN}        DEPLOY SUCCESS${RESET}"
+echo -e "  ${GREEN}           DEPLOY SUCCESS${RESET}"
 echo -e "  ${GREEN}========================================${RESET}"
 echo
 echo -e "  ${CYAN}URL:${RESET}     ${GREEN}${SERVICE_URL}${RESET}"
