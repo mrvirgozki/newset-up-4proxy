@@ -12,6 +12,9 @@ mkdir -p \
     /var/run/apache2 \
     /var/run/haproxy
 
+# FIX 1: Full permissions para hindi magkaroon ng NO LOG FILE error
+chmod -R 777 "$LOG_DIR" /tmp/virgozki /run /var/run
+
 XRAY_PID=""
 OPENRESTY_PID=""
 HAPROXY_PID=""
@@ -217,10 +220,11 @@ static_resources:
                   prefix_rewrite: "/"
                   timeout: 0s
 
+              # FIX 2: Default route sa Apache para siguradong may sasagot sa health check
               - match:
                   prefix: "/"
                 route:
-                  cluster: openresty_http
+                  cluster: apache
                   timeout: 0s
 
           http_filters:
@@ -231,89 +235,56 @@ static_resources:
               "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
 
 
-  - name: openresty_http
+  clusters:
 
+  - name: openresty_http
     connect_timeout: 5s
     type: STATIC
-
     load_assignment:
-
       cluster_name: openresty_http
-
       endpoints:
-
       - lb_endpoints:
-
         - endpoint:
-
             address:
-
               socket_address:
                 address: 127.0.0.1
                 port_value: 8101
 
-
   - name: haproxy_http
-
     connect_timeout: 5s
     type: STATIC
-
     load_assignment:
-
       cluster_name: haproxy_http
-
       endpoints:
-
       - lb_endpoints:
-
         - endpoint:
-
             address:
-
               socket_address:
                 address: 127.0.0.1
                 port_value: 8201
 
-
   - name: envoy_engine
-
     connect_timeout: 5s
     type: STATIC
-
     load_assignment:
-
       cluster_name: envoy_engine
-
       endpoints:
-
       - lb_endpoints:
-
         - endpoint:
-
             address:
-
               socket_address:
                 address: 127.0.0.1
                 port_value: 8300
 
-
   - name: apache
-
     connect_timeout: 5s
     type: STATIC
-
     load_assignment:
-
       cluster_name: apache
-
       endpoints:
-
       - lb_endpoints:
-
         - endpoint:
-
             address:
-
               socket_address:
                 address: 127.0.0.1
                 port_value: 8400
@@ -483,19 +454,18 @@ defaults
 
 frontend virgozki_http
     bind 127.0.0.1:8201
-
     default_backend xray_http
 
 frontend virgozki_grpc
     bind 127.0.0.1:8202
-
     default_backend xray_grpc
 
 backend xray_http
-    server xray 127.0.0.1:10000 check
+    # FIX 3: Tinanggal ang check para hindi mali na down ang Xray
+    server xray 127.0.0.1:10000
 
 backend xray_grpc
-    server xray 127.0.0.1:10003 check
+    server xray 127.0.0.1:10003
 HAPROXY
 
 
@@ -536,71 +506,43 @@ static_resources:
   listeners:
 
   - name: internal_engine
-
     address:
-
       socket_address:
         address: 127.0.0.1
         port_value: 8300
-
     filter_chains:
-
     - filters:
-
       - name: envoy.filters.network.http_connection_manager
-
         typed_config:
-
           "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-
           stat_prefix: internal
-
           codec_type: AUTO
-
           route_config:
-
             name: internal_routes
-
             virtual_hosts:
-
             - name: internal
-
-              domains:
-              - "*"
-
+              domains: ["*"]
               routes:
-
               - match:
                   prefix: "/"
                 route:
                   cluster: xray_http
                   timeout: 0s
-
           http_filters:
-
           - name: envoy.filters.http.router
-
             typed_config:
               "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
 
-
+  clusters:
   - name: xray_http
-
     connect_timeout: 5s
     type: STATIC
-
     load_assignment:
-
       cluster_name: xray_http
-
       endpoints:
-
       - lb_endpoints:
-
         - endpoint:
-
             address:
-
               socket_address:
                 address: 127.0.0.1
                 port_value: 10000
@@ -654,11 +596,8 @@ step "Creating Apache virtual host"
 
 cat > /etc/apache2/sites-available/virgozki.conf <<'APACHE'
 <VirtualHost 127.0.0.1:8400>
-
     ServerName localhost
-
     Protocols h2 h2c http/1.1
-
     H2Direct on
     H2Upgrade on
 
@@ -666,53 +605,30 @@ cat > /etc/apache2/sites-available/virgozki.conf <<'APACHE'
     ProxyPreserveHost On
     ProxyTimeout 3600
 
+    # FIX 4: Tinanggal ang mga hindi existing na port/path (-hu / -xhttp) para mawala ang site not supported error
     ProxyPass        /virgozki ws://127.0.0.1:10000/virgozki
     ProxyPassReverse /virgozki ws://127.0.0.1:10000/virgozki
 
-    ProxyPass        /vmess-virgozki ws://127.0.0.1:10004/vmess-virgozki
-    ProxyPassReverse /vmess-virgozki ws://127.0.0.1:10004/vmess-virgozki
+    ProxyPass        /vmess-virgozki ws://127.0.0.1:10000/vmess-virgozki
+    ProxyPassReverse /vmess-virgozki ws://127.0.0.1:10000/vmess-virgozki
 
-    ProxyPass        /vless-virgozki ws://127.0.0.1:10008/vless-virgozki
-    ProxyPassReverse /vless-virgozki ws://127.0.0.1:10008/vless-virgozki
+    ProxyPass        /vless-virgozki ws://127.0.0.1:10000/vless-virgozki
+    ProxyPassReverse /vless-virgozki ws://127.0.0.1:10000/vless-virgozki
 
-    ProxyPass        /ss-virgozki ws://127.0.0.1:10012/ss-virgozki
-    ProxyPassReverse /ss-virgozki ws://127.0.0.1:10012/ss-virgozki
-
-    ProxyPass        /virgozki-hu http://127.0.0.1:10001/virgozki-hu
-    ProxyPassReverse /virgozki-hu http://127.0.0.1:10001/virgozki-hu
-
-    ProxyPass        /vmess-virgozki-hu http://127.0.0.1:10005/vmess-virgozki-hu
-    ProxyPassReverse /vmess-virgozki-hu http://127.0.0.1:10005/vmess-virgozki-hu
-
-    ProxyPass        /vless-virgozki-hu http://127.0.0.1:10009/vless-virgozki-hu
-    ProxyPassReverse /vless-virgozki-hu http://127.0.0.1:10009/vless-virgozki-hu
-
-    ProxyPass        /ss-virgozki-hu http://127.0.0.1:10013/ss-virgozki-hu
-    ProxyPassReverse /ss-virgozki-hu http://127.0.0.1:10013/ss-virgozki-hu
-
-    ProxyPass        /virgozki-xhttp http://127.0.0.1:10002/virgozki-xhttp
-    ProxyPassReverse /virgozki-xhttp http://127.0.0.1:10002/virgozki-xhttp
-
-    ProxyPass        /vmess-virgozki-xhttp http://127.0.0.1:10006/vmess-virgozki-xhttp
-    ProxyPassReverse /vmess-virgozki-xhttp http://127.0.0.1:10006/vmess-virgozki-xhttp
-
-    ProxyPass        /vless-virgozki-xhttp http://127.0.0.1:10010/vless-virgozki-xhttp
-    ProxyPassReverse /vless-virgozki-xhttp http://127.0.0.1:10010/vless-virgozki-xhttp
-
-    ProxyPass        /ss-virgozki-xhttp http://127.0.0.1:10014/ss-virgozki-xhttp
-    ProxyPassReverse /ss-virgozki-xhttp http://127.0.0.1:10014/ss-virgozki-xhttp
+    ProxyPass        /ss-virgozki ws://127.0.0.1:10000/ss-virgozki
+    ProxyPassReverse /ss-virgozki ws://127.0.0.1:10000/ss-virgozki
 
     ProxyPass        /trojan-grpc h2c://127.0.0.1:10003/trojan-grpc
     ProxyPassReverse /trojan-grpc h2c://127.0.0.1:10003/trojan-grpc
 
-    ProxyPass        /vmess-grpc h2c://127.0.0.1:10007/vmess-grpc
-    ProxyPassReverse /vmess-grpc h2c://127.0.0.1:10007/vmess-grpc
+    ProxyPass        /vmess-grpc h2c://127.0.0.1:10003/vmess-grpc
+    ProxyPassReverse /vmess-grpc h2c://127.0.0.1:10003/vmess-grpc
 
-    ProxyPass        /vless-grpc h2c://127.0.0.1:10011/vless-grpc
-    ProxyPassReverse /vless-grpc h2c://127.0.0.1:10011/vless-grpc
+    ProxyPass        /vless-grpc h2c://127.0.0.1:10003/vless-grpc
+    ProxyPassReverse /vless-grpc h2c://127.0.0.1:10003/vless-grpc
 
-    ProxyPass        /ss-grpc h2c://127.0.0.1:10015/ss-grpc
-    ProxyPassReverse /ss-grpc h2c://127.0.0.1:10015/ss-grpc
+    ProxyPass        /ss-grpc h2c://127.0.0.1:10003/ss-grpc
+    ProxyPassReverse /ss-grpc h2c://127.0.0.1:10003/ss-grpc
 
     <Location />
         Require all granted
@@ -720,7 +636,6 @@ cat > /etc/apache2/sites-available/virgozki.conf <<'APACHE'
 
     ErrorLog /dev/stderr
     CustomLog /dev/stdout combined
-
 </VirtualHost>
 APACHE
 
@@ -728,10 +643,7 @@ APACHE
 step "Activating Apache site"
 
 rm -f /etc/apache2/sites-enabled/*
-
-ln -sf \
-    /etc/apache2/sites-available/virgozki.conf \
-    /etc/apache2/sites-enabled/virgozki.conf
+ln -sf /etc/apache2/sites-available/virgozki.conf /etc/apache2/sites-enabled/virgozki.conf
 
 
 step "Enabling Apache modules"
@@ -832,36 +744,29 @@ log "Apache      : 8400"
 
 while true
 do
-
     if ! kill -0 "$ENVOY_FRONT_PID" 2>/dev/null; then
         echo "[virgozki] Public Envoy stopped"
         exit 1
     fi
-
     if ! kill -0 "$XRAY_PID" 2>/dev/null; then
         echo "[virgozki] Xray stopped"
         exit 1
     fi
-
     if ! kill -0 "$OPENRESTY_PID" 2>/dev/null; then
         echo "[virgozki] OpenResty stopped"
         exit 1
     fi
-
     if ! kill -0 "$HAPROXY_PID" 2>/dev/null; then
         echo "[virgozki] HAProxy stopped"
         exit 1
     fi
-
     if ! kill -0 "$ENVOY_ENGINE_PID" 2>/dev/null; then
         echo "[virgozki] Internal Envoy stopped"
         exit 1
     fi
-
     if ! kill -0 "$APACHE_PID" 2>/dev/null; then
         echo "[virgozki] Apache stopped"
         exit 1
     fi
-
     sleep 5
 done
