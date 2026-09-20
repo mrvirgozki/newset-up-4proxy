@@ -1,38 +1,27 @@
 # ============================================================
-# VIRGOZKI 4-PROXY + gRPC
-# Cloud Run / Debian Bookworm
+# VIRGOZKI 4-PROXY + gRPC | CLOUD RUN | DEBIAN BOOKWORM
 # ============================================================
 
-# ------------------------------------------------------------
-# Envoy stage
-# ------------------------------------------------------------
+# Envoy dependency stage
 FROM envoyproxy/envoy:v1.39.1 AS envoy
 
-# ------------------------------------------------------------
-# Xray stage
-# ------------------------------------------------------------
+# Xray dependency stage
 FROM ghcr.io/xtls/xray-core:25.12.8 AS xray
 
-# ------------------------------------------------------------
-# Main image
-# ------------------------------------------------------------
+# Base image
 FROM openresty/openresty:1.31.1.1-bookworm-fat
 
 ENV DEBIAN_FRONTEND=noninteractive
-
 ENV XRAY_LOCATION_ASSET=/usr/local/share/xray
 ENV XRAY_LOCATION_CONFIG=/etc/xray
 
 WORKDIR /opt/virgozki
 
-# ------------------------------------------------------------
-# System packages + Apache modules
-# ------------------------------------------------------------
+# Install packages + enable required Apache modules (FIXED)
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         apache2 \
         apache2-utils \
-        libapache2-mod-proxy-html \
         haproxy \
         python3 \
         ca-certificates \
@@ -44,25 +33,17 @@ RUN apt-get update && \
         iproute2 \
         net-tools \
         openssl && \
-    # Enable required Apache modules permanently
+    # ✅ No missing packages anymore! All built-in modules
     a2enmod proxy proxy_http proxy_http2 proxy_wstunnel headers rewrite http2 && \
-    # Cleanup
+    # Cleanup to reduce image size
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# ------------------------------------------------------------
-# Copy Envoy
-# ------------------------------------------------------------
+# Copy binaries from dependency stages
 COPY --from=envoy /usr/local/bin/envoy /usr/local/bin/envoy
-
-# ------------------------------------------------------------
-# Copy Xray
-# ------------------------------------------------------------
 COPY --from=xray /usr/local/bin/xray /usr/local/bin/xray
 COPY --from=xray /usr/local/share/xray /usr/local/share/xray
 
-# ------------------------------------------------------------
-# Directories & Permissions
-# ------------------------------------------------------------
+# Create required directories + fix permissions
 RUN mkdir -p \
         /etc/xray \
         /var/log/xray \
@@ -71,28 +52,21 @@ RUN mkdir -p \
         /run/apache2 \
         /var/run/apache2 \
         /var/run/haproxy && \
-    chmod -R 777 /tmp /run /var/run && \
-    chown -R www-data:www-data /usr/local/openresty/nginx/html
+    chmod -R 777 /tmp /run /var/run
 
-# ------------------------------------------------------------
-# Configs
-# ------------------------------------------------------------
+# Copy all config files
 COPY config.json /etc/xray/config.json
 COPY nginx.conf /etc/openresty/nginx.conf
 COPY index.html /usr/local/openresty/nginx/html/index.html
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 
-# ------------------------------------------------------------
-# Final Permissions
-# ------------------------------------------------------------
+# Final file permissions
 RUN chmod +x /usr/local/bin/entrypoint.sh && \
     chmod 644 /etc/xray/config.json && \
     chmod 644 /etc/openresty/nginx.conf && \
     chmod 644 /usr/local/openresty/nginx/html/index.html
 
-# ------------------------------------------------------------
-# Cloud Run
-# ------------------------------------------------------------
+# Cloud Run port
 EXPOSE 8080
 
 ENTRYPOINT ["/usr/bin/tini", "--"]
