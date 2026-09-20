@@ -93,10 +93,52 @@ check_pid() {
     NAME="$1"
     PID="$2"
 
+    if [ -z "$PID" ]; then
+        echo "[virgozki] $NAME PID EMPTY"
+        return 1
+    fi
+
     if ! kill -0 "$PID" 2>/dev/null; then
         echo "[virgozki] $NAME STOPPED"
-        exit 1
+        return 1
     fi
+
+    return 0
+}
+
+wait_for_port() {
+    NAME="$1"
+    HOST="$2"
+    CHECK_PORT="$3"
+    TIMEOUT="$4"
+
+    END_TIME=$(( $(date +%s) + TIMEOUT ))
+
+    while [ "$(date +%s)" -lt "$END_TIME" ]
+    do
+        if python3 - "$HOST" "$CHECK_PORT" <<'PY'
+import socket
+import sys
+
+host = sys.argv[1]
+port = int(sys.argv[2])
+
+try:
+    with socket.create_connection((host, port), timeout=1):
+        sys.exit(0)
+except Exception:
+    sys.exit(1)
+PY
+        then
+            log "$NAME port $CHECK_PORT READY"
+            return 0
+        fi
+
+        sleep 1
+    done
+
+    echo "[virgozki] $NAME port $CHECK_PORT FAILED"
+    return 1
 }
 
 on_exit() {
@@ -171,7 +213,8 @@ for CMD in \
     openresty \
     envoy \
     haproxy \
-    apache2ctl
+    apache2ctl \
+    python3
 do
     if ! command -v "$CMD" >/dev/null 2>&1; then
         echo "[virgozki] REQUIRED BINARY NOT FOUND: $CMD"
@@ -250,7 +293,7 @@ fi
 log "HAProxy configuration OK"
 
 # ============================================================
-# ENVOY CONFIGURATION
+# CREATE ENVOY CONFIG
 # ============================================================
 
 step "Creating Envoy configuration"
@@ -284,6 +327,12 @@ static_resources:
 
           stream_idle_timeout: 3600s
 
+          request_headers_to_add:
+
+          - header:
+              key: X-Forwarded-Proto
+              value: http
+
           normalize_path: true
 
           route_config:
@@ -299,7 +348,10 @@ static_resources:
 
               routes:
 
+              # ==================================================
               # gRPC
+              # ==================================================
+
               - match:
                   prefix: "/openresty/"
                   grpc: {}
@@ -308,19 +360,16 @@ static_resources:
                   cluster: haproxy_grpc
                   timeout: 3600s
 
-              # HTTP / WebSocket / HTTPUpgrade / XHTTP
+              # ==================================================
+              # HTTP / WS / HTTPUPGRADE / XHTTP
+              # ==================================================
+
               - match:
                   prefix: "/"
 
                 route:
                   cluster: haproxy_http
                   timeout: 3600s
-
-                request_headers_to_add:
-
-                - header:
-                    key: X-Forwarded-Proto
-                    value: http
 
           http_filters:
 
@@ -422,7 +471,7 @@ XRAY_PID=$!
 
 sleep 2
 
-if ! kill -0 "$XRAY_PID" 2>/dev/null; then
+if ! check_pid "Xray" "$XRAY_PID"; then
     echo "[virgozki] XRAY FAILED TO START"
     cat "$LOG_DIR/xray.log"
     exit 1
@@ -442,10 +491,18 @@ apache2ctl \
 
 APACHE_PID=$!
 
-sleep 2
-
-if ! kill -0 "$APACHE_PID" 2>/dev/null; then
+if ! check_pid "Apache" "$APACHE_PID"; then
     echo "[virgozki] APACHE FAILED TO START"
+    cat "$LOG_DIR/apache.log"
+    exit 1
+fi
+
+if ! wait_for_port \
+    "Apache" \
+    "127.0.0.1" \
+    "$APACHE_PORT" \
+    30
+then
     cat "$LOG_DIR/apache.log"
     exit 1
 fi
@@ -456,7 +513,7 @@ log "Apache started"
 # START OPENRESTY
 # ============================================================
 
-step "Starting OpenResty HTTP:${OPENRESTY_PORT} gRPC:${OPENRESTY_GRPC_PORT}"
+step "Starting OpenResty"
 
 openresty \
     -g "daemon off;" \
@@ -465,10 +522,28 @@ openresty \
 
 OPENRESTY_PID=$!
 
-sleep 2
-
-if ! kill -0 "$OPENRESTY_PID" 2>/dev/null; then
+if ! check_pid "OpenResty" "$OPENRESTY_PID"; then
     echo "[virgozki] OPENRESTY FAILED TO START"
+    cat "$LOG_DIR/openresty.log"
+    exit 1
+fi
+
+if ! wait_for_port \
+    "OpenResty HTTP" \
+    "127.0.0.1" \
+    "$OPENRESTY_PORT" \
+    30
+then
+    cat "$LOG_DIR/openresty.log"
+    exit 1
+fi
+
+if ! wait_for_port \
+    "OpenResty gRPC" \
+    "127.0.0.1" \
+    "$OPENRESTY_GRPC_PORT" \
+    30
+then
     cat "$LOG_DIR/openresty.log"
     exit 1
 fi
@@ -488,10 +563,28 @@ haproxy \
 
 HAPROXY_PID=$!
 
-sleep 2
-
-if ! kill -0 "$HAPROXY_PID" 2>/dev/null; then
+if ! check_pid "HAProxy" "$HAPROXY_PID"; then
     echo "[virgozki] HAPROXY FAILED TO START"
+    cat "$LOG_DIR/haproxy.log"
+    exit 1
+fi
+
+if ! wait_for_port \
+    "HAProxy HTTP" \
+    "127.0.0.1" \
+    "$HAPROXY_PORT" \
+    30
+then
+    cat "$LOG_DIR/haproxy.log"
+    exit 1
+fi
+
+if ! wait_for_port \
+    "HAProxy gRPC" \
+    "127.0.0.1" \
+    "$HAPROXY_GRPC_PORT" \
+    30
+then
     cat "$LOG_DIR/haproxy.log"
     exit 1
 fi
@@ -512,59 +605,41 @@ envoy \
 
 ENVOY_PID=$!
 
+if ! check_pid "Envoy" "$ENVOY_PID"; then
+    echo "[virgozki] ENVOY FAILED TO START"
+    cat "$LOG_DIR/envoy.log"
+    exit 1
+fi
+
 # ============================================================
-# WAIT FOR PUBLIC PORT
+# WAIT FOR CLOUD RUN PUBLIC PORT
 # ============================================================
 
 step "Waiting for public port ${PORT}"
 
-python3 - "$PORT" "$ENVOY_PID" <<'PY'
-import socket
-import sys
-import time
-import os
+if ! wait_for_port \
+    "Envoy PUBLIC" \
+    "127.0.0.1" \
+    "$PORT" \
+    60
+then
+    cat "$LOG_DIR/envoy.log"
+    exit 1
+fi
 
-port = int(sys.argv[1])
-pid = int(sys.argv[2])
-
-deadline = time.time() + 30
-
-while time.time() < deadline:
-
-    try:
-        with socket.create_connection(
-            ("127.0.0.1", port),
-            timeout=1
-        ):
-            print(f"[virgozki] PORT {port} READY")
-            sys.exit(0)
-
-    except Exception:
-        pass
-
-    try:
-        os.kill(pid, 0)
-    except OSError:
-        print("[virgozki] Envoy stopped")
-        sys.exit(1)
-
-    time.sleep(1)
-
-print(f"[virgozki] PORT {port} FAILED")
-sys.exit(1)
-PY
+log "Envoy public port ${PORT} READY"
 
 # ============================================================
-# FINAL CHECK
+# FINAL HEALTH CHECK
 # ============================================================
 
 step "Running final health checks"
 
-check_pid envoy "$ENVOY_PID"
-check_pid haproxy "$HAPROXY_PID"
-check_pid openresty "$OPENRESTY_PID"
-check_pid apache "$APACHE_PID"
-check_pid xray "$XRAY_PID"
+check_pid "Envoy" "$ENVOY_PID"
+check_pid "HAProxy" "$HAPROXY_PID"
+check_pid "OpenResty" "$OPENRESTY_PID"
+check_pid "Apache" "$APACHE_PID"
+check_pid "Xray" "$XRAY_PID"
 
 # ============================================================
 # STARTUP COMPLETE
@@ -593,11 +668,11 @@ echo ""
 
 while true
 do
-    check_pid envoy "$ENVOY_PID"
-    check_pid haproxy "$HAPROXY_PID"
-    check_pid openresty "$OPENRESTY_PID"
-    check_pid apache "$APACHE_PID"
-    check_pid xray "$XRAY_PID"
+    check_pid "Envoy" "$ENVOY_PID"
+    check_pid "HAProxy" "$HAPROXY_PID"
+    check_pid "OpenResty" "$OPENRESTY_PID"
+    check_pid "Apache" "$APACHE_PID"
+    check_pid "Xray" "$XRAY_PID"
 
     sleep 5
 done
