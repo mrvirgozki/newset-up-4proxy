@@ -11,7 +11,6 @@ mkdir -p \
     /var/run/apache2 \  
     /var/run/haproxy  
 
-# Full permissions  
 chmod -R 777 "$LOG_DIR" /tmp/virgozki /run /var/run  
 
 XRAY_PID=""  
@@ -55,9 +54,6 @@ on_exit() {
         show_log envoy-front-test; show_log envoy-front  
         show_log xray-test; show_log xray  
         show_log openresty-test; show_log openresty  
-        show_log haproxy-test; show_log haproxy  
-        show_log envoy-engine-test; show_log envoy-engine  
-        show_log apache-modules; show_log apache-test; show_log apache  
         echo ""; echo "=============================================="  
     fi  
     cleanup  
@@ -68,26 +64,23 @@ trap on_exit EXIT
 trap 'exit 143' INT TERM  
 
 # ==================================================  
-# ✅ FIXED: MATCH PATHS SA DOCKERFILE + NGINX.CONF
+# ✅ CHECK FILES  
 # ==================================================  
 step "Checking required files"  
 for FILE in \  
     /etc/xray/config.json \  
     /etc/openresty/nginx.conf \  
-    /usr/share/nginx/html/index.html  # ✅ Tama na ang path!  
+    /usr/share/nginx/html/index.html  
 do  
     [ ! -f "$FILE" ] && { echo "[virgozki] MISSING: $FILE"; exit 1; }  
 done  
 
 command -v xray >/dev/null 2>&1 || { echo "[virgozki] xray not found"; exit 1; }  
 command -v openresty >/dev/null 2>&1 || { echo "[virgozki] openresty not found"; exit 1; }  
-command -v haproxy >/dev/null 2>&1 || { echo "[virgozki] haproxy not found"; exit 1; }  
-command -v envoy >/dev/null 2>&1 || { echo "[virgozki] envoy not found"; exit 1; }  
-command -v apache2ctl >/dev/null 2>&1 || { echo "[virgozki] apache2ctl not found"; exit 1; }  
 log "All files & binaries OK"  
 
 # ==================================================  
-# ✅ FIXED ENVOY ROUTING: PANEL GOES TO OPENRESTY FIRST
+# ✅ FIXED ENVOY: HINDI NA BABAWASAN ANG PREFIX!
 # ==================================================  
 step "Creating public Envoy config"  
 cat > /tmp/envoy-front.yaml <<YAML  
@@ -112,18 +105,11 @@ static_resources:
             - name: public  
               domains: ["*"]  
               routes:  
-              # ✅ Panel + OpenResty proxy paths (una ito!)
+              # ✅ Panel + Lahat ng /openresty/ path (IPAPASA BUO ANG PREFIX!)
               - match: { prefix: "/openresty/" }  
-                route: { cluster: openresty_http, prefix_rewrite: "/", timeout: 3600s }  
-              - match: { path: "/" }  # Root = PANEL from OpenResty
                 route: { cluster: openresty_http, timeout: 3600s }  
-              # Iba pang proxy engines
-              - match: { prefix: "/haproxy/" }  
-                route: { cluster: haproxy_http, prefix_rewrite: "/", timeout: 3600s }  
-              - match: { prefix: "/envoy/" }  
-                route: { cluster: envoy_engine, prefix_rewrite: "/", timeout: 3600s }  
-              - match: { prefix: "/apache/" }  
-                route: { cluster: apache, prefix_rewrite: "/", timeout: 3600s }  
+              - match: { path: "/" }  
+                route: { cluster: openresty_http, timeout: 3600s }  
           http_filters:  
           - name: envoy.filters.http.router  
             typed_config: { "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router }  
@@ -131,19 +117,7 @@ static_resources:
   - name: openresty_http  
     connect_timeout: 10s  
     type: STATIC  
-    load_assignment: { cluster_name: openresty_http, endpoints: [{ lb_endpoints: [{ endpoint: { address: { socket_address: { address: 127.0.0.1, port_value: 8080 } } } }] }] }  # ✅ Match Nginx port
-  - name: haproxy_http  
-    connect_timeout: 10s  
-    type: STATIC  
-    load_assignment: { cluster_name: haproxy_http, endpoints: [{ lb_endpoints: [{ endpoint: { address: { socket_address: { address: 127.0.0.1, port_value: 8201 } } } }] }] }  
-  - name: envoy_engine  
-    connect_timeout: 10s  
-    type: STATIC  
-    load_assignment: { cluster_name: envoy_engine, endpoints: [{ lb_endpoints: [{ endpoint: { address: { socket_address: { address: 127.0.0.1, port_value: 8300 } } } }] }] }  
-  - name: apache  
-    connect_timeout: 10s  
-    type: STATIC  
-    load_assignment: { cluster_name: apache, endpoints: [{ lb_endpoints: [{ endpoint: { address: { socket_address: { address: 127.0.0.1, port_value: 8400 } } } }] }] }  
+    load_assignment: { cluster_name: openresty_http, endpoints: [{ lb_endpoints: [{ endpoint: { address: { socket_address: { address: 127.0.0.1, port_value: 8080 } } } }] }] }  
 YAML  
 
 step "Validating Envoy"  
@@ -157,7 +131,7 @@ envoy -c /tmp/envoy-front.yaml --disable-hot-restart --log-level info >"$LOG_DIR
 ENVOY_FRONT_PID=$!  
 
 # ==================================================  
-# WAIT FOR PORT  
+# ✅ WAIT FOR PORT  
 # ==================================================  
 step "Waiting for port $PORT"  
 python3 - "$PORT" "$ENVOY_FRONT_PID" <<'PY'  
@@ -180,20 +154,20 @@ PY
 log "CLOUD RUN PORT READY: 0.0.0.0:$PORT"  
 
 # ==================================================  
-# XRAY  
+# ✅ FIXED XRAY TEST COMMAND  
 # ==================================================  
 step "Testing Xray"  
-xray run -test -config /etc/xray/config.json >"$LOG_DIR/xray-test.log" 2>&1 || {  
+xray test -c /etc/xray/config.json >"$LOG_DIR/xray-test.log" 2>&1 || {  
     echo "[virgozki] XRAY FAILED"; cat "$LOG_DIR/xray-test.log"; exit 1  
 }  
 log "Xray OK"  
 
 step "Starting Xray"  
-xray run -config /etc/xray/config.json >"$LOG_DIR/xray.log" 2>&1 &  
+xray run -c /etc/xray/config.json >"$LOG_DIR/xray.log" 2>&1 &  
 XRAY_PID=$!  
 
 # ==================================================  
-# ✅ FIXED OPENRESTY PORT + ALIGNMENT
+# ✅ OPENRESTY (TUGMA NA SA LAHAT)
 # ==================================================  
 step "Testing OpenResty"  
 openresty -t -c /etc/openresty/nginx.conf >"$LOG_DIR/openresty-test.log" 2>&1 || {  
@@ -206,202 +180,30 @@ openresty -g "daemon off;" -c /etc/openresty/nginx.conf >"$LOG_DIR/openresty.log
 OPENRESTY_PID=$!  
 
 # ==================================================  
-# HAPROXY  
+# ✅ TINANGGAL ANG DUPLICATE SERVICES (HAProxy/Envoy/Apache)
+# Hindi na kailangan dahil OpenResty na ang humahawak ng lahat ng path
 # ==================================================  
-step "Creating HAProxy config"  
-cat > /tmp/haproxy.cfg <<'HAPROXY'  
-global  
-    log stdout format raw local0  
-    maxconn 4096  
-defaults  
-    log global  
-    mode http  
-    option httplog  
-    option dontlognull  
-    timeout connect 10s  
-    timeout client 3600s  
-    timeout server 3600s  
-    timeout tunnel 3600s  
-frontend virgozki_http  
-    bind 127.0.0.1:8201  
-    default_backend xray_http  
-frontend virgozki_grpc  
-    bind 127.0.0.1:8202  
-    default_backend xray_grpc  
-backend xray_http  
-    server xray 127.0.0.1:10000 check inter 2s rise 2 fall 3  
-backend xray_grpc  
-    server xray 127.0.0.1:10003 check inter 2s rise 2 fall 3  
-HAPROXY  
-
-step "Testing HAProxy"  
-haproxy -c -f /tmp/haproxy.cfg >"$LOG_DIR/haproxy-test.log" 2>&1 || {  
-    echo "[virgozki] HAPROXY FAILED"; cat "$LOG_DIR/haproxy-test.log"; exit 1  
-}  
-log "HAProxy OK"  
-
-step "Starting HAProxy"  
-haproxy -W -db -f /tmp/haproxy.cfg >"$LOG_DIR/haproxy.log" 2>&1 &  
-HAPROXY_PID=$!  
 
 # ==================================================  
-# INTERNAL ENVOY  
-# ==================================================  
-step "Creating internal Envoy"  
-cat > /tmp/envoy-engine.yaml <<'YAML'  
-static_resources:  
-  listeners:  
-  - name: internal_engine  
-    address: { socket_address: { address: 127.0.0.1, port_value: 8300 } }  
-    filter_chains:  
-    - filters:  
-      - name: envoy.filters.network.http_connection_manager  
-        typed_config:  
-          "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager  
-          stat_prefix: internal  
-          route_config:  
-            name: internal_routes  
-            virtual_hosts:  
-            - name: internal  
-              domains: ["*"]  
-              routes:  
-              - match: { prefix: "/" }  
-                route: { cluster: xray_http, timeout: 3600s }  
-          http_filters:  
-          - name: envoy.filters.http.router  
-            typed_config: { "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router }  
-  clusters:  
-  - name: xray_http  
-    connect_timeout: 10s  
-    type: STATIC  
-    load_assignment: { cluster_name: xray_http, endpoints: [{ lb_endpoints: [{ endpoint: { address: { socket_address: { address: 127.0.0.1, port_value: 10000 } } } }] }] }  
-YAML  
-
-step "Testing internal Envoy"  
-envoy --mode validate -c /tmp/envoy-engine.yaml >"$LOG_DIR/envoy-engine-test.log" 2>&1 || {  
-    echo "[virgozki] INTERNAL ENVOY FAILED"; exit 1  
-}  
-log "Internal Envoy OK"  
-
-step "Starting internal Envoy"  
-envoy -c /tmp/envoy-engine.yaml --disable-hot-restart --log-level info >"$LOG_DIR/envoy-engine.log" 2>&1 &  
-ENVOY_ENGINE_PID=$!  
-
-# ==================================================  
-# APACHE  
-# ==================================================  
-step "Preparing Apache"  
-mkdir -p /run/apache2 /var/run/apache2  
-cat > /etc/apache2/ports.conf <<'AP'  
-Listen 127.0.0.1:8400  
-AP  
-
-cat > /etc/apache2/sites-available/virgozki.conf <<'VHOST'  
-<VirtualHost 127.0.0.1:8400>  
-    ServerName localhost  
-    Protocols h2 h2c http/1.1  
-    H2Direct on  
-    H2Upgrade on  
-
-    ProxyRequests Off  
-    ProxyPreserveHost On  
-    ProxyTimeout 3600  
-    ProxyAddHeaders Off  
-
-    # WebSocket  
-    ProxyPass        /virgozki ws://127.0.0.1:10000/virgozki upgrade=WebSocket  
-    ProxyPassReverse /virgozki ws://127.0.0.1:10000/virgozki  
-    ProxyPass        /vmess-virgozki ws://127.0.0.1:10004/vmess-virgozki upgrade=WebSocket  
-    ProxyPassReverse /vmess-virgozki ws://127.0.0.1:10004/vmess-virgozki  
-    ProxyPass        /vless-virgozki ws://127.0.0.1:10008/vless-virgozki upgrade=WebSocket  
-    ProxyPassReverse /vless-virgozki ws://127.0.0.1:10008/vless-virgozki  
-    ProxyPass        /ss-virgozki ws://127.0.0.1:10012/ss-virgozki upgrade=WebSocket  
-    ProxyPassReverse /ss-virgozki ws://127.0.0.1:10012/ss-virgozki  
-
-    # HTTPUpgrade  
-    ProxyPass        /virgozki-hu http://127.0.0.1:10001/virgozki-hu  
-    ProxyPassReverse /virgozki-hu http://127.0.0.1:10001/virgozki-hu  
-    ProxyPass        /vmess-virgozki-hu http://127.0.0.1:10005/vmess-virgozki-hu  
-    ProxyPassReverse /vmess-virgozki-hu http://127.0.0.1:10005/vmess-virgozki-hu  
-    ProxyPass        /vless-virgozki-hu http://127.0.0.1:10009/vless-virgozki-hu  
-    ProxyPassReverse /vless-virgozki-hu http://127.0.0.1:10009/vless-virgozki-hu  
-    ProxyPass        /ss-virgozki-hu http://127.0.0.1:10013/ss-virgozki-hu  
-    ProxyPassReverse /ss-virgozki-hu http://127.0.0.1:10013/ss-virgozki-hu  
-
-    # XHTTP  
-    ProxyPass        /virgozki-xhttp http://127.0.0.1:10002/virgozki-xhttp  
-    ProxyPassReverse /virgozki-xhttp http://127.0.0.1:10002/virgozki-xhttp  
-    ProxyPass        /vmess-virgozki-xhttp http://127.0.0.1:10006/vmess-virgozki-xhttp  
-    ProxyPassReverse /vmess-virgozki-xhttp http://127.0.0.1:10006/vmess-virgozki-xhttp  
-    ProxyPass        /vless-virgozki-xhttp http://127.0.0.1:10010/vless-virgozki-xhttp  
-    ProxyPassReverse /vless-virgozki-xhttp http://127.0.0.1:10010/vless-virgozki-xhttp  
-    ProxyPass        /ss-virgozki-xhttp http://127.0.0.1:10014/ss-virgozki-xhttp  
-    ProxyPassReverse /ss-virgozki-xhttp http://127.0.0.1:10014/ss-virgozki-xhttp  
-
-    # gRPC  
-    ProxyPass        /trojan-grpc h2c://127.0.0.1:10003/trojan-grpc  
-    ProxyPassReverse /trojan-grpc h2c://127.0.0.1:10003/trojan-grpc  
-    ProxyPass        /vmess-grpc h2c://127.0.0.1:10007/vmess-grpc  
-    ProxyPassReverse /vmess-grpc h2c://127.0.0.1:10007/vmess-grpc  
-    ProxyPass        /vless-grpc h2c://127.0.0.1:10011/vless-grpc  
-    ProxyPassReverse /vless-grpc h2c://127.0.0.1:10011/vless-grpc  
-    ProxyPass        /ss-grpc h2c://127.0.0.1:10015/ss-grpc  
-    ProxyPassReverse /ss-grpc h2c://127.0.0.1:10015/ss-grpc  
-
-    <Location />  
-        Require all granted  
-    </Location>  
-
-    ErrorLog /dev/stderr  
-    CustomLog /dev/stdout combined  
-</VirtualHost>  
-VHOST  
-
-rm -f /etc/apache2/sites-enabled/*  
-ln -sf /etc/apache2/sites-available/virgozki.conf /etc/apache2/sites-enabled/virgozki.conf  
-
-step "Enabling Apache modules"  
-a2enmod proxy proxy_http proxy_http2 proxy_wstunnel headers rewrite http2 >"$LOG_DIR/apache-modules.log" 2>&1 || {  
-    echo "[virgozki] MODULES FAILED"; cat "$LOG_DIR/apache-modules.log"; exit 1  
-}  
-log "Apache modules OK"  
-
-step "Testing Apache"  
-apache2ctl -t >"$LOG_DIR/apache-test.log" 2>&1 || {  
-    echo "[virgozki] APACHE CONFIG FAILED"; cat "$LOG_DIR/apache-test.log"; exit 1  
-}  
-log "Apache config OK"  
-
-step "Starting Apache"  
-apache2ctl -DFOREGROUND >"$LOG_DIR/apache.log" 2>&1 &  
-APACHE_PID=$!  
-
-# ==================================================  
-# FINAL HEALTH CHECKS  
+# ✅ HEALTH CHECKS  
 # ==================================================  
 sleep 3  
 kill -0 "$ENVOY_FRONT_PID" 2>/dev/null || { echo "[virgozki] ❌ ENVOY STOPPED"; exit 1; }  
 kill -0 "$XRAY_PID" 2>/dev/null || { echo "[virgozki] ❌ XRAY STOPPED"; exit 1; }  
 kill -0 "$OPENRESTY_PID" 2>/dev/null || { echo "[virgozki] ❌ OPENRESTY STOPPED"; exit 1; }  
-kill -0 "$HAPROXY_PID" 2>/dev/null || { echo "[virgozki] ❌ HAPROXY STOPPED"; exit 1; }  
-kill -0 "$ENVOY_ENGINE_PID" 2>/dev/null || { echo "[virgozki] ❌ INTERNAL ENVOY STOPPED"; exit 1; }  
-kill -0 "$APACHE_PID" 2>/dev/null || { echo "[virgozki] ❌ APACHE STOPPED"; exit 1; }  
 
 step "✅ VIRGOZKI FULLY DEPLOYED & RUNNING"  
 log "🌐 Public Access: https://<your-run-app-domain>"  
-log "📊 Panel: / (OpenResty)"  
-log "🔌 Protocols: WS / HTTPUpgrade / XHTTP / gRPC"  
-log "⚙️ Engines: OpenResty / HAProxy / Envoy / Apache"  
+log "📊 Panel: /"  
+log "🔌 All paths under: /openresty/ match your config generator"  
+log "✅ Paths now match perfectly between Envoy → OpenResty → Xray"  
 
 # ==================================================  
-# SERVICE MONITORING
+# ✅ MONITORING  
 # ==================================================  
 while true; do  
     kill -0 "$ENVOY_FRONT_PID" 2>/dev/null || exit 1  
     kill -0 "$XRAY_PID" 2>/dev/null || exit 1  
     kill -0 "$OPENRESTY_PID" 2>/dev/null || exit 1  
-    kill -0 "$HAPROXY_PID" 2>/dev/null || exit 1  
-    kill -0 "$ENVOY_ENGINE_PID" 2>/dev/null || exit 1  
-    kill -0 "$APACHE_PID" 2>/dev/null || exit 1  
     sleep 5  
 done  
