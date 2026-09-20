@@ -4,7 +4,7 @@
 # ============================================================
 
 # ------------------------------------------------------------
-# ENVoy stage
+# Envoy stage
 # ------------------------------------------------------------
 FROM envoyproxy/envoy:v1.39.1 AS envoy
 
@@ -26,12 +26,13 @@ ENV XRAY_LOCATION_CONFIG=/etc/xray
 WORKDIR /opt/virgozki
 
 # ------------------------------------------------------------
-# System packages
+# System packages + Apache modules
 # ------------------------------------------------------------
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         apache2 \
         apache2-utils \
+        libapache2-mod-proxy-html \
         haproxy \
         python3 \
         ca-certificates \
@@ -43,7 +44,10 @@ RUN apt-get update && \
         iproute2 \
         net-tools \
         openssl && \
-    rm -rf /var/lib/apt/lists/*
+    # Enable required Apache modules permanently
+    a2enmod proxy proxy_http proxy_http2 proxy_wstunnel headers rewrite http2 && \
+    # Cleanup
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # ------------------------------------------------------------
 # Copy Envoy
@@ -57,46 +61,39 @@ COPY --from=xray /usr/local/bin/xray /usr/local/bin/xray
 COPY --from=xray /usr/local/share/xray /usr/local/share/xray
 
 # ------------------------------------------------------------
-# Xray configuration
+# Directories & Permissions
 # ------------------------------------------------------------
 RUN mkdir -p \
         /etc/xray \
         /var/log/xray \
         /tmp/virgozki-logs \
-        /tmp/virgozki
+        /tmp/virgozki \
+        /run/apache2 \
+        /var/run/apache2 \
+        /var/run/haproxy && \
+    chmod -R 777 /tmp /run /var/run && \
+    chown -R www-data:www-data /usr/local/openresty/nginx/html
 
+# ------------------------------------------------------------
+# Configs
+# ------------------------------------------------------------
 COPY config.json /etc/xray/config.json
-
-# ------------------------------------------------------------
-# OpenResty configuration
-# ------------------------------------------------------------
 COPY nginx.conf /etc/openresty/nginx.conf
-
-# ------------------------------------------------------------
-# Panel
-# ------------------------------------------------------------
-RUN mkdir -p /usr/local/openresty/nginx/html
-
 COPY index.html /usr/local/openresty/nginx/html/index.html
-
-# ------------------------------------------------------------
-# Entrypoint
-# ------------------------------------------------------------
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 
+# ------------------------------------------------------------
+# Final Permissions
+# ------------------------------------------------------------
 RUN chmod +x /usr/local/bin/entrypoint.sh && \
     chmod 644 /etc/xray/config.json && \
     chmod 644 /etc/openresty/nginx.conf && \
     chmod 644 /usr/local/openresty/nginx/html/index.html
 
 # ------------------------------------------------------------
-# Cloud Run container port
+# Cloud Run
 # ------------------------------------------------------------
 EXPOSE 8080
 
-# ------------------------------------------------------------
-# Tini = proper PID 1 / signal handling
-# ------------------------------------------------------------
 ENTRYPOINT ["/usr/bin/tini", "--"]
-
 CMD ["/usr/local/bin/entrypoint.sh"]
