@@ -4,12 +4,12 @@
 # ============================================================
 
 FROM envoyproxy/envoy:v1.39.1 AS envoy
-
 FROM ghcr.io/xtls/xray-core:25.12.8 AS xray
-
 FROM openresty/openresty:1.31.1.1-bookworm-fat
 
-
+# ============================================================
+# GLOBAL ENV VARS (MATCHES ALL YOUR CONFIGS)
+# ============================================================
 ENV DEBIAN_FRONTEND=noninteractive
 
 ENV XRAY_LOCATION_ASSET=/usr/local/share/xray
@@ -25,14 +25,11 @@ ENV APACHE_PORT=8083
 ENV HAPROXY_GRPC_PORT=8084
 ENV OPENRESTY_GRPC_PORT=8085
 
-
 WORKDIR /opt/virgozki
 
-
 # ============================================================
-# PACKAGES
+# SYSTEM & DEPENDENCIES
 # ============================================================
-
 RUN apt-get update && apt-get install -y --no-install-recommends \
         apache2 \
         apache2-utils \
@@ -47,6 +44,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         iproute2 \
         net-tools \
         openssl \
+    # ✅ FIX: Create required system users
+    && groupadd -r haproxy && useradd -r -g haproxy -d /var/lib/haproxy -s /usr/sbin/nologin haproxy \
+    # ✅ Enable Apache modules
     && a2enmod \
         proxy \
         proxy_http \
@@ -55,38 +55,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         headers \
         rewrite \
         http2 \
+    # ✅ Cleanup
     && rm -rf \
         /var/lib/apt/lists/* \
         /tmp/* \
         /var/tmp/*
 
+# ============================================================
+# BINARIES FROM OFFICIAL IMAGES
+# ============================================================
+COPY --from=envoy /usr/local/bin/envoy /usr/local/bin/envoy
+COPY --from=xray /usr/local/bin/xray /usr/local/bin/xray
+COPY --from=xray /usr/local/share/xray /usr/local/share/xray
 
 # ============================================================
-# ENVOY
+# DIRECTORIES & PERMISSIONS
 # ============================================================
-
-COPY --from=envoy \
-    /usr/local/bin/envoy \
-    /usr/local/bin/envoy
-
-
-# ============================================================
-# XRAY
-# ============================================================
-
-COPY --from=xray \
-    /usr/local/bin/xray \
-    /usr/local/bin/xray
-
-COPY --from=xray \
-    /usr/local/share/xray \
-    /usr/local/share/xray
-
-
-# ============================================================
-# DIRECTORIES
-# ============================================================
-
 RUN mkdir -p \
         /etc/xray \
         /etc/haproxy \
@@ -95,95 +79,55 @@ RUN mkdir -p \
         /var/log/xray \
         /var/log/apache2 \
         /var/lock/apache2 \
-        /tmp/virgozki-logs \
-        /tmp/virgozki \
-        /run/apache2 \
         /var/run/apache2 \
         /var/run/haproxy \
+        /var/lib/haproxy \
+        /tmp/virgozki-logs \
+        /tmp/virgozki \
     && chmod 777 \
         /tmp \
         /run \
         /var/run \
+        /var/log \
+        /var/lock/apache2 \
+        /var/run/apache2 \
+        /var/run/haproxy \
+        /var/lib/haproxy \
         /tmp/virgozki-logs \
-        /tmp/virgozki
-
-
-# ============================================================
-# XRAY
-# ============================================================
-
-COPY config.json \
-    /etc/xray/config.json
-
+        /tmp/virgozki \
+    && chown -R haproxy:haproxy /var/lib/haproxy /var/run/haproxy
 
 # ============================================================
-# OPENRESTY
+# CONFIG FILES
 # ============================================================
-
-COPY nginx.conf \
-    /etc/openresty/nginx.conf
-
-
-# ============================================================
-# HAPROXY
-# ============================================================
-
-COPY haproxy.cfg \
-    /etc/haproxy/haproxy.cfg
-
-
-# ============================================================
-# APACHE
-# ============================================================
-
-COPY httpd.conf \
-    /etc/apache2/conf-available/virgozki.conf
+COPY config.json /etc/xray/config.json
+COPY nginx.conf /etc/openresty/nginx.conf
+COPY haproxy.cfg /etc/haproxy/haproxy.cfg
+COPY httpd.conf /etc/apache2/conf-available/virgozki.conf
 
 RUN a2enconf virgozki
 
+COPY index.html /usr/share/nginx/html/index.html
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 
 # ============================================================
-# PANEL
+# FINAL PERMISSIONS
 # ============================================================
-
-COPY index.html \
-    /usr/share/nginx/html/index.html
-
-
-# ============================================================
-# ENTRYPOINT
-# ============================================================
-
-COPY entrypoint.sh \
-    /usr/local/bin/entrypoint.sh
-
-
-# ============================================================
-# PERMISSIONS
-# ============================================================
-
-RUN chmod +x \
-        /usr/local/bin/entrypoint.sh \
+RUN chmod +x /usr/local/bin/entrypoint.sh \
     && chmod 644 \
         /etc/xray/config.json \
         /etc/openresty/nginx.conf \
         /etc/haproxy/haproxy.cfg \
         /etc/apache2/conf-available/virgozki.conf \
-    && chmod -R 755 \
-        /usr/share/nginx/html
-
+    && chmod -R 755 /usr/share/nginx/html
 
 # ============================================================
-# CLOUD RUN
+# CLOUD RUN REQUIRED
 # ============================================================
-
 EXPOSE 8080
 
-
 # ============================================================
-# TINI
+# ENTRYPOINT
 # ============================================================
-
 ENTRYPOINT ["/usr/bin/tini", "--"]
-
 CMD ["/usr/local/bin/entrypoint.sh"]
