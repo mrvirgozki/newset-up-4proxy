@@ -39,7 +39,7 @@ show_log() {
 
     echo
     echo "============================================================"
-    echo "$NAME LOG"
+    echo " $NAME LOG"
     echo "============================================================"
 
     if [ -f "$FILE" ]; then
@@ -60,32 +60,70 @@ cleanup() {
 
     log "Stopping services..."
 
-    if [ -n "$ENVOY_FRONT_PID" ]; then
-        kill "$ENVOY_FRONT_PID" 2>/dev/null || true
-    fi
-
-    if [ -n "$APACHE_PID" ]; then
-        kill "$APACHE_PID" 2>/dev/null || true
-    fi
-
-    if [ -n "$ENVOY_ENGINE_PID" ]; then
-        kill "$ENVOY_ENGINE_PID" 2>/dev/null || true
-    fi
-
-    if [ -n "$HAPROXY_PID" ]; then
-        kill "$HAPROXY_PID" 2>/dev/null || true
-    fi
-
-    if [ -n "$OPENRESTY_PID" ]; then
-        kill "$OPENRESTY_PID" 2>/dev/null || true
-    fi
-
-    if [ -n "$XRAY_PID" ]; then
-        kill "$XRAY_PID" 2>/dev/null || true
-    fi
+    for PID in \
+        "$ENVOY_FRONT_PID" \
+        "$APACHE_PID" \
+        "$ENVOY_ENGINE_PID" \
+        "$HAPROXY_PID" \
+        "$OPENRESTY_PID" \
+        "$XRAY_PID"
+    do
+        if [ -n "$PID" ]; then
+            if kill -0 "$PID" 2>/dev/null; then
+                kill "$PID" 2>/dev/null || true
+            fi
+        fi
+    done
 }
 
-trap cleanup INT TERM EXIT
+# ------------------------------------------------------------
+# Exit handler
+# ------------------------------------------------------------
+
+on_exit() {
+
+    RC=$?
+
+    if [ "$RC" -ne 0 ]; then
+
+        echo
+        echo "============================================================"
+        echo " VIRGOZKI STARTUP FAILED"
+        echo " EXIT CODE: $RC"
+        echo "============================================================"
+
+        show_log "xray-test"
+        show_log "xray"
+
+        show_log "openresty-test"
+        show_log "openresty"
+
+        show_log "haproxy-test"
+        show_log "haproxy"
+
+        show_log "envoy-engine-test"
+        show_log "envoy-engine"
+
+        show_log "apache-test"
+        show_log "apache"
+
+        show_log "envoy-front-test"
+        show_log "envoy-front"
+
+        echo "============================================================"
+        echo
+
+    fi
+
+    cleanup
+
+    trap - EXIT
+
+    exit "$RC"
+}
+
+trap on_exit EXIT
+trap 'exit 143' INT TERM
 
 # ============================================================
 # STARTUP HEADER
@@ -116,6 +154,7 @@ for FILE in \
 do
 
     if [ ! -f "$FILE" ]; then
+        echo
         echo "ERROR: Missing file: $FILE"
         exit 1
     fi
@@ -133,22 +172,30 @@ wait_port() {
     HOST="$1"
     PORT_NUMBER="$2"
     NAME="$3"
-    PID="${4:-}"
+    PID="$4"
+    LOG_NAME="$5"
 
     COUNT=0
 
     while [ "$COUNT" -lt 60 ]; do
 
-        if [ -n "$PID" ]; then
+        # ----------------------------------------------------
+        # Check process
+        # ----------------------------------------------------
 
-            if ! kill -0 "$PID" 2>/dev/null; then
-                echo
-                echo "ERROR: $NAME stopped before becoming ready."
-                show_log "$NAME"
-                exit 1
-            fi
+        if ! kill -0 "$PID" 2>/dev/null; then
 
+            echo
+            echo "ERROR: $NAME stopped before becoming ready."
+
+            show_log "$LOG_NAME"
+
+            exit 1
         fi
+
+        # ----------------------------------------------------
+        # Check TCP port
+        # ----------------------------------------------------
 
         if python3 - "$HOST" "$PORT_NUMBER" <<'PY'
 import socket
@@ -157,30 +204,36 @@ import sys
 host = sys.argv[1]
 port = int(sys.argv[2])
 
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.settimeout(0.5)
+sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+sock.settimeout(0.5)
 
 try:
-    s.connect((host, port))
-    s.close()
+    sock.connect((host, port))
+    sock.close()
     sys.exit(0)
+
 except Exception:
-    s.close()
+    sock.close()
     sys.exit(1)
 PY
         then
+
             log "$NAME ready on $HOST:$PORT_NUMBER"
+
             return 0
         fi
 
         COUNT=$((COUNT + 1))
+
         sleep 0.5
 
     done
 
     echo
     echo "ERROR: $NAME did not become ready on $HOST:$PORT_NUMBER"
-    show_log "$NAME"
+
+    show_log "$LOG_NAME"
+
     exit 1
 }
 
@@ -198,7 +251,9 @@ then
 
     echo
     echo "ERROR: Xray configuration test failed."
+
     show_log "xray-test"
+
     exit 1
 fi
 
@@ -219,15 +274,23 @@ XRAY_PID=$!
 sleep 1
 
 if ! kill -0 "$XRAY_PID" 2>/dev/null; then
+
     echo
     echo "ERROR: Xray stopped immediately."
+
     show_log "xray"
+
     exit 1
 fi
 
 log "Xray PID: $XRAY_PID"
 
-wait_port 127.0.0.1 10000 "Xray" "$XRAY_PID"
+wait_port \
+    127.0.0.1 \
+    10000 \
+    "Xray" \
+    "$XRAY_PID" \
+    "xray"
 
 # ============================================================
 # OPENRESTY
@@ -243,11 +306,17 @@ then
 
     echo
     echo "ERROR: OpenResty configuration test failed."
+
     show_log "openresty-test"
+
     exit 1
 fi
 
 log "OpenResty configuration: OK"
+
+# ------------------------------------------------------------
+# Start OpenResty
+# ------------------------------------------------------------
 
 log "Starting OpenResty..."
 
@@ -261,16 +330,30 @@ OPENRESTY_PID=$!
 sleep 1
 
 if ! kill -0 "$OPENRESTY_PID" 2>/dev/null; then
+
     echo
     echo "ERROR: OpenResty stopped immediately."
+
     show_log "openresty"
+
     exit 1
 fi
 
 log "OpenResty PID: $OPENRESTY_PID"
 
-wait_port 127.0.0.1 8101 "OpenResty HTTP" "$OPENRESTY_PID"
-wait_port 127.0.0.1 8102 "OpenResty gRPC" "$OPENRESTY_PID"
+wait_port \
+    127.0.0.1 \
+    8101 \
+    "OpenResty HTTP" \
+    "$OPENRESTY_PID" \
+    "openresty"
+
+wait_port \
+    127.0.0.1 \
+    8102 \
+    "OpenResty gRPC" \
+    "$OPENRESTY_PID" \
+    "openresty"
 
 # ============================================================
 # HAPROXY CONFIG
@@ -282,6 +365,7 @@ cat > /tmp/haproxy.cfg <<'HAPROXY'
 global
     log stdout format raw local0
     maxconn 4096
+
     stats socket /tmp/haproxy.sock mode 660 level admin
 
 defaults
@@ -301,23 +385,44 @@ defaults
 # ============================================================
 
 frontend virgozki_http
+
     bind 127.0.0.1:8201
+
+    # --------------------------------------------------------
+    # Trojan
+    # --------------------------------------------------------
 
     acl trojan_xhttp path -i /virgozki-xhttp
     acl trojan_hu    path -i /virgozki-hu
     acl trojan_ws    path -i /virgozki
 
+    # --------------------------------------------------------
+    # VMess
+    # --------------------------------------------------------
+
     acl vmess_xhttp path -i /vmess-virgozki-xhttp
     acl vmess_hu    path -i /vmess-virgozki-hu
     acl vmess_ws    path -i /vmess-virgozki
+
+    # --------------------------------------------------------
+    # VLESS
+    # --------------------------------------------------------
 
     acl vless_xhttp path -i /vless-virgozki-xhttp
     acl vless_hu    path -i /vless-virgozki-hu
     acl vless_ws    path -i /vless-virgozki
 
+    # --------------------------------------------------------
+    # Shadowsocks
+    # --------------------------------------------------------
+
     acl ss_xhttp path -i /ss-virgozki-xhttp
     acl ss_hu    path -i /ss-virgozki-hu
     acl ss_ws    path -i /ss-virgozki
+
+    # --------------------------------------------------------
+    # Routes
+    # --------------------------------------------------------
 
     use_backend trojan_xhttp if trojan_xhttp
     use_backend trojan_hu    if trojan_hu
@@ -342,6 +447,7 @@ frontend virgozki_http
 # ============================================================
 
 frontend virgozki_grpc
+
     bind 127.0.0.1:8202 proto h2
 
     acl trojan_grpc path_beg -i /trojan-grpc
@@ -361,12 +467,15 @@ frontend virgozki_grpc
 # ============================================================
 
 backend trojan_ws
+
     server xray 127.0.0.1:10000
 
 backend trojan_hu
+
     server xray 127.0.0.1:10001
 
 backend trojan_xhttp
+
     server xray 127.0.0.1:10002
 
 # ============================================================
@@ -374,12 +483,15 @@ backend trojan_xhttp
 # ============================================================
 
 backend vmess_ws
+
     server xray 127.0.0.1:10004
 
 backend vmess_hu
+
     server xray 127.0.0.1:10005
 
 backend vmess_xhttp
+
     server xray 127.0.0.1:10006
 
 # ============================================================
@@ -387,12 +499,15 @@ backend vmess_xhttp
 # ============================================================
 
 backend vless_ws
+
     server xray 127.0.0.1:10008
 
 backend vless_hu
+
     server xray 127.0.0.1:10009
 
 backend vless_xhttp
+
     server xray 127.0.0.1:10010
 
 # ============================================================
@@ -400,12 +515,15 @@ backend vless_xhttp
 # ============================================================
 
 backend ss_ws
+
     server xray 127.0.0.1:10012
 
 backend ss_hu
+
     server xray 127.0.0.1:10013
 
 backend ss_xhttp
+
     server xray 127.0.0.1:10014
 
 # ============================================================
@@ -413,20 +531,36 @@ backend ss_xhttp
 # ============================================================
 
 backend trojan_grpc
+
     mode http
-    server xray 127.0.0.1:10003 proto h2
+
+    server xray \
+        127.0.0.1:10003 \
+        proto h2
 
 backend vmess_grpc
+
     mode http
-    server xray 127.0.0.1:10007 proto h2
+
+    server xray \
+        127.0.0.1:10007 \
+        proto h2
 
 backend vless_grpc
+
     mode http
-    server xray 127.0.0.1:10011 proto h2
+
+    server xray \
+        127.0.0.1:10011 \
+        proto h2
 
 backend ss_grpc
+
     mode http
-    server xray 127.0.0.1:10015 proto h2
+
+    server xray \
+        127.0.0.1:10015 \
+        proto h2
 HAPROXY
 
 # ============================================================
@@ -443,7 +577,9 @@ then
 
     echo
     echo "ERROR: HAProxy configuration test failed."
+
     show_log "haproxy-test"
+
     exit 1
 fi
 
@@ -465,16 +601,30 @@ HAPROXY_PID=$!
 sleep 1
 
 if ! kill -0 "$HAPROXY_PID" 2>/dev/null; then
+
     echo
     echo "ERROR: HAProxy stopped immediately."
+
     show_log "haproxy"
+
     exit 1
 fi
 
 log "HAProxy PID: $HAPROXY_PID"
 
-wait_port 127.0.0.1 8201 "HAProxy HTTP" "$HAPROXY_PID"
-wait_port 127.0.0.1 8202 "HAProxy gRPC" "$HAPROXY_PID"
+wait_port \
+    127.0.0.1 \
+    8201 \
+    "HAProxy HTTP" \
+    "$HAPROXY_PID" \
+    "haproxy"
+
+wait_port \
+    127.0.0.1 \
+    8202 \
+    "HAProxy gRPC" \
+    "$HAPROXY_PID" \
+    "haproxy"
 
 # ============================================================
 # INTERNAL ENVOY
@@ -501,6 +651,7 @@ static_resources:
       - name: envoy.filters.network.http_connection_manager
 
         typed_config:
+
           "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
 
           stat_prefix: virgozki_engine
@@ -511,6 +662,7 @@ static_resources:
           request_timeout: 0s
 
           upgrade_configs:
+
           - upgrade_type: websocket
 
           route_config:
@@ -648,6 +800,7 @@ static_resources:
           - name: envoy.filters.http.router
 
             typed_config:
+
               "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
 
   clusters:
@@ -657,40 +810,64 @@ static_resources:
   # ============================================================
 
   - name: trojan_ws
+
     connect_timeout: 5s
     type: STATIC
+
     load_assignment:
+
       cluster_name: trojan_ws
+
       endpoints:
+
       - lb_endpoints:
+
         - endpoint:
+
             address:
+
               socket_address:
                 address: 127.0.0.1
                 port_value: 10000
 
   - name: trojan_hu
+
     connect_timeout: 5s
     type: STATIC
+
     load_assignment:
+
       cluster_name: trojan_hu
+
       endpoints:
+
       - lb_endpoints:
+
         - endpoint:
+
             address:
+
               socket_address:
                 address: 127.0.0.1
                 port_value: 10001
 
   - name: trojan_xhttp
+
     connect_timeout: 5s
     type: STATIC
+
     load_assignment:
+
       cluster_name: trojan_xhttp
+
       endpoints:
+
       - lb_endpoints:
+
         - endpoint:
+
             address:
+
               socket_address:
                 address: 127.0.0.1
                 port_value: 10002
@@ -700,40 +877,64 @@ static_resources:
   # ============================================================
 
   - name: vmess_ws
+
     connect_timeout: 5s
     type: STATIC
+
     load_assignment:
+
       cluster_name: vmess_ws
+
       endpoints:
+
       - lb_endpoints:
+
         - endpoint:
+
             address:
+
               socket_address:
                 address: 127.0.0.1
                 port_value: 10004
 
   - name: vmess_hu
+
     connect_timeout: 5s
     type: STATIC
+
     load_assignment:
+
       cluster_name: vmess_hu
+
       endpoints:
+
       - lb_endpoints:
+
         - endpoint:
+
             address:
+
               socket_address:
                 address: 127.0.0.1
                 port_value: 10005
 
   - name: vmess_xhttp
+
     connect_timeout: 5s
     type: STATIC
+
     load_assignment:
+
       cluster_name: vmess_xhttp
+
       endpoints:
+
       - lb_endpoints:
+
         - endpoint:
+
             address:
+
               socket_address:
                 address: 127.0.0.1
                 port_value: 10006
@@ -743,40 +944,64 @@ static_resources:
   # ============================================================
 
   - name: vless_ws
+
     connect_timeout: 5s
     type: STATIC
+
     load_assignment:
+
       cluster_name: vless_ws
+
       endpoints:
+
       - lb_endpoints:
+
         - endpoint:
+
             address:
+
               socket_address:
                 address: 127.0.0.1
                 port_value: 10008
 
   - name: vless_hu
+
     connect_timeout: 5s
     type: STATIC
+
     load_assignment:
+
       cluster_name: vless_hu
+
       endpoints:
+
       - lb_endpoints:
+
         - endpoint:
+
             address:
+
               socket_address:
                 address: 127.0.0.1
                 port_value: 10009
 
   - name: vless_xhttp
+
     connect_timeout: 5s
     type: STATIC
+
     load_assignment:
+
       cluster_name: vless_xhttp
+
       endpoints:
+
       - lb_endpoints:
+
         - endpoint:
+
             address:
+
               socket_address:
                 address: 127.0.0.1
                 port_value: 10010
@@ -786,40 +1011,64 @@ static_resources:
   # ============================================================
 
   - name: ss_ws
+
     connect_timeout: 5s
     type: STATIC
+
     load_assignment:
+
       cluster_name: ss_ws
+
       endpoints:
+
       - lb_endpoints:
+
         - endpoint:
+
             address:
+
               socket_address:
                 address: 127.0.0.1
                 port_value: 10012
 
   - name: ss_hu
+
     connect_timeout: 5s
     type: STATIC
+
     load_assignment:
+
       cluster_name: ss_hu
+
       endpoints:
+
       - lb_endpoints:
+
         - endpoint:
+
             address:
+
               socket_address:
                 address: 127.0.0.1
                 port_value: 10013
 
   - name: ss_xhttp
+
     connect_timeout: 5s
     type: STATIC
+
     load_assignment:
+
       cluster_name: ss_xhttp
+
       endpoints:
+
       - lb_endpoints:
+
         - endpoint:
+
             address:
+
               socket_address:
                 address: 127.0.0.1
                 port_value: 10014
@@ -829,63 +1078,101 @@ static_resources:
   # ============================================================
 
   - name: trojan_grpc
+
     connect_timeout: 5s
     type: STATIC
+
     http2_protocol_options: {}
+
     load_assignment:
+
       cluster_name: trojan_grpc
+
       endpoints:
+
       - lb_endpoints:
+
         - endpoint:
+
             address:
+
               socket_address:
                 address: 127.0.0.1
                 port_value: 10003
 
   - name: vmess_grpc
+
     connect_timeout: 5s
     type: STATIC
+
     http2_protocol_options: {}
+
     load_assignment:
+
       cluster_name: vmess_grpc
+
       endpoints:
+
       - lb_endpoints:
+
         - endpoint:
+
             address:
+
               socket_address:
                 address: 127.0.0.1
                 port_value: 10007
 
   - name: vless_grpc
+
     connect_timeout: 5s
     type: STATIC
+
     http2_protocol_options: {}
+
     load_assignment:
+
       cluster_name: vless_grpc
+
       endpoints:
+
       - lb_endpoints:
+
         - endpoint:
+
             address:
+
               socket_address:
                 address: 127.0.0.1
                 port_value: 10011
 
   - name: ss_grpc
+
     connect_timeout: 5s
     type: STATIC
+
     http2_protocol_options: {}
+
     load_assignment:
+
       cluster_name: ss_grpc
+
       endpoints:
+
       - lb_endpoints:
+
         - endpoint:
+
             address:
+
               socket_address:
                 address: 127.0.0.1
                 port_value: 10015
 
 admin:
+
   address:
+
     socket_address:
       address: 127.0.0.1
       port_value: 9902
@@ -905,7 +1192,9 @@ then
 
     echo
     echo "ERROR: Internal Envoy configuration test failed."
+
     show_log "envoy-engine-test"
+
     exit 1
 fi
 
@@ -919,7 +1208,7 @@ log "Starting internal Envoy..."
 
 envoy \
     -c /tmp/envoy-engine.yaml \
-    --base-id 1 \
+    --disable-hot-restart \
     --log-level info \
     >"$LOG_DIR/envoy-engine.log" 2>&1 &
 
@@ -928,15 +1217,23 @@ ENVOY_ENGINE_PID=$!
 sleep 1
 
 if ! kill -0 "$ENVOY_ENGINE_PID" 2>/dev/null; then
+
     echo
     echo "ERROR: Internal Envoy stopped immediately."
+
     show_log "envoy-engine"
+
     exit 1
 fi
 
 log "Internal Envoy PID: $ENVOY_ENGINE_PID"
 
-wait_port 127.0.0.1 8300 "Internal Envoy" "$ENVOY_ENGINE_PID"
+wait_port \
+    127.0.0.1 \
+    8300 \
+    "Internal Envoy" \
+    "$ENVOY_ENGINE_PID" \
+    "envoy-engine"
 
 # ============================================================
 # APACHE
@@ -1030,9 +1327,17 @@ cat > /etc/apache2/sites-available/virgozki.conf <<'APACHE'
     ProxyPass        /ss-virgozki ws://127.0.0.1:10012
     ProxyPassReverse /ss-virgozki http://127.0.0.1:10012
 
+    # ========================================================
+    # Access
+    # ========================================================
+
     <Location />
         Require all granted
     </Location>
+
+    # ========================================================
+    # Logs
+    # ========================================================
 
     ErrorLog /dev/stderr
     CustomLog /dev/stdout combined
@@ -1052,6 +1357,12 @@ a2enmod headers >/dev/null 2>&1 || true
 a2enmod http2 >/dev/null 2>&1 || true
 
 # ------------------------------------------------------------
+# Enable site
+# ------------------------------------------------------------
+
+a2ensite virgozki.conf >/dev/null 2>&1
+
+# ------------------------------------------------------------
 # Apache test
 # ------------------------------------------------------------
 
@@ -1064,7 +1375,9 @@ then
 
     echo
     echo "ERROR: Apache configuration test failed."
+
     show_log "apache-test"
+
     exit 1
 fi
 
@@ -1085,15 +1398,23 @@ APACHE_PID=$!
 sleep 1
 
 if ! kill -0 "$APACHE_PID" 2>/dev/null; then
+
     echo
     echo "ERROR: Apache stopped immediately."
+
     show_log "apache"
+
     exit 1
 fi
 
 log "Apache PID: $APACHE_PID"
 
-wait_port 127.0.0.1 8400 "Apache" "$APACHE_PID"
+wait_port \
+    127.0.0.1 \
+    8400 \
+    "Apache" \
+    "$APACHE_PID" \
+    "apache"
 
 # ============================================================
 # PUBLIC ENVOY
@@ -1131,6 +1452,7 @@ static_resources:
           request_timeout: 0s
 
           upgrade_configs:
+
           - upgrade_type: websocket
 
           route_config:
@@ -1305,6 +1627,7 @@ static_resources:
           - name: envoy.filters.http.router
 
             typed_config:
+
               "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
 
   clusters:
@@ -1314,28 +1637,45 @@ static_resources:
   # ============================================================
 
   - name: openresty_http
+
     connect_timeout: 5s
     type: STATIC
+
     load_assignment:
+
       cluster_name: openresty_http
+
       endpoints:
+
       - lb_endpoints:
+
         - endpoint:
+
             address:
+
               socket_address:
                 address: 127.0.0.1
                 port_value: 8101
 
   - name: openresty_grpc
+
     connect_timeout: 5s
     type: STATIC
+
     http2_protocol_options: {}
+
     load_assignment:
+
       cluster_name: openresty_grpc
+
       endpoints:
+
       - lb_endpoints:
+
         - endpoint:
+
             address:
+
               socket_address:
                 address: 127.0.0.1
                 port_value: 8102
@@ -1345,28 +1685,45 @@ static_resources:
   # ============================================================
 
   - name: haproxy_http
+
     connect_timeout: 5s
     type: STATIC
+
     load_assignment:
+
       cluster_name: haproxy_http
+
       endpoints:
+
       - lb_endpoints:
+
         - endpoint:
+
             address:
+
               socket_address:
                 address: 127.0.0.1
                 port_value: 8201
 
   - name: haproxy_grpc
+
     connect_timeout: 5s
     type: STATIC
+
     http2_protocol_options: {}
+
     load_assignment:
+
       cluster_name: haproxy_grpc
+
       endpoints:
+
       - lb_endpoints:
+
         - endpoint:
+
             address:
+
               socket_address:
                 address: 127.0.0.1
                 port_value: 8202
@@ -1376,28 +1733,45 @@ static_resources:
   # ============================================================
 
   - name: envoy_http
+
     connect_timeout: 5s
     type: STATIC
+
     load_assignment:
+
       cluster_name: envoy_http
+
       endpoints:
+
       - lb_endpoints:
+
         - endpoint:
+
             address:
+
               socket_address:
                 address: 127.0.0.1
                 port_value: 8300
 
   - name: envoy_grpc
+
     connect_timeout: 5s
     type: STATIC
+
     http2_protocol_options: {}
+
     load_assignment:
+
       cluster_name: envoy_grpc
+
       endpoints:
+
       - lb_endpoints:
+
         - endpoint:
+
             address:
+
               socket_address:
                 address: 127.0.0.1
                 port_value: 8300
@@ -1407,28 +1781,45 @@ static_resources:
   # ============================================================
 
   - name: apache_http
+
     connect_timeout: 5s
     type: STATIC
+
     load_assignment:
+
       cluster_name: apache_http
+
       endpoints:
+
       - lb_endpoints:
+
         - endpoint:
+
             address:
+
               socket_address:
                 address: 127.0.0.1
                 port_value: 8400
 
   - name: apache_grpc
+
     connect_timeout: 5s
     type: STATIC
+
     http2_protocol_options: {}
+
     load_assignment:
+
       cluster_name: apache_grpc
+
       endpoints:
+
       - lb_endpoints:
+
         - endpoint:
+
             address:
+
               socket_address:
                 address: 127.0.0.1
                 port_value: 8400
@@ -1456,7 +1847,9 @@ then
 
     echo
     echo "ERROR: Public Envoy configuration test failed."
+
     show_log "envoy-front-test"
+
     exit 1
 fi
 
@@ -1470,7 +1863,7 @@ log "Starting public Envoy on 0.0.0.0:$PORT..."
 
 envoy \
     -c /tmp/envoy-front.yaml \
-    --base-id 2 \
+    --disable-hot-restart \
     --log-level info \
     >"$LOG_DIR/envoy-front.log" 2>&1 &
 
@@ -1482,13 +1875,20 @@ if ! kill -0 "$ENVOY_FRONT_PID" 2>/dev/null; then
 
     echo
     echo "ERROR: Public Envoy stopped immediately."
+
     show_log "envoy-front"
+
     exit 1
 fi
 
 log "Public Envoy PID: $ENVOY_FRONT_PID"
 
-wait_port 127.0.0.1 "$PORT" "Public Envoy" "$ENVOY_FRONT_PID"
+wait_port \
+    127.0.0.1 \
+    "$PORT" \
+    "Public Envoy" \
+    "$ENVOY_FRONT_PID" \
+    "envoy-front"
 
 # ============================================================
 # FINAL STATUS
@@ -1503,6 +1903,7 @@ echo " OpenResty    : 8101 / 8102"
 echo " HAProxy      : 8201 / 8202"
 echo " Envoy        : 8300"
 echo " Apache       : 8400"
+echo " Xray         : 10000-10015"
 echo "============================================================"
 echo
 
@@ -1513,39 +1914,81 @@ echo
 while true
 do
 
+    # --------------------------------------------------------
+    # Xray
+    # --------------------------------------------------------
+
     if ! kill -0 "$XRAY_PID" 2>/dev/null; then
+
         echo "ERROR: Xray process stopped."
+
         show_log "xray"
+
         exit 1
     fi
+
+    # --------------------------------------------------------
+    # OpenResty
+    # --------------------------------------------------------
 
     if ! kill -0 "$OPENRESTY_PID" 2>/dev/null; then
+
         echo "ERROR: OpenResty process stopped."
+
         show_log "openresty"
+
         exit 1
     fi
+
+    # --------------------------------------------------------
+    # HAProxy
+    # --------------------------------------------------------
 
     if ! kill -0 "$HAPROXY_PID" 2>/dev/null; then
+
         echo "ERROR: HAProxy process stopped."
+
         show_log "haproxy"
+
         exit 1
     fi
+
+    # --------------------------------------------------------
+    # Internal Envoy
+    # --------------------------------------------------------
 
     if ! kill -0 "$ENVOY_ENGINE_PID" 2>/dev/null; then
+
         echo "ERROR: Internal Envoy process stopped."
+
         show_log "envoy-engine"
+
         exit 1
     fi
+
+    # --------------------------------------------------------
+    # Apache
+    # --------------------------------------------------------
 
     if ! kill -0 "$APACHE_PID" 2>/dev/null; then
+
         echo "ERROR: Apache process stopped."
+
         show_log "apache"
+
         exit 1
     fi
 
+    # --------------------------------------------------------
+    # Public Envoy
+    # --------------------------------------------------------
+
     if ! kill -0 "$ENVOY_FRONT_PID" 2>/dev/null; then
+
         echo "ERROR: Public Envoy process stopped."
+
         show_log "envoy-front"
+
         exit 1
     fi
 
