@@ -4,7 +4,7 @@
 # ============================================================
 
 # ------------------------------------------------------------
-# ENVoy
+# ENVOY
 # ------------------------------------------------------------
 FROM envoyproxy/envoy:v1.39.1 AS envoy
 
@@ -26,10 +26,16 @@ ENV XRAY_LOCATION_CONFIG=/etc/xray
 ENV BIND_ADDR=0.0.0.0
 ENV PORT=8080
 
-# Internal proxy ports
+# ------------------------------------------------------------
+# INTERNAL PROXY PORTS
+# ------------------------------------------------------------
 ENV HAPROXY_PORT=8081
 ENV OPENRESTY_PORT=8082
 ENV APACHE_PORT=8083
+
+# gRPC internal ports
+ENV HAPROXY_GRPC_PORT=8084
+ENV OPENRESTY_GRPC_PORT=8085
 
 WORKDIR /opt/virgozki
 
@@ -122,10 +128,6 @@ COPY haproxy.cfg \
 
 # ------------------------------------------------------------
 # APACHE
-#
-# IMPORTANT:
-# This is loaded as an Apache conf file.
-# It does NOT replace apache2.conf.
 # ------------------------------------------------------------
 COPY httpd.conf \
     /etc/apache2/conf-available/virgozki.conf
