@@ -12,7 +12,7 @@ mkdir -p \
     /var/run/apache2 \
     /var/run/haproxy
 
-# ✅ Full permissions para mawala ang NO LOG FILE error
+# Full permissions
 chmod -R 777 "$LOG_DIR" /tmp/virgozki /run /var/run
 
 XRAY_PID=""
@@ -24,24 +24,13 @@ ENVOY_FRONT_PID=""
 
 LAST_STEP="STARTING"
 
-log() {
-    echo "[virgozki] $*"
-}
-
-step() {
-    LAST_STEP="$1"
-    echo "[virgozki] STEP: $LAST_STEP"
-}
+log() { echo "[virgozki] $*"; }
+step() { LAST_STEP="$1"; echo "[virgozki] STEP: $LAST_STEP"; }
 
 show_log() {
     NAME="$1"
-    echo ""
-    echo "----- $NAME -----"
-    if [ -f "$LOG_DIR/$NAME.log" ]; then
-        cat "$LOG_DIR/$NAME.log"
-    else
-        echo "NO LOG FILE: $LOG_DIR/$NAME.log"
-    fi
+    echo ""; echo "----- $NAME -----"
+    [ -f "$LOG_DIR/$NAME.log" ] && cat "$LOG_DIR/$NAME.log" || echo "NO LOG FILE"
 }
 
 cleanup() {
@@ -64,21 +53,13 @@ on_exit() {
         echo " LAST STEP : $LAST_STEP"
         echo " PORT      : $PORT"
         echo "=============================================="
-        show_log envoy-front-test
-        show_log envoy-front
-        show_log xray-test
-        show_log xray
-        show_log openresty-test
-        show_log openresty
-        show_log haproxy-test
-        show_log haproxy
-        show_log envoy-engine-test
-        show_log envoy-engine
-        show_log apache-modules
-        show_log apache-test
-        show_log apache
-        echo ""
-        echo "=============================================="
+        show_log envoy-front-test; show_log envoy-front
+        show_log xray-test; show_log xray
+        show_log openresty-test; show_log openresty
+        show_log haproxy-test; show_log haproxy
+        show_log envoy-engine-test; show_log envoy-engine
+        show_log apache-modules; show_log apache-test; show_log apache
+        echo ""; echo "=============================================="
     fi
     cleanup
     exit "$RC"
@@ -88,7 +69,7 @@ trap on_exit EXIT
 trap 'exit 143' INT TERM
 
 # ==================================================
-# CHECK BASIC FILES & BINARIES
+# CHECK FILES & BINARIES
 # ==================================================
 step "Checking required files"
 for FILE in \
@@ -96,10 +77,7 @@ for FILE in \
     /etc/openresty/nginx.conf \
     /usr/local/openresty/nginx/html/index.html
 do
-    if [ ! -f "$FILE" ]; then
-        echo "[virgozki] MISSING FILE: $FILE"
-        exit 1
-    fi
+    [ ! -f "$FILE" ] && { echo "[virgozki] MISSING: $FILE"; exit 1; }
 done
 
 command -v xray >/dev/null 2>&1 || { echo "[virgozki] xray not found"; exit 1; }
@@ -107,13 +85,12 @@ command -v openresty >/dev/null 2>&1 || { echo "[virgozki] openresty not found";
 command -v haproxy >/dev/null 2>&1 || { echo "[virgozki] haproxy not found"; exit 1; }
 command -v envoy >/dev/null 2>&1 || { echo "[virgozki] envoy not found"; exit 1; }
 command -v apache2ctl >/dev/null 2>&1 || { echo "[virgozki] apache2ctl not found"; exit 1; }
-
-log "Required files and binaries OK"
+log "All files & binaries OK"
 
 # ==================================================
-# PUBLIC ENVOY CONFIG (Fixed Routing)
+# PUBLIC ENVOY CONFIG
 # ==================================================
-step "Creating public Envoy configuration"
+step "Creating public Envoy config"
 cat > /tmp/envoy-front.yaml <<YAML
 static_resources:
   listeners:
@@ -151,53 +128,35 @@ static_resources:
   - name: openresty_http
     connect_timeout: 5s
     type: STATIC
-    load_assignment:
-      cluster_name: openresty_http
-      endpoints:
-      - lb_endpoints:
-        - endpoint: { address: { socket_address: { address: 127.0.0.1, port_value: 8101 } } }
+    load_assignment: { cluster_name: openresty_http, endpoints: [{ lb_endpoints: [{ endpoint: { address: { socket_address: { address: 127.0.0.1, port_value: 8101 } } } }] }] }
   - name: haproxy_http
     connect_timeout: 5s
     type: STATIC
-    load_assignment:
-      cluster_name: haproxy_http
-      endpoints:
-      - lb_endpoints:
-        - endpoint: { address: { socket_address: { address: 127.0.0.1, port_value: 8201 } } }
+    load_assignment: { cluster_name: haproxy_http, endpoints: [{ lb_endpoints: [{ endpoint: { address: { socket_address: { address: 127.0.0.1, port_value: 8201 } } } }] }] }
   - name: envoy_engine
     connect_timeout: 5s
     type: STATIC
-    load_assignment:
-      cluster_name: envoy_engine
-      endpoints:
-      - lb_endpoints:
-        - endpoint: { address: { socket_address: { address: 127.0.0.1, port_value: 8300 } } }
+    load_assignment: { cluster_name: envoy_engine, endpoints: [{ lb_endpoints: [{ endpoint: { address: { socket_address: { address: 127.0.0.1, port_value: 8300 } } } }] }] }
   - name: apache
     connect_timeout: 5s
     type: STATIC
-    load_assignment:
-      cluster_name: apache
-      endpoints:
-      - lb_endpoints:
-        - endpoint: { address: { socket_address: { address: 127.0.0.1, port_value: 8400 } } }
+    load_assignment: { cluster_name: apache, endpoints: [{ lb_endpoints: [{ endpoint: { address: { socket_address: { address: 127.0.0.1, port_value: 8400 } } } }] }] }
 YAML
 
-step "Validating public Envoy"
-if ! envoy --mode validate -c /tmp/envoy-front.yaml >"$LOG_DIR/envoy-front-test.log" 2>&1; then
-    echo "[virgozki] PUBLIC ENVOY VALIDATION FAILED"
-    cat "$LOG_DIR/envoy-front-test.log"
-    exit 1
-fi
-log "Public Envoy configuration OK"
+step "Validating Envoy"
+envoy --mode validate -c /tmp/envoy-front.yaml >"$LOG_DIR/envoy-front-test.log" 2>&1 || {
+    echo "[virgozki] ENVOY VALIDATION FAILED"; cat "$LOG_DIR/envoy-front-test.log"; exit 1
+}
+log "Envoy OK"
 
-step "Starting public Envoy on 0.0.0.0:$PORT"
+step "Starting Envoy on 0.0.0.0:$PORT"
 envoy -c /tmp/envoy-front.yaml --disable-hot-restart --log-level info >"$LOG_DIR/envoy-front.log" 2>&1 &
 ENVOY_FRONT_PID=$!
 
 # ==================================================
-# WAIT FOR PUBLIC PORT
+# WAIT FOR PORT
 # ==================================================
-step "Waiting for Cloud Run PORT $PORT"
+step "Waiting for port $PORT"
 python3 - "$PORT" "$ENVOY_FRONT_PID" <<'PY'
 import socket, sys, time, os
 port, pid = int(sys.argv[1]), int(sys.argv[2])
@@ -205,55 +164,48 @@ deadline = time.time() + 30
 while time.time() < deadline:
     try:
         with socket.create_connection(("127.0.0.1", port), timeout=1):
-            print(f"[virgozki] PUBLIC PORT {port} IS READY")
+            print(f"[virgozki] PORT {port} READY")
             sys.exit(0)
     except: pass
-    try: os.kill(pid, 0)
-    except: print("[virgozki] Public Envoy stopped"); sys.exit(1)
+    try: os.kill(pid,0)
+    except: print("[virgozki] Envoy stopped"); sys.exit(1)
     time.sleep(1)
-print(f"[virgozki] PUBLIC PORT {port} DID NOT OPEN")
+print(f"[virgozki] PORT {port} FAILED")
 sys.exit(1)
 PY
 
-log "=============================================="
-log " CLOUD RUN PORT IS READY"
-log " 0.0.0.0:$PORT"
-log "=============================================="
+log "CLOUD RUN PORT READY: 0.0.0.0:$PORT"
 
 # ==================================================
-# XRAY SERVICE
+# XRAY
 # ==================================================
 step "Testing Xray"
-if ! xray run -test -config /etc/xray/config.json >"$LOG_DIR/xray-test.log" 2>&1; then
-    echo "[virgozki] XRAY CONFIGURATION FAILED"
-    cat "$LOG_DIR/xray-test.log"
-    exit 1
-fi
-log "Xray configuration OK"
+xray run -test -config /etc/xray/config.json >"$LOG_DIR/xray-test.log" 2>&1 || {
+    echo "[virgozki] XRAY FAILED"; cat "$LOG_DIR/xray-test.log"; exit 1
+}
+log "Xray OK"
 
 step "Starting Xray"
 xray run -config /etc/xray/config.json >"$LOG_DIR/xray.log" 2>&1 &
 XRAY_PID=$!
 
 # ==================================================
-# OPENRESTY SERVICE
+# OPENRESTY
 # ==================================================
 step "Testing OpenResty"
-if ! openresty -t -c /etc/openresty/nginx.conf >"$LOG_DIR/openresty-test.log" 2>&1; then
-    echo "[virgozki] OPENRESTY CONFIGURATION FAILED"
-    cat "$LOG_DIR/openresty-test.log"
-    exit 1
-fi
-log "OpenResty configuration OK"
+openresty -t -c /etc/openresty/nginx.conf >"$LOG_DIR/openresty-test.log" 2>&1 || {
+    echo "[virgozki] OPENRESTY FAILED"; cat "$LOG_DIR/openresty-test.log"; exit 1
+}
+log "OpenResty OK"
 
 step "Starting OpenResty"
 openresty -g "daemon off;" -c /etc/openresty/nginx.conf >"$LOG_DIR/openresty.log" 2>&1 &
 OPENRESTY_PID=$!
 
 # ==================================================
-# HAPROXY CONFIG (Fixed Health Check)
+# HAPROXY
 # ==================================================
-step "Creating HAProxy configuration"
+step "Creating HAProxy config"
 cat > /tmp/haproxy.cfg <<'HAPROXY'
 global
     log stdout format raw local0
@@ -280,12 +232,10 @@ backend xray_grpc
 HAPROXY
 
 step "Testing HAProxy"
-if ! haproxy -c -f /tmp/haproxy.cfg >"$LOG_DIR/haproxy-test.log" 2>&1; then
-    echo "[virgozki] HAPROXY CONFIGURATION FAILED"
-    cat "$LOG_DIR/haproxy-test.log"
-    exit 1
-fi
-log "HAProxy configuration OK"
+haproxy -c -f /tmp/haproxy.cfg >"$LOG_DIR/haproxy-test.log" 2>&1 || {
+    echo "[virgozki] HAPROXY FAILED"; cat "$LOG_DIR/haproxy-test.log"; exit 1
+}
+log "HAProxy OK"
 
 step "Starting HAProxy"
 haproxy -W -db -f /tmp/haproxy.cfg >"$LOG_DIR/haproxy.log" 2>&1 &
@@ -294,7 +244,7 @@ HAPROXY_PID=$!
 # ==================================================
 # INTERNAL ENVOY
 # ==================================================
-step "Creating internal Envoy configuration"
+step "Creating internal Envoy"
 cat > /tmp/envoy-engine.yaml <<'YAML'
 static_resources:
   listeners:
@@ -322,38 +272,29 @@ static_resources:
   - name: xray_http
     connect_timeout: 5s
     type: STATIC
-    load_assignment:
-      cluster_name: xray_http
-      endpoints:
-      - lb_endpoints:
-        - endpoint: { address: { socket_address: { address: 127.0.0.1, port_value: 10000 } } }
+    load_assignment: { cluster_name: xray_http, endpoints: [{ lb_endpoints: [{ endpoint: { address: { socket_address: { address: 127.0.0.1, port_value: 10000 } } } }] }] }
 YAML
 
 step "Testing internal Envoy"
-if ! envoy --mode validate -c /tmp/envoy-engine.yaml >"$LOG_DIR/envoy-engine-test.log" 2>&1; then
-    echo "[virgozki] INTERNAL ENVOY CONFIGURATION FAILED"
-    cat "$LOG_DIR/envoy-engine-test.log"
-    exit 1
-fi
-log "Internal Envoy configuration OK"
+envoy --mode validate -c /tmp/envoy-engine.yaml >"$LOG_DIR/envoy-engine-test.log" 2>&1 || {
+    echo "[virgozki] INTERNAL ENVOY FAILED"; exit 1
+}
+log "Internal Envoy OK"
 
 step "Starting internal Envoy"
 envoy -c /tmp/envoy-engine.yaml --disable-hot-restart --log-level info >"$LOG_DIR/envoy-engine.log" 2>&1 &
 ENVOY_ENGINE_PID=$!
 
 # ==================================================
-# APACHE (✅ PERFECT MATCH SA CONFIG MO)
+# APACHE (✅ FIXED MODULES + PROTOCOL)
 # ==================================================
-step "Creating Apache directories"
+step "Preparing Apache"
 mkdir -p /run/apache2 /var/run/apache2
-
-step "Creating Apache ports configuration"
-cat > /etc/apache2/ports.conf <<'APACHEPORTS'
+cat > /etc/apache2/ports.conf <<'AP'
 Listen 8400
-APACHEPORTS
+AP
 
-step "Creating Apache virtual host"
-cat > /etc/apache2/sites-available/virgozki.conf <<'APACHE'
+cat > /etc/apache2/sites-available/virgozki.conf <<'VHOST'
 <VirtualHost 127.0.0.1:8400>
     ServerName localhost
     Protocols h2 h2c http/1.1
@@ -363,8 +304,9 @@ cat > /etc/apache2/sites-available/virgozki.conf <<'APACHE'
     ProxyRequests Off
     ProxyPreserveHost On
     ProxyTimeout 3600
+    ProxyAddHeaders Off
 
-    # WebSocket
+    # ✅ WebSocket (TAMA)
     ProxyPass        /virgozki ws://127.0.0.1:10000/virgozki
     ProxyPassReverse /virgozki ws://127.0.0.1:10000/virgozki
     ProxyPass        /vmess-virgozki ws://127.0.0.1:10004/vmess-virgozki
@@ -374,7 +316,7 @@ cat > /etc/apache2/sites-available/virgozki.conf <<'APACHE'
     ProxyPass        /ss-virgozki ws://127.0.0.1:10012/ss-virgozki
     ProxyPassReverse /ss-virgozki ws://127.0.0.1:10012/ss-virgozki
 
-    # HTTPUpgrade (-hu)
+    # ✅ HTTPUpgrade (Ginamit ang correct proxy protocol)
     ProxyPass        /virgozki-hu http://127.0.0.1:10001/virgozki-hu
     ProxyPassReverse /virgozki-hu http://127.0.0.1:10001/virgozki-hu
     ProxyPass        /vmess-virgozki-hu http://127.0.0.1:10005/vmess-virgozki-hu
@@ -384,7 +326,7 @@ cat > /etc/apache2/sites-available/virgozki.conf <<'APACHE'
     ProxyPass        /ss-virgozki-hu http://127.0.0.1:10013/ss-virgozki-hu
     ProxyPassReverse /ss-virgozki-hu http://127.0.0.1:10013/ss-virgozki-hu
 
-    # XHTTP (-xhttp)
+    # ✅ XHTTP
     ProxyPass        /virgozki-xhttp http://127.0.0.1:10002/virgozki-xhttp
     ProxyPassReverse /virgozki-xhttp http://127.0.0.1:10002/virgozki-xhttp
     ProxyPass        /vmess-virgozki-xhttp http://127.0.0.1:10006/vmess-virgozki-xhttp
@@ -394,7 +336,7 @@ cat > /etc/apache2/sites-available/virgozki.conf <<'APACHE'
     ProxyPass        /ss-virgozki-xhttp http://127.0.0.1:10014/ss-virgozki-xhttp
     ProxyPassReverse /ss-virgozki-xhttp http://127.0.0.1:10014/ss-virgozki-xhttp
 
-    # gRPC
+    # ✅ gRPC
     ProxyPass        /trojan-grpc h2c://127.0.0.1:10003/trojan-grpc
     ProxyPassReverse /trojan-grpc h2c://127.0.0.1:10003/trojan-grpc
     ProxyPass        /vmess-grpc h2c://127.0.0.1:10007/vmess-grpc
@@ -411,26 +353,23 @@ cat > /etc/apache2/sites-available/virgozki.conf <<'APACHE'
     ErrorLog /dev/stderr
     CustomLog /dev/stdout combined
 </VirtualHost>
-APACHE
+VHOST
 
-step "Activating Apache site"
 rm -f /etc/apache2/sites-enabled/*
 ln -sf /etc/apache2/sites-available/virgozki.conf /etc/apache2/sites-enabled/virgozki.conf
 
+# ✅ ENABLE ALL REQUIRED MODULES (walang kulang na!)
 step "Enabling Apache modules"
-if ! a2enmod proxy proxy_http proxy_http2 proxy_wstunnel headers http2 >"$LOG_DIR/apache-modules.log" 2>&1; then
-    echo "[virgozki] APACHE MODULE SETUP FAILED"
-    cat "$LOG_DIR/apache-modules.log"
-    exit 1
-fi
+a2enmod proxy proxy_http proxy_http2 proxy_wstunnel headers rewrite http2 >"$LOG_DIR/apache-modules.log" 2>&1 || {
+    echo "[virgozki] MODULES FAILED"; cat "$LOG_DIR/apache-modules.log"; exit 1
+}
+log "Apache modules OK"
 
 step "Testing Apache"
-if ! apache2ctl -t >"$LOG_DIR/apache-test.log" 2>&1; then
-    echo "[virgozki] APACHE CONFIGURATION FAILED"
-    cat "$LOG_DIR/apache-test.log"
-    exit 11
-fi
-log "Apache configuration OK"
+apache2ctl -t >"$LOG_DIR/apache-test.log" 2>&1 || {
+    echo "[virgozki] APACHE CONFIG FAILED"; cat "$LOG_DIR/apache-test.log"; exit 1
+}
+log "Apache config OK"
 
 step "Starting Apache"
 apache2ctl -DFOREGROUND >"$LOG_DIR/apache.log" 2>&1 &
@@ -440,19 +379,19 @@ APACHE_PID=$!
 # FINAL CHECKS
 # ==================================================
 sleep 2
-kill -0 "$ENVOY_FRONT_PID" 2>/dev/null || { echo "[virgozki] PUBLIC ENVOY STOPPED"; cat "$LOG_DIR/envoy-front.log"; exit 1; }
-kill -0 "$XRAY_PID" 2>/dev/null || { echo "[virgozki] XRAY STOPPED"; cat "$LOG_DIR/xray.log"; exit 1; }
-kill -0 "$OPENRESTY_PID" 2>/dev/null || { echo "[virgozki] OPENRESTY STOPPED"; cat "$LOG_DIR/openresty.log"; exit 1; }
-kill -0 "$HAPROXY_PID" 2>/dev/null || { echo "[virgozki] HAPROXY STOPPED"; cat "$LOG_DIR/haproxy.log"; exit 1; }
-kill -0 "$ENVOY_ENGINE_PID" 2>/dev/null || { echo "[virgozki] INTERNAL ENVOY STOPPED"; cat "$LOG_DIR/envoy-engine.log"; exit 1; }
-kill -0 "$APACHE_PID" 2>/dev/null || { echo "[virgozki] APACHE STOPPED"; cat "$LOG_DIR/apache.log"; exit 1; }
+kill -0 "$ENVOY_FRONT_PID" 2>/dev/null || { echo "[virgozki] ENVOY STOPPED"; exit 1; }
+kill -0 "$XRAY_PID" 2>/dev/null || { echo "[virgozki] XRAY STOPPED"; exit 1; }
+kill -0 "$OPENRESTY_PID" 2>/dev/null || { echo "[virgozki] OPENRESTY STOPPED"; exit 1; }
+kill -0 "$HAPROXY_PID" 2>/dev/null || { echo "[virgozki] HAPROXY STOPPED"; exit 1; }
+kill -0 "$ENVOY_ENGINE_PID" 2>/dev/null || { echo "[virgozki] INTERNAL ENVOY STOPPED"; exit 1; }
+kill -0 "$APACHE_PID" 2>/dev/null || { echo "[virgozki] APACHE STOPPED"; exit 1; }
 
-step "VIRGOZKI FULLY READY"
-log "Public PORT : 0.0.0.0:$PORT"
-log "All protocols: WS / HTTPUpgrade / XHTTP / gRPC"
+step "VIRGOZKI FULLY READY ✅"
+log "Public Port: $PORT"
+log "All Protocols: WS / HTTPUpgrade / XHTTP / gRPC"
 
 # ==================================================
-# PROCESS MONITOR
+# MONITOR
 # ==================================================
 while true; do
     kill -0 "$ENVOY_FRONT_PID" 2>/dev/null || exit 1
@@ -463,4 +402,3 @@ while true; do
     kill -0 "$APACHE_PID" 2>/dev/null || exit 1
     sleep 5
 done
-
