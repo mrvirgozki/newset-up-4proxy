@@ -89,6 +89,16 @@ cleanup() {
     done
 }
 
+check_pid() {
+    NAME="$1"
+    PID="$2"
+
+    if ! kill -0 "$PID" 2>/dev/null; then
+        echo "[virgozki] $NAME STOPPED"
+        exit 1
+    fi
+}
+
 on_exit() {
     RC=$?
 
@@ -319,7 +329,6 @@ static_resources:
             typed_config:
               "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
 
-
   clusters:
 
   # ==========================================================
@@ -349,7 +358,6 @@ static_resources:
               socket_address:
                 address: 127.0.0.1
                 port_value: ${HAPROXY_PORT}
-
 
   # ==========================================================
   # HAProxy gRPC
@@ -552,18 +560,11 @@ PY
 
 step "Running final health checks"
 
-for NAME PID in \
-    envoy "$ENVOY_PID" \
-    haproxy "$HAPROXY_PID" \
-    openresty "$OPENRESTY_PID" \
-    apache "$APACHE_PID" \
-    xray "$XRAY_PID"
-do
-    if ! kill -0 "$PID" 2>/dev/null; then
-        echo "[virgozki] $NAME STOPPED"
-        exit 1
-    fi
-done
+check_pid envoy "$ENVOY_PID"
+check_pid haproxy "$HAPROXY_PID"
+check_pid openresty "$OPENRESTY_PID"
+check_pid apache "$APACHE_PID"
+check_pid xray "$XRAY_PID"
 
 # ============================================================
 # STARTUP COMPLETE
@@ -592,19 +593,11 @@ echo ""
 
 while true
 do
-
-    for NAME PID in \
-        envoy "$ENVOY_PID" \
-        haproxy "$HAPROXY_PID" \
-        openresty "$OPENRESTY_PID" \
-        apache "$APACHE_PID" \
-        xray "$XRAY_PID"
-    do
-        if ! kill -0 "$PID" 2>/dev/null; then
-            echo "[virgozki] $NAME STOPPED"
-            exit 1
-        fi
-    done
+    check_pid envoy "$ENVOY_PID"
+    check_pid haproxy "$HAPROXY_PID"
+    check_pid openresty "$OPENRESTY_PID"
+    check_pid apache "$APACHE_PID"
+    check_pid xray "$XRAY_PID"
 
     sleep 5
 done
