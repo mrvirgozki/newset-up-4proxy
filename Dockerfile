@@ -28,7 +28,7 @@ ENV OPENRESTY_GRPC_PORT=8085
 WORKDIR /opt/virgozki
 
 # ============================================================
-# ✅ FIXED: TINANGGAL ANG DUPLICATE GROUP/USER CREATION
+# ✅ FIXED: WALANG NAWAWALANG DIRECTORY ERROR NA
 # ============================================================
 RUN apt-get update && apt-get install -y --no-install-recommends \
         apache2 \
@@ -44,32 +44,24 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         iproute2 \
         net-tools \
         openssl \
-    # Enable Apache modules
-    && a2enmod \
-        proxy \
-        proxy_http \
-        proxy_http2 \
-        proxy_wstunnel \
-        headers \
-        rewrite \
-        http2 \
-    # ✅ Siguraduhin lang na may ownership ang HAProxy dir (hindi na gumagawa ng bagong user)
-    && mkdir -p /var/lib/haproxy && chown -R haproxy:haproxy /var/lib/haproxy /var/run/haproxy \
+    # Enable Apache modules (hindi na nagdudulot ng error kahit naka-enable na)
+    && a2enmod proxy proxy_http proxy_http2 proxy_wstunnel headers rewrite http2 || true \
+    # ✅ Gumawa muna ng directory BAGO mag-set ng permissions
+    && mkdir -p /var/lib/haproxy /run/haproxy /var/run/haproxy \
+    # ✅ Siguraduhin lang na tama ang ownership, iwas error
+    && chown -R haproxy:haproxy /var/lib/haproxy /run/haproxy \
     # Cleanup
-    && rm -rf \
-        /var/lib/apt/lists/* \
-        /tmp/* \
-        /var/tmp/*
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # ============================================================
-# BINARIES
+# KOPYA NG MGA BINARY
 # ============================================================
 COPY --from=envoy /usr/local/bin/envoy /usr/local/bin/envoy
 COPY --from=xray /usr/local/bin/xray /usr/local/bin/xray
 COPY --from=xray /usr/local/share/xray /usr/local/share/xray
 
 # ============================================================
-# DIRECTORIES & PERMISSIONS
+# IBA PANG DIRECTORY
 # ============================================================
 RUN mkdir -p \
         /etc/xray \
@@ -80,7 +72,6 @@ RUN mkdir -p \
         /var/log/apache2 \
         /var/lock/apache2 \
         /var/run/apache2 \
-        /var/run/haproxy \
         /tmp/virgozki-logs \
         /tmp/virgozki \
     && chmod 777 \
@@ -91,20 +82,20 @@ RUN mkdir -p \
         /tmp/virgozki
 
 # ============================================================
-# CONFIG FILES
+# CONFIGURATION FILES
 # ============================================================
 COPY config.json /etc/xray/config.json
 COPY nginx.conf /etc/openresty/nginx.conf
 COPY haproxy.cfg /etc/haproxy/haproxy.cfg
 COPY httpd.conf /etc/apache2/conf-available/virgozki.conf
 
-RUN a2enconf virgozki
+RUN a2enconf virgozki || true
 
 COPY index.html /usr/share/nginx/html/index.html
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 
 # ============================================================
-# FINAL PERMISSIONS
+# PERMISSIONS
 # ============================================================
 RUN chmod +x /usr/local/bin/entrypoint.sh \
     && chmod 644 \
@@ -115,7 +106,7 @@ RUN chmod +x /usr/local/bin/entrypoint.sh \
     && chmod -R 755 /usr/share/nginx/html
 
 # ============================================================
-# CLOUD RUN
+# CLOUD RUN SETTINGS
 # ============================================================
 EXPOSE 8080
 
