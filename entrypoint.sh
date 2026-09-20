@@ -227,11 +227,7 @@ fi
 
 log "Xray PID: $XRAY_PID"
 
-# ------------------------------------------------------------
-# Verify one Xray port before starting reverse proxies
-# ------------------------------------------------------------
-
-wait_port 127.0.0.1 10000 "Xray"
+wait_port 127.0.0.1 10000 "Xray" "$XRAY_PID"
 
 # ============================================================
 # OPENRESTY
@@ -301,43 +297,43 @@ defaults
     timeout tunnel 3600s
 
 # ============================================================
-# HTTP/1.1
+# HTTP / HTTP Upgrade / XHTTP
 # ============================================================
 
 frontend virgozki_http
     bind 127.0.0.1:8201
 
-    acl trojan_ws path -i /virgozki
-    acl trojan_hu path -i /virgozki-hu
     acl trojan_xhttp path -i /virgozki-xhttp
+    acl trojan_hu    path -i /virgozki-hu
+    acl trojan_ws    path -i /virgozki
 
-    acl vmess_ws path -i /vmess-virgozki
-    acl vmess_hu path -i /vmess-virgozki-hu
     acl vmess_xhttp path -i /vmess-virgozki-xhttp
+    acl vmess_hu    path -i /vmess-virgozki-hu
+    acl vmess_ws    path -i /vmess-virgozki
 
-    acl vless_ws path -i /vless-virgozki
-    acl vless_hu path -i /vless-virgozki-hu
     acl vless_xhttp path -i /vless-virgozki-xhttp
+    acl vless_hu    path -i /vless-virgozki-hu
+    acl vless_ws    path -i /vless-virgozki
 
-    acl ss_ws path -i /ss-virgozki
-    acl ss_hu path -i /ss-virgozki-hu
     acl ss_xhttp path -i /ss-virgozki-xhttp
+    acl ss_hu    path -i /ss-virgozki-hu
+    acl ss_ws    path -i /ss-virgozki
 
-    use_backend trojan_ws if trojan_ws
-    use_backend trojan_hu if trojan_hu
     use_backend trojan_xhttp if trojan_xhttp
+    use_backend trojan_hu    if trojan_hu
+    use_backend trojan_ws    if trojan_ws
 
-    use_backend vmess_ws if vmess_ws
-    use_backend vmess_hu if vmess_hu
     use_backend vmess_xhttp if vmess_xhttp
+    use_backend vmess_hu    if vmess_hu
+    use_backend vmess_ws    if vmess_ws
 
-    use_backend vless_ws if vless_ws
-    use_backend vless_hu if vless_hu
     use_backend vless_xhttp if vless_xhttp
+    use_backend vless_hu    if vless_hu
+    use_backend vless_ws    if vless_ws
 
-    use_backend ss_ws if ss_ws
-    use_backend ss_hu if ss_hu
     use_backend ss_xhttp if ss_xhttp
+    use_backend ss_hu    if ss_hu
+    use_backend ss_ws    if ss_ws
 
     http-request deny deny_status 404
 
@@ -348,20 +344,20 @@ frontend virgozki_http
 frontend virgozki_grpc
     bind 127.0.0.1:8202 proto h2
 
-    acl trojan_grpc path_beg /trojan-grpc
-    acl vmess_grpc path_beg /vmess-grpc
-    acl vless_grpc path_beg /vless-grpc
-    acl ss_grpc path_beg /ss-grpc
+    acl trojan_grpc path_beg -i /trojan-grpc
+    acl vmess_grpc  path_beg -i /vmess-grpc
+    acl vless_grpc  path_beg -i /vless-grpc
+    acl ss_grpc     path_beg -i /ss-grpc
 
     use_backend trojan_grpc if trojan_grpc
-    use_backend vmess_grpc if vmess_grpc
-    use_backend vless_grpc if vless_grpc
-    use_backend ss_grpc if ss_grpc
+    use_backend vmess_grpc  if vmess_grpc
+    use_backend vless_grpc  if vless_grpc
+    use_backend ss_grpc     if ss_grpc
 
     http-request deny deny_status 404
 
 # ============================================================
-# WebSocket / HTTP Upgrade / XHTTP
+# Trojan
 # ============================================================
 
 backend trojan_ws
@@ -373,6 +369,10 @@ backend trojan_hu
 backend trojan_xhttp
     server xray 127.0.0.1:10002
 
+# ============================================================
+# VMess
+# ============================================================
+
 backend vmess_ws
     server xray 127.0.0.1:10004
 
@@ -382,6 +382,10 @@ backend vmess_hu
 backend vmess_xhttp
     server xray 127.0.0.1:10006
 
+# ============================================================
+# VLESS
+# ============================================================
+
 backend vless_ws
     server xray 127.0.0.1:10008
 
@@ -390,6 +394,10 @@ backend vless_hu
 
 backend vless_xhttp
     server xray 127.0.0.1:10010
+
+# ============================================================
+# Shadowsocks
+# ============================================================
 
 backend ss_ws
     server xray 127.0.0.1:10012
@@ -469,7 +477,7 @@ wait_port 127.0.0.1 8201 "HAProxy HTTP" "$HAPROXY_PID"
 wait_port 127.0.0.1 8202 "HAProxy gRPC" "$HAPROXY_PID"
 
 # ============================================================
-# ENVOY ENGINE
+# INTERNAL ENVOY
 # ============================================================
 
 log "Generating internal Envoy configuration..."
@@ -480,6 +488,7 @@ static_resources:
   listeners:
 
   - name: virgozki_engine
+
     address:
       socket_address:
         address: 127.0.0.1
@@ -517,9 +526,9 @@ static_resources:
 
               routes:
 
-              # ------------------------------------------------
+              # ==================================================
               # Trojan
-              # ------------------------------------------------
+              # ==================================================
 
               - match:
                   prefix: /virgozki-xhttp
@@ -532,15 +541,15 @@ static_resources:
                   cluster: trojan_hu
 
               - match:
-                  prefix: /virgozki
+                  path: /virgozki
                 route:
                   cluster: trojan_ws
                   upgrade_configs:
                   - upgrade_type: websocket
 
-              # ------------------------------------------------
+              # ==================================================
               # VMess
-              # ------------------------------------------------
+              # ==================================================
 
               - match:
                   prefix: /vmess-virgozki-xhttp
@@ -553,15 +562,15 @@ static_resources:
                   cluster: vmess_hu
 
               - match:
-                  prefix: /vmess-virgozki
+                  path: /vmess-virgozki
                 route:
                   cluster: vmess_ws
                   upgrade_configs:
                   - upgrade_type: websocket
 
-              # ------------------------------------------------
+              # ==================================================
               # VLESS
-              # ------------------------------------------------
+              # ==================================================
 
               - match:
                   prefix: /vless-virgozki-xhttp
@@ -574,15 +583,15 @@ static_resources:
                   cluster: vless_hu
 
               - match:
-                  prefix: /vless-virgozki
+                  path: /vless-virgozki
                 route:
                   cluster: vless_ws
                   upgrade_configs:
                   - upgrade_type: websocket
 
-              # ------------------------------------------------
+              # ==================================================
               # Shadowsocks
-              # ------------------------------------------------
+              # ==================================================
 
               - match:
                   prefix: /ss-virgozki-xhttp
@@ -595,15 +604,15 @@ static_resources:
                   cluster: ss_hu
 
               - match:
-                  prefix: /ss-virgozki
+                  path: /ss-virgozki
                 route:
                   cluster: ss_ws
                   upgrade_configs:
                   - upgrade_type: websocket
 
-              # ------------------------------------------------
+              # ==================================================
               # gRPC
-              # ------------------------------------------------
+              # ==================================================
 
               - match:
                   prefix: /trojan-grpc
@@ -625,9 +634,9 @@ static_resources:
                 route:
                   cluster: ss_grpc
 
-              # ------------------------------------------------
-              # Default
-              # ------------------------------------------------
+              # ==================================================
+              # DEFAULT
+              # ==================================================
 
               - match:
                   prefix: /
@@ -641,12 +650,11 @@ static_resources:
             typed_config:
               "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
 
-
   clusters:
 
-  # ==========================================================
+  # ============================================================
   # Trojan
-  # ==========================================================
+  # ============================================================
 
   - name: trojan_ws
     connect_timeout: 5s
@@ -687,9 +695,9 @@ static_resources:
                 address: 127.0.0.1
                 port_value: 10002
 
-  # ==========================================================
+  # ============================================================
   # VMess
-  # ==========================================================
+  # ============================================================
 
   - name: vmess_ws
     connect_timeout: 5s
@@ -730,9 +738,9 @@ static_resources:
                 address: 127.0.0.1
                 port_value: 10006
 
-  # ==========================================================
+  # ============================================================
   # VLESS
-  # ==========================================================
+  # ============================================================
 
   - name: vless_ws
     connect_timeout: 5s
@@ -773,9 +781,9 @@ static_resources:
                 address: 127.0.0.1
                 port_value: 10010
 
-  # ==========================================================
+  # ============================================================
   # Shadowsocks
-  # ==========================================================
+  # ============================================================
 
   - name: ss_ws
     connect_timeout: 5s
@@ -816,9 +824,9 @@ static_resources:
                 address: 127.0.0.1
                 port_value: 10014
 
-  # ==========================================================
+  # ============================================================
   # gRPC
-  # ==========================================================
+  # ============================================================
 
   - name: trojan_grpc
     connect_timeout: 5s
@@ -884,7 +892,7 @@ admin:
 YAML
 
 # ============================================================
-# ENVOY ENGINE TEST
+# INTERNAL ENVOY TEST
 # ============================================================
 
 log "Testing internal Envoy configuration..."
@@ -911,6 +919,7 @@ log "Starting internal Envoy..."
 
 envoy \
     -c /tmp/envoy-engine.yaml \
+    --base-id 1 \
     --log-level info \
     >"$LOG_DIR/envoy-engine.log" 2>&1 &
 
@@ -935,17 +944,13 @@ wait_port 127.0.0.1 8300 "Internal Envoy" "$ENVOY_ENGINE_PID"
 
 log "Configuring Apache..."
 
-# ------------------------------------------------------------
-# Disable default Apache listeners/sites
-# ------------------------------------------------------------
-
 rm -f /etc/apache2/sites-enabled/*
 
 cat > /etc/apache2/ports.conf <<'APACHEPORTS'
 Listen 8400
 APACHEPORTS
 
-cat > /etc/apache2/sites-enabled/virgozki.conf <<'APACHE'
+cat > /etc/apache2/sites-available/virgozki.conf <<'APACHE'
 <VirtualHost 127.0.0.1:8400>
 
     ServerName localhost
@@ -957,6 +962,7 @@ cat > /etc/apache2/sites-enabled/virgozki.conf <<'APACHE'
     H2OutputBuffering off
 
     ProxyRequests Off
+    ProxyPreserveHost On
 
     ProxyTimeout 3600
 
@@ -977,38 +983,6 @@ cat > /etc/apache2/sites-enabled/virgozki.conf <<'APACHE'
     ProxyPassReverse /ss-grpc      http://127.0.0.1:10015
 
     # ========================================================
-    # WebSocket
-    # ========================================================
-
-    ProxyPass        /virgozki          ws://127.0.0.1:10000
-    ProxyPassReverse /virgozki          http://127.0.0.1:10000
-
-    ProxyPass        /vmess-virgozki    ws://127.0.0.1:10004
-    ProxyPassReverse /vmess-virgozki    http://127.0.0.1:10004
-
-    ProxyPass        /vless-virgozki    ws://127.0.0.1:10008
-    ProxyPassReverse /vless-virgozki    http://127.0.0.1:10008
-
-    ProxyPass        /ss-virgozki       ws://127.0.0.1:10012
-    ProxyPassReverse /ss-virgozki       http://127.0.0.1:10012
-
-    # ========================================================
-    # HTTP Upgrade
-    # ========================================================
-
-    ProxyPass        /virgozki-hu          http://127.0.0.1:10001
-    ProxyPassReverse /virgozki-hu          http://127.0.0.1:10001
-
-    ProxyPass        /vmess-virgozki-hu    http://127.0.0.1:10005
-    ProxyPassReverse /vmess-virgozki-hu    http://127.0.0.1:10005
-
-    ProxyPass        /vless-virgozki-hu    http://127.0.0.1:10009
-    ProxyPassReverse /vless-virgozki-hu    http://127.0.0.1:10009
-
-    ProxyPass        /ss-virgozki-hu       http://127.0.0.1:10013
-    ProxyPassReverse /ss-virgozki-hu       http://127.0.0.1:10013
-
-    # ========================================================
     # XHTTP
     # ========================================================
 
@@ -1024,6 +998,38 @@ cat > /etc/apache2/sites-enabled/virgozki.conf <<'APACHE'
     ProxyPass        /ss-virgozki-xhttp    http://127.0.0.1:10014
     ProxyPassReverse /ss-virgozki-xhttp    http://127.0.0.1:10014
 
+    # ========================================================
+    # HTTP Upgrade
+    # ========================================================
+
+    ProxyPass        /virgozki-hu       http://127.0.0.1:10001
+    ProxyPassReverse /virgozki-hu       http://127.0.0.1:10001
+
+    ProxyPass        /vmess-virgozki-hu http://127.0.0.1:10005
+    ProxyPassReverse /vmess-virgozki-hu http://127.0.0.1:10005
+
+    ProxyPass        /vless-virgozki-hu http://127.0.0.1:10009
+    ProxyPassReverse /vless-virgozki-hu http://127.0.0.1:10009
+
+    ProxyPass        /ss-virgozki-hu    http://127.0.0.1:10013
+    ProxyPassReverse /ss-virgozki-hu    http://127.0.0.1:10013
+
+    # ========================================================
+    # WebSocket
+    # ========================================================
+
+    ProxyPass        /virgozki       ws://127.0.0.1:10000
+    ProxyPassReverse /virgozki       http://127.0.0.1:10000
+
+    ProxyPass        /vmess-virgozki ws://127.0.0.1:10004
+    ProxyPassReverse /vmess-virgozki http://127.0.0.1:10004
+
+    ProxyPass        /vless-virgozki ws://127.0.0.1:10008
+    ProxyPassReverse /vless-virgozki http://127.0.0.1:10008
+
+    ProxyPass        /ss-virgozki ws://127.0.0.1:10012
+    ProxyPassReverse /ss-virgozki http://127.0.0.1:10012
+
     <Location />
         Require all granted
     </Location>
@@ -1035,15 +1041,15 @@ cat > /etc/apache2/sites-enabled/virgozki.conf <<'APACHE'
 APACHE
 
 # ------------------------------------------------------------
-# Enable required Apache modules
+# Enable Apache modules
 # ------------------------------------------------------------
 
-a2enmod proxy
-a2enmod proxy_http
-a2enmod proxy_http2
-a2enmod proxy_wstunnel
-a2enmod headers
-a2enmod http2
+a2enmod proxy >/dev/null 2>&1 || true
+a2enmod proxy_http >/dev/null 2>&1 || true
+a2enmod proxy_http2 >/dev/null 2>&1 || true
+a2enmod proxy_wstunnel >/dev/null 2>&1 || true
+a2enmod headers >/dev/null 2>&1 || true
+a2enmod http2 >/dev/null 2>&1 || true
 
 # ------------------------------------------------------------
 # Apache test
@@ -1168,10 +1174,6 @@ static_resources:
                   cluster: openresty_grpc
                   prefix_rewrite: /ss-grpc
 
-              # ==================================================
-              # OpenResty
-              # ==================================================
-
               - match:
                   prefix: /openresty/
                 route:
@@ -1206,10 +1208,6 @@ static_resources:
                   cluster: haproxy_grpc
                   prefix_rewrite: /ss-grpc
 
-              # ==================================================
-              # HAProxy
-              # ==================================================
-
               - match:
                   prefix: /haproxy/
                 route:
@@ -1217,7 +1215,7 @@ static_resources:
                   prefix_rewrite: /
 
               # ==================================================
-              # Envoy engine gRPC
+              # Internal Envoy gRPC
               # ==================================================
 
               - match:
@@ -1243,10 +1241,6 @@ static_resources:
                 route:
                   cluster: envoy_grpc
                   prefix_rewrite: /ss-grpc
-
-              # ==================================================
-              # Envoy engine
-              # ==================================================
 
               - match:
                   prefix: /envoy/
@@ -1282,10 +1276,6 @@ static_resources:
                   cluster: apache_grpc
                   prefix_rewrite: /ss-grpc
 
-              # ==================================================
-              # Apache
-              # ==================================================
-
               - match:
                   prefix: /apache/
                 route:
@@ -1316,7 +1306,6 @@ static_resources:
 
             typed_config:
               "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
-
 
   clusters:
 
@@ -1383,7 +1372,7 @@ static_resources:
                 port_value: 8202
 
   # ============================================================
-  # Envoy
+  # Internal Envoy
   # ============================================================
 
   - name: envoy_http
@@ -1444,7 +1433,6 @@ static_resources:
                 address: 127.0.0.1
                 port_value: 8400
 
-
 admin:
 
   address:
@@ -1482,6 +1470,7 @@ log "Starting public Envoy on 0.0.0.0:$PORT..."
 
 envoy \
     -c /tmp/envoy-front.yaml \
+    --base-id 2 \
     --log-level info \
     >"$LOG_DIR/envoy-front.log" 2>&1 &
 
