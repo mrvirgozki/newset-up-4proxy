@@ -1,7 +1,14 @@
 {
-  "log": { "loglevel": "warning" },
+  "log": {
+    "loglevel": "warning"
+  },
   "dns": {
-    "servers": ["8.8.8.8", "8.8.4.4", "1.1.1.1", "1.0.0.1"],
+    "servers": [
+      "8.8.8.8",
+      "8.8.4.4",
+      "1.1.1.1",
+      "1.0.0.1"
+    ],
     "queryStrategy": "UseIPv4",
     "disableCache": false,
     "hosts": {
@@ -41,95 +48,471 @@
     }
   },
   "inbounds": [
-    {"port":10000,"listen":"127.0.0.1","protocol":"trojan","tag":"trojan-ws",
-     "settings":{"clients":[{"password":"virgozki"}]},
-     "streamSettings":{"network":"ws","security":"none","wsSettings":{"path":"/virgozki"}},
-     "sniffing":{"enabled":true,"destOverride":["http","tls"],"routeOnly":true}},
-
-    {"port":10001,"listen":"127.0.0.1","protocol":"trojan","tag":"trojan-hu",
-     "settings":{"clients":[{"password":"virgozki"}]},
-     "streamSettings":{"network":"httpupgrade","security":"none","httpupgradeSettings":{"path":"/virgozki-hu"}},
-     "sniffing":{"enabled":true,"destOverride":["http","tls"],"routeOnly":true}},
-
-    {"port":10002,"listen":"127.0.0.1","protocol":"trojan","tag":"trojan-xhttp",
-     "settings":{"clients":[{"password":"virgozki"}]},
-     "streamSettings":{"network":"xhttp","security":"none","xhttpSettings":{"path":"/virgozki-xhttp","mode":"packet-upstream","noGRPCHeader":true,"keepAlivePeriod":30}},
-     "sniffing":{"enabled":true,"destOverride":["http","tls"],"routeOnly":true}},
-
-    {"port":10003,"listen":"127.0.0.1","protocol":"trojan","tag":"trojan-grpc",
-     "settings":{"clients":[{"password":"virgozki"}]},
-     "streamSettings":{"network":"grpc","security":"none","grpcSettings":{"serviceName":"/trojan-grpc","multiMode":true}},
-     "sniffing":{"enabled":true,"destOverride":["http","tls"],"routeOnly":true}},
-
-    {"port":10004,"listen":"127.0.0.1","protocol":"vmess","tag":"vmess-ws",
-     "settings":{"clients":[{"id":"b831381d-6324-4d53-ad4f-8cda48b30811","alterId":0,"email":"user@local"}]},
-     "streamSettings":{"network":"ws","security":"none","wsSettings":{"path":"/vmess-virgozki"}},
-     "sniffing":{"enabled":true,"destOverride":["http","tls"],"routeOnly":true}},
-
-    {"port":10005,"listen":"127.0.0.1","protocol":"vmess","tag":"vmess-hu",
-     "settings":{"clients":[{"id":"b831381d-6324-4d53-ad4f-8cda48b30811","alterId":0,"email":"user@local"}]},
-     "streamSettings":{"network":"httpupgrade","security":"none","httpupgradeSettings":{"path":"/vmess-virgozki-hu"}},
-     "sniffing":{"enabled":true,"destOverride":["http","tls"],"routeOnly":true}},
-
-    {"port":10006,"listen":"127.0.0.1","protocol":"vmess","tag":"vmess-xhttp",
-     "settings":{"clients":[{"id":"b831381d-6324-4d53-ad4f-8cda48b30811","alterId":0,"email":"user@local"}]},
-     "streamSettings":{"network":"xhttp","security":"none","xhttpSettings":{"path":"/vmess-virgozki-xhttp","mode":"packet-upstream","noGRPCHeader":true,"keepAlivePeriod":30}},
-     "sniffing":{"enabled":true,"destOverride":["http","tls"],"routeOnly":true}},
-
-    {"port":10007,"listen":"127.0.0.1","protocol":"vmess","tag":"vmess-grpc",
-     "settings":{"clients":[{"id":"b831381d-6324-4d53-ad4f-8cda48b30811","alterId":0,"email":"user@local"}]},
-     "streamSettings":{"network":"grpc","security":"none","grpcSettings":{"serviceName":"/vmess-grpc","multiMode":true}},
-     "sniffing":{"enabled":true,"destOverride":["http","tls"],"routeOnly":true}},
-
-    {"port":10008,"listen":"127.0.0.1","protocol":"vless","tag":"vless-ws",
-     "settings":{"clients":[{"id":"b831381d-6324-4d53-ad4f-8cda48b30811","email":"user@local"}],"decryption":"none"},
-     "streamSettings":{"network":"ws","security":"none","wsSettings":{"path":"/vless-virgozki"}},
-     "sniffing":{"enabled":true,"destOverride":["http","tls"],"routeOnly":true}},
-
-    {"port":10009,"listen":"127.0.0.1","protocol":"vless","tag":"vless-hu",
-     "settings":{"clients":[{"id":"b831381d-6324-4d53-ad4f-8cda48b30811","email":"user@local"}],"decryption":"none"},
-     "streamSettings":{"network":"httpupgrade","security":"none","httpupgradeSettings":{"path":"/vless-virgozki-hu"}},
-     "sniffing":{"enabled":true,"destOverride":["http","tls"],"routeOnly":true}},
-
-    {"port":10010,"listen":"127.0.0.1","protocol":"vless","tag":"vless-xhttp",
-     "settings":{"clients":[{"id":"b831381d-6324-4d53-ad4f-8cda48b30811","email":"user@local"}],"decryption":"none"},
-     "streamSettings":{"network":"xhttp","security":"none","xhttpSettings":{"path":"/vless-virgozki-xhttp","mode":"packet-upstream","noGRPCHeader":true,"keepAlivePeriod":30}},
-     "sniffing":{"enabled":true,"destOverride":["http","tls"],"routeOnly":true}},
-
-    {"port":10011,"listen":"127.0.0.1","protocol":"vless","tag":"vless-grpc",
-     "settings":{"clients":[{"id":"b831381d-6324-4d53-ad4f-8cda48b30811","email":"user@local"}],"decryption":"none"},
-     "streamSettings":{"network":"grpc","security":"none","grpcSettings":{"serviceName":"/vless-grpc","multiMode":true}},
-     "sniffing":{"enabled":true,"destOverride":["http","tls"],"routeOnly":true}},
-
-    {"port":10012,"listen":"127.0.0.1","protocol":"shadowsocks","tag":"ss-ws",
-     "settings":{"clients":[{"password":"virgozki","method":"aes-256-gcm"}]},
-     "streamSettings":{"network":"ws","security":"none","wsSettings":{"path":"/ss-virgozki"}},
-     "sniffing":{"enabled":true,"destOverride":["http","tls"],"routeOnly":true}},
-
-    {"port":10013,"listen":"127.0.0.1","protocol":"shadowsocks","tag":"ss-hu",
-     "settings":{"clients":[{"password":"virgozki","method":"aes-256-gcm"}]},
-     "streamSettings":{"network":"httpupgrade","security":"none","httpupgradeSettings":{"path":"/ss-virgozki-hu"}},
-     "sniffing":{"enabled":true,"destOverride":["http","tls"],"routeOnly":true}},
-
-    {"port":10014,"listen":"127.0.0.1","protocol":"shadowsocks","tag":"ss-xhttp",
-     "settings":{"clients":[{"password":"virgozki","method":"aes-256-gcm"}]},
-     "streamSettings":{"network":"xhttp","security":"none","xhttpSettings":{"path":"/ss-virgozki-xhttp","mode":"packet-upstream","noGRPCHeader":true,"keepAlivePeriod":30}},
-     "sniffing":{"enabled":true,"destOverride":["http","tls"],"routeOnly":true}},
-
-    {"port":10015,"listen":"127.0.0.1","protocol":"shadowsocks","tag":"ss-grpc",
-     "settings":{"clients":[{"password":"virgozki","method":"aes-256-gcm"}]},
-     "streamSettings":{"network":"grpc","security":"none","grpcSettings":{"serviceName":"/ss-grpc","multiMode":true}},
-     "sniffing":{"enabled":true,"destOverride":["http","tls"],"routeOnly":true}}
+    {
+      "port": 10000,
+      "listen": "127.0.0.1",
+      "protocol": "trojan",
+      "tag": "trojan-ws",
+      "settings": {
+        "clients": [
+          {
+            "password": "virgozki"
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "ws",
+        "security": "none",
+        "wsSettings": {
+          "path": "/virgozki"
+        }
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls"],
+        "routeOnly": true
+      }
+    },
+    {
+      "port": 10001,
+      "listen": "127.0.0.1",
+      "protocol": "trojan",
+      "tag": "trojan-hu",
+      "settings": {
+        "clients": [
+          {
+            "password": "virgozki"
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "httpupgrade",
+        "security": "none",
+        "httpupgradeSettings": {
+          "path": "/virgozki-hu"
+        }
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls"],
+        "routeOnly": true
+      }
+    },
+    {
+      "port": 10002,
+      "listen": "127.0.0.1",
+      "protocol": "trojan",
+      "tag": "trojan-xhttp",
+      "settings": {
+        "clients": [
+          {
+            "password": "virgozki"
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "xhttp",
+        "security": "none",
+        "xhttpSettings": {
+          "path": "/virgozki-xhttp",
+          "mode": "packet-upstream",
+          "noGRPCHeader": true,
+          "keepAlivePeriod": 30
+        }
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls"],
+        "routeOnly": true
+      }
+    },
+    {
+      "port": 10003,
+      "listen": "127.0.0.1",
+      "protocol": "trojan",
+      "tag": "trojan-grpc",
+      "settings": {
+        "clients": [
+          {
+            "password": "virgozki"
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "grpc",
+        "security": "none",
+        "grpcSettings": {
+          "serviceName": "/trojan-grpc",
+          "multiMode": true
+        }
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls"],
+        "routeOnly": true
+      }
+    },
+    {
+      "port": 10004,
+      "listen": "127.0.0.1",
+      "protocol": "vmess",
+      "tag": "vmess-ws",
+      "settings": {
+        "clients": [
+          {
+            "id": "b831381d-6324-4d53-ad4f-8cda48b30811",
+            "alterId": 0,
+            "email": "user@local"
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "ws",
+        "security": "none",
+        "wsSettings": {
+          "path": "/vmess-virgozki"
+        }
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls"],
+        "routeOnly": true
+      }
+    },
+    {
+      "port": 10005,
+      "listen": "127.0.0.1",
+      "protocol": "vmess",
+      "tag": "vmess-hu",
+      "settings": {
+        "clients": [
+          {
+            "id": "b831381d-6324-4d53-ad4f-8cda48b30811",
+            "alterId": 0,
+            "email": "user@local"
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "httpupgrade",
+        "security": "none",
+        "httpupgradeSettings": {
+          "path": "/vmess-virgozki-hu"
+        }
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls"],
+        "routeOnly": true
+      }
+    },
+    {
+      "port": 10006,
+      "listen": "127.0.0.1",
+      "protocol": "vmess",
+      "tag": "vmess-xhttp",
+      "settings": {
+        "clients": [
+          {
+            "id": "b831381d-6324-4d53-ad4f-8cda48b30811",
+            "alterId": 0,
+            "email": "user@local"
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "xhttp",
+        "security": "none",
+        "xhttpSettings": {
+          "path": "/vmess-virgozki-xhttp",
+          "mode": "packet-upstream",
+          "noGRPCHeader": true,
+          "keepAlivePeriod": 30
+        }
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls"],
+        "routeOnly": true
+      }
+    },
+    {
+      "port": 10007,
+      "listen": "127.0.0.1",
+      "protocol": "vmess",
+      "tag": "vmess-grpc",
+      "settings": {
+        "clients": [
+          {
+            "id": "b831381d-6324-4d53-ad4f-8cda48b30811",
+            "alterId": 0,
+            "email": "user@local"
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "grpc",
+        "security": "none",
+        "grpcSettings": {
+          "serviceName": "/vmess-grpc",
+          "multiMode": true
+        }
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls"],
+        "routeOnly": true
+      }
+    },
+    {
+      "port": 10008,
+      "listen": "127.0.0.1",
+      "protocol": "vless",
+      "tag": "vless-ws",
+      "settings": {
+        "clients": [
+          {
+            "id": "b831381d-6324-4d53-ad4f-8cda48b30811",
+            "email": "user@local"
+          }
+        ],
+        "decryption": "none"
+      },
+      "streamSettings": {
+        "network": "ws",
+        "security": "none",
+        "wsSettings": {
+          "path": "/vless-virgozki"
+        }
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls"],
+        "routeOnly": true
+      }
+    },
+    {
+      "port": 10009,
+      "listen": "127.0.0.1",
+      "protocol": "vless",
+      "tag": "vless-hu",
+      "settings": {
+        "clients": [
+          {
+            "id": "b831381d-6324-4d53-ad4f-8cda48b30811",
+            "email": "user@local"
+          }
+        ],
+        "decryption": "none"
+      },
+      "streamSettings": {
+        "network": "httpupgrade",
+        "security": "none",
+        "httpupgradeSettings": {
+          "path": "/vless-virgozki-hu"
+        }
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls"],
+        "routeOnly": true
+      }
+    },
+    {
+      "port": 10010,
+      "listen": "127.0.0.1",
+      "protocol": "vless",
+      "tag": "vless-xhttp",
+      "settings": {
+        "clients": [
+          {
+            "id": "b831381d-6324-4d53-ad4f-8cda48b30811",
+            "email": "user@local"
+          }
+        ],
+        "decryption": "none"
+      },
+      "streamSettings": {
+        "network": "xhttp",
+        "security": "none",
+        "xhttpSettings": {
+          "path": "/vless-virgozki-xhttp",
+          "mode": "packet-upstream",
+          "noGRPCHeader": true,
+          "keepAlivePeriod": 30
+        }
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls"],
+        "routeOnly": true
+      }
+    },
+    {
+      "port": 10011,
+      "listen": "127.0.0.1",
+      "protocol": "vless",
+      "tag": "vless-grpc",
+      "settings": {
+        "clients": [
+          {
+            "id": "b831381d-6324-4d53-ad4f-8cda48b30811",
+            "email": "user@local"
+          }
+        ],
+        "decryption": "none"
+      },
+      "streamSettings": {
+        "network": "grpc",
+        "security": "none",
+        "grpcSettings": {
+          "serviceName": "/vless-grpc",
+          "multiMode": true
+        }
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls"],
+        "routeOnly": true
+      }
+    },
+    {
+      "port": 10012,
+      "listen": "127.0.0.1",
+      "protocol": "shadowsocks",
+      "tag": "ss-ws",
+      "settings": {
+        "clients": [
+          {
+            "password": "virgozki",
+            "method": "aes-256-gcm"
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "ws",
+        "security": "none",
+        "wsSettings": {
+          "path": "/ss-virgozki"
+        }
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls"],
+        "routeOnly": true
+      }
+    },
+    {
+      "port": 10013,
+      "listen": "127.0.0.1",
+      "protocol": "shadowsocks",
+      "tag": "ss-hu",
+      "settings": {
+        "clients": [
+          {
+            "password": "virgozki",
+            "method": "aes-256-gcm"
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "httpupgrade",
+        "security": "none",
+        "httpupgradeSettings": {
+          "path": "/ss-virgozki-hu"
+        }
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls"],
+        "routeOnly": true
+      }
+    },
+    {
+      "port": 10014,
+      "listen": "127.0.0.1",
+      "protocol": "shadowsocks",
+      "tag": "ss-xhttp",
+      "settings": {
+        "clients": [
+          {
+            "password": "virgozki",
+            "method": "aes-256-gcm"
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "xhttp",
+        "security": "none",
+        "xhttpSettings": {
+          "path": "/ss-virgozki-xhttp",
+          "mode": "packet-upstream",
+          "noGRPCHeader": true,
+          "keepAlivePeriod": 30
+        }
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls"],
+        "routeOnly": true
+      }
+    },
+    {
+      "port": 10015,
+      "listen": "127.0.0.1",
+      "protocol": "shadowsocks",
+      "tag": "ss-grpc",
+      "settings": {
+        "clients": [
+          {
+            "password": "virgozki",
+            "method": "aes-256-gcm"
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "grpc",
+        "security": "none",
+        "grpcSettings": {
+          "serviceName": "/ss-grpc",
+          "multiMode": true
+        }
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls"],
+        "routeOnly": true
+      }
+    }
   ],
   "outbounds": [
-    {"protocol":"freedom","tag":"direct"},
-    {"protocol":"blackhole","tag":"block"}
+    {
+      "protocol": "freedom",
+      "tag": "direct"
+    },
+    {
+      "protocol": "blackhole",
+      "tag": "block"
+    }
   ],
   "routing": {
-    "domainStrategy":"IPIfNonMatch",
-    "rules":[
-      {"type":"field","domain":["geosite:category-ads-all"],"outboundTag":"block"},
-      {"type":"field","inboundTag":["trojan-ws","trojan-hu","trojan-xhttp","trojan-grpc","vmess-ws","vmess-hu","vmess-xhttp","vmess-grpc","vless-ws","vless-hu","vless-xhttp","vless-grpc","ss-ws","ss-hu","ss-xhttp","ss-grpc"],"outboundTag":"direct"}
+    "domainStrategy": "IPIfNonMatch",
+    "rules": [
+      {
+        "type": "field",
+        "domain": ["geosite:category-ads-all"],
+        "outboundTag": "block"
+      },
+      {
+        "type": "field",
+        "inboundTag": [
+          "trojan-ws", "trojan-hu", "trojan-xhttp", "trojan-grpc",
+          "vmess-ws", "vmess-hu", "vmess-xhttp", "vmess-grpc",
+          "vless-ws", "vless-hu", "vless-xhttp", "vless-grpc",
+          "ss-ws", "ss-hu", "ss-xhttp", "ss-grpc"
+        ],
+        "outboundTag": "direct"
+      }
     ]
   }
 }
