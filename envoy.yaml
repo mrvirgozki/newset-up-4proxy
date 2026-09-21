@@ -53,157 +53,193 @@ static_resources:
             virtual_hosts:
 
             - name: local_service
+
               domains:
               - "*"
 
               routes:
 
-              # ------------------------------------------------
+              # =================================================
               # HEALTH
-              # ------------------------------------------------
+              # =================================================
 
               - match:
                   path: /health
+
                 direct_response:
                   status: 200
+
                   body:
                     inline_string: "ok\n"
 
 
-              # ------------------------------------------------
+              # =================================================
               # gRPC
-              # IMPORTANT:
-              # gRPC path is /serviceName/method
-              # so prefix matching is required.
-              # ------------------------------------------------
+              #
+              # /serviceName/method
+              #
+              # Envoy -> Xray gRPC :10012-10015
+              # =================================================
 
               - match:
                   prefix: /vless-grpc-virgozki/
+
                 route:
                   cluster: vless_grpc
                   timeout: 0s
 
+
               - match:
                   prefix: /vmess-grpc-virgozki/
+
                 route:
                   cluster: vmess_grpc
                   timeout: 0s
 
+
               - match:
                   prefix: /trojan-grpc-virgozki/
+
                 route:
                   cluster: trojan_grpc
                   timeout: 0s
 
+
               - match:
                   prefix: /ss-grpc-virgozki/
+
                 route:
                   cluster: ss_grpc
                   timeout: 0s
 
 
-              # ------------------------------------------------
+              # =================================================
               # TROJAN
-              # ------------------------------------------------
+              # =================================================
 
               - match:
                   path: /virgozki
+
                 route:
                   cluster: trojan_ws
                   timeout: 0s
 
+
               - match:
                   path: /virgozki-hu
+
                 route:
                   cluster: trojan_hu
                   timeout: 0s
 
+
               - match:
                   path: /virgozki-xhttp
+
                 route:
                   cluster: trojan_xhttp
                   timeout: 0s
 
 
-              # ------------------------------------------------
+              # =================================================
               # VMESS
-              # ------------------------------------------------
+              # =================================================
 
               - match:
                   path: /vmess-virgozki
+
                 route:
                   cluster: vmess_ws
                   timeout: 0s
 
+
               - match:
                   path: /vmess-virgozki-hu
+
                 route:
                   cluster: vmess_hu
                   timeout: 0s
 
+
               - match:
                   path: /vmess-virgozki-xhttp
+
                 route:
                   cluster: vmess_xhttp
                   timeout: 0s
 
 
-              # ------------------------------------------------
+              # =================================================
               # VLESS
-              # ------------------------------------------------
+              # =================================================
 
               - match:
                   path: /vless-virgozki
+
                 route:
                   cluster: vless_ws
                   timeout: 0s
 
+
               - match:
                   path: /vless-virgozki-hu
+
                 route:
                   cluster: vless_hu
                   timeout: 0s
 
+
               - match:
                   path: /vless-virgozki-xhttp
+
                 route:
                   cluster: vless_xhttp
                   timeout: 0s
 
 
-              # ------------------------------------------------
+              # =================================================
               # SHADOWSOCKS
-              # ------------------------------------------------
+              # =================================================
 
               - match:
                   path: /ss-virgozki
+
                 route:
                   cluster: ss_ws
                   timeout: 0s
 
+
               - match:
                   path: /ss-virgozki-hu
+
                 route:
                   cluster: ss_hu
                   timeout: 0s
 
+
               - match:
                   path: /ss-virgozki-xhttp
+
                 route:
                   cluster: ss_xhttp
                   timeout: 0s
 
 
-              # ------------------------------------------------
+              # =================================================
               # NORMAL WEBSITE
-              # ------------------------------------------------
+              # =================================================
 
               - match:
                   prefix: /
+
                 route:
                   cluster: apache_web
                   timeout: 60s
 
+
+  # ============================================================
+  # CLUSTERS
+  # ============================================================
 
   clusters:
 
@@ -215,8 +251,10 @@ static_resources:
     connect_timeout: 5s
     type: STATIC
     lb_policy: ROUND_ROBIN
+
     load_assignment:
       cluster_name: trojan_ws
+
       endpoints:
       - lb_endpoints:
         - endpoint:
@@ -225,12 +263,15 @@ static_resources:
                 address: 127.0.0.1
                 port_value: 10000
 
+
   - name: trojan_hu
     connect_timeout: 5s
     type: STATIC
     lb_policy: ROUND_ROBIN
+
     load_assignment:
       cluster_name: trojan_hu
+
       endpoints:
       - lb_endpoints:
         - endpoint:
@@ -239,12 +280,15 @@ static_resources:
                 address: 127.0.0.1
                 port_value: 10001
 
+
   - name: trojan_xhttp
     connect_timeout: 5s
     type: STATIC
     lb_policy: ROUND_ROBIN
+
     load_assignment:
       cluster_name: trojan_xhttp
+
       endpoints:
       - lb_endpoints:
         - endpoint:
@@ -262,8 +306,10 @@ static_resources:
     connect_timeout: 5s
     type: STATIC
     lb_policy: ROUND_ROBIN
+
     load_assignment:
       cluster_name: vmess_ws
+
       endpoints:
       - lb_endpoints:
         - endpoint:
@@ -272,12 +318,15 @@ static_resources:
                 address: 127.0.0.1
                 port_value: 10003
 
+
   - name: vmess_hu
     connect_timeout: 5s
     type: STATIC
     lb_policy: ROUND_ROBIN
+
     load_assignment:
       cluster_name: vmess_hu
+
       endpoints:
       - lb_endpoints:
         - endpoint:
@@ -286,12 +335,15 @@ static_resources:
                 address: 127.0.0.1
                 port_value: 10004
 
+
   - name: vmess_xhttp
     connect_timeout: 5s
     type: STATIC
     lb_policy: ROUND_ROBIN
+
     load_assignment:
       cluster_name: vmess_xhttp
+
       endpoints:
       - lb_endpoints:
         - endpoint:
@@ -309,8 +361,10 @@ static_resources:
     connect_timeout: 5s
     type: STATIC
     lb_policy: ROUND_ROBIN
+
     load_assignment:
       cluster_name: vless_ws
+
       endpoints:
       - lb_endpoints:
         - endpoint:
@@ -319,12 +373,15 @@ static_resources:
                 address: 127.0.0.1
                 port_value: 10006
 
+
   - name: vless_hu
     connect_timeout: 5s
     type: STATIC
     lb_policy: ROUND_ROBIN
+
     load_assignment:
       cluster_name: vless_hu
+
       endpoints:
       - lb_endpoints:
         - endpoint:
@@ -333,12 +390,15 @@ static_resources:
                 address: 127.0.0.1
                 port_value: 10007
 
+
   - name: vless_xhttp
     connect_timeout: 5s
     type: STATIC
     lb_policy: ROUND_ROBIN
+
     load_assignment:
       cluster_name: vless_xhttp
+
       endpoints:
       - lb_endpoints:
         - endpoint:
@@ -356,8 +416,10 @@ static_resources:
     connect_timeout: 5s
     type: STATIC
     lb_policy: ROUND_ROBIN
+
     load_assignment:
       cluster_name: ss_ws
+
       endpoints:
       - lb_endpoints:
         - endpoint:
@@ -366,12 +428,15 @@ static_resources:
                 address: 127.0.0.1
                 port_value: 10009
 
+
   - name: ss_hu
     connect_timeout: 5s
     type: STATIC
     lb_policy: ROUND_ROBIN
+
     load_assignment:
       cluster_name: ss_hu
+
       endpoints:
       - lb_endpoints:
         - endpoint:
@@ -380,12 +445,15 @@ static_resources:
                 address: 127.0.0.1
                 port_value: 10010
 
+
   - name: ss_xhttp
     connect_timeout: 5s
     type: STATIC
     lb_policy: ROUND_ROBIN
+
     load_assignment:
       cluster_name: ss_xhttp
+
       endpoints:
       - lb_endpoints:
         - endpoint:
@@ -396,8 +464,10 @@ static_resources:
 
 
   # ============================================================
-  # gRPC Xray
-  # HTTP/2 / h2c upstream
+  # gRPC X-RAY
+  #
+  # Envoy -> Xray
+  # HTTP/2 h2c
   # ============================================================
 
   - name: vless_grpc
@@ -409,6 +479,7 @@ static_resources:
 
     load_assignment:
       cluster_name: vless_grpc
+
       endpoints:
       - lb_endpoints:
         - endpoint:
@@ -427,6 +498,7 @@ static_resources:
 
     load_assignment:
       cluster_name: vmess_grpc
+
       endpoints:
       - lb_endpoints:
         - endpoint:
@@ -445,6 +517,7 @@ static_resources:
 
     load_assignment:
       cluster_name: trojan_grpc
+
       endpoints:
       - lb_endpoints:
         - endpoint:
@@ -463,6 +536,7 @@ static_resources:
 
     load_assignment:
       cluster_name: ss_grpc
+
       endpoints:
       - lb_endpoints:
         - endpoint:
@@ -483,6 +557,7 @@ static_resources:
 
     load_assignment:
       cluster_name: apache_web
+
       endpoints:
       - lb_endpoints:
         - endpoint:
@@ -491,6 +566,10 @@ static_resources:
                 address: 127.0.0.1
                 port_value: 8083
 
+
+# ==============================================================
+# ENVOY ADMIN
+# ==============================================================
 
 admin:
   access_log_path: /dev/stdout
