@@ -53,7 +53,7 @@ mkdir -p \
 /var/log/xray
 
 # ==============================================
-# ✅ CHECK BINARIES
+# ✅ CHECK BINARIES (DAGDAG NA NETCAT)
 # ==============================================
 echo "[check] 🔍 Verifying binaries..."
 command -v xray >/dev/null || { echo "❌ Missing: xray"; exit 1; }
@@ -62,6 +62,7 @@ command -v haproxy >/dev/null || { echo "❌ Missing: haproxy"; exit 1; }
 command -v apache2ctl >/dev/null || { echo "❌ Missing: apache2ctl"; exit 1; }
 command -v envoy >/dev/null || { echo "❌ Missing: envoy"; exit 1; }
 command -v python3 >/dev/null || { echo "❌ Missing: python3"; exit 1; }
+command -v nc >/dev/null || { echo "❌ Missing: netcat (nc) — install sa Dockerfile"; exit 1; }
 
 # ==============================================
 # CHECK CONFIG FILES
@@ -72,12 +73,14 @@ for f in "$XRAY_CONFIG" "$NGINX_CONFIG" "$HAPROXY_CONFIG"; do
 done
 
 # ==============================================
-# ✅ AYOS NA SED — TUGMA SA BAGONG NGINX FORMAT
+# ✅ PINABUTING SED — SIGURADONG LOCAL LANG
 # ==============================================
-echo "[config] 🔧 Updating OpenResty ports to local only..."
-# Palitan ang lahat ng listen address papuntang 127.0.0.1, iwas conflict sa Envoy
-sed -i -E "s/^(\s*)listen\s+[0-9.]+:8080;/\1listen 127.0.0.1:${OPENRESTY_PORT};/" "$NGINX_CONFIG"
-sed -i -E "s/^(\s*)listen\s+[0-9.]+:8085;/\1listen 127.0.0.1:${OPENRESTY_GRPC_PORT};/" "$NGINX_CONFIG"
+echo "[config] 🔧 Updating OpenResty to listen ONLY on 127.0.0.1..."
+# Palitan lahat ng listen sa 0.0.0.0 papuntang local
+sed -i 's/listen\s*0\.0\.0\.0:/listen 127.0.0.1:/g' "$NGINX_CONFIG"
+# Itakda ang tamang port para sa main at gRPC
+sed -i -E "s/listen\s+127\.0\.0\.1:8080;/listen 127.0.0.1:${OPENRESTY_PORT};/" "$NGINX_CONFIG"
+sed -i -E "s/listen\s+127\.0\.0\.1:8085;/listen 127.0.0.1:${OPENRESTY_GRPC_PORT};/" "$NGINX_CONFIG"
 
 # ==============================================
 # VALIDATE ALL CONFIGS
@@ -117,7 +120,7 @@ sleep 2
 echo "[start] ⚖️ Starting HAProxy..."
 haproxy -db -f "$HAPROXY_CONFIG" > /tmp/virgozki-logs/haproxy.log 2>&1 &
 PIDS+=($!)
-sleep 3  # ✅ Pahabain ng kaunti para siguradong handa
+sleep 3
 
 # ==============================================
 # ✅ AUTO-GENERATE ENVOY CONFIG (PUBLIC PORT 8080)
@@ -180,20 +183,37 @@ echo "[start] 🌐 Starting Envoy — listening on PUBLIC $BIND_ADDR:$PORT..."
 envoy -c "$ENVOY_CONFIG" --log-level warning > /tmp/virgozki-logs/envoy.log 2>&1 &
 PIDS+=($!)
 
-# ✅ MAHALAGA: Pahabain bago ipakita na running — para hindi ma-timeout ang Cloud Run
-sleep 10
+# ==============================================
+# ✅ PAGHIHINTAY TALAGA HANGGANG BUKSAN ANG PORT
+# ==============================================
+echo "[wait] ⏳ Waiting for public port $PORT to be ready..."
+READY=0
+for i in {1..30}; do
+    if nc -z "$BIND_ADDR" "$PORT"; then
+        READY=1
+        echo "[ready] ✅ Successfully listening on $BIND_ADDR:$PORT!"
+        break
+    fi
+    echo "  ...Waiting ($i/30)..."
+    sleep 1
+done
+
+if [ "$READY" -ne 1 ]; then
+    echo "❌ CRITICAL: Port $PORT never opened within 30 seconds!"
+    echo "📋 Envoy logs:"
+    tail -n 20 /tmp/virgozki-logs/envoy.log
+    exit 1
+fi
 
 # ==============================================
-# FINAL STATUS — IPAPAKITA LANG PAG SIGURADONG LISTENING NA
+# FINAL STATUS
 # ==============================================
 echo "======================================"
-echo " ✅ ALL SERVICES RUNNING — LISTENING ON $PORT"
+echo " ✅ ALL SERVICES RUNNING SUCCESSFULLY"
 echo "======================================"
 echo "🌐 Public Access : $BIND_ADDR:$PORT"
 echo "⚖️ HAProxy       : 127.0.0.1:$HAPROXY_PORT"
 echo "🔄 OpenResty     : 127.0.0.1:$OPENRESTY_PORT / $OPENRESTY_GRPC_PORT"
-echo "🌐 Panel Ready    : / index.html"
-echo "🛡️ Anti-DDoS     : Active"
 echo "======================================"
 
 # ==============================================
@@ -202,11 +222,11 @@ echo "======================================"
 while true; do
     for pid in "${PIDS[@]}"; do
         if ! kill -0 "$pid" 2>/dev/null; then
-            echo -e "\n❌ CRITICAL: Process stopped!"
-            echo -e "\n📋 Recent logs:"
+            echo -e "\n❌ CRITICAL: Process stopped unexpectedly!"
             tail -n 15 /tmp/virgozki-logs/*.log 2>/dev/null || true
             exit 1
         fi
     done
     sleep 5
 done
+
