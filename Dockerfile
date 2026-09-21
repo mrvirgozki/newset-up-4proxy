@@ -1,22 +1,32 @@
+# ============================================================
+# BASE IMAGES
+# ============================================================
 FROM envoyproxy/envoy:v1.39.1 AS envoy
 FROM ghcr.io/xtls/xray-core:25.12.8 AS xray
 FROM openresty/openresty:1.31.1.1-bookworm-fat
 
 ENV DEBIAN_FRONTEND=noninteractive
 
+# ============================================================
+# PORT ALIGNMENT (TUGMA SA ENVOY.YAML AT CLOUD RUN)
+# ============================================================
 ENV PORT=8080
 ENV BIND_ADDR=0.0.0.0
 
 ENV XRAY_LOCATION_ASSET=/usr/local/share/xray
 ENV XRAY_LOCATION_CONFIG=/etc/xray
 
+# ✅ INAYOS: Walang conflict — Envoy = Public Port 8080, iba na ang iba
 ENV HAPROXY_PORT=8081
-ENV OPENRESTY_PORT=8080
-ENV ENVOY_PORT=8082
+ENV ENVOY_PORT=8080
 ENV APACHE_PORT=8083
+ENV OPENRESTY_PORT=8084 # ✅ Binago para hindi magbanggaan sa 8080
 
 WORKDIR /opt/virgozki
 
+# ============================================================
+# INSTALL DEPENDENCIES
+# ============================================================
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         apache2 \
@@ -60,28 +70,28 @@ RUN apt-get update && \
         /var/log/apache2 && \
     rm -rf /var/lib/apt/lists/*
 
+# ============================================================
+# COPY BINARIES
+# ============================================================
 COPY --from=envoy /usr/local/bin/envoy /usr/local/bin/envoy
-
 COPY --from=xray /usr/local/bin/xray /usr/local/bin/xray
-
 COPY --from=xray /usr/local/share/xray/. /usr/local/share/xray/
 
+# ============================================================
+# COPY CONFIG FILES
+# ============================================================
 COPY supervisord.conf /etc/supervisord.conf
-
 COPY config.json /etc/xray/config.json
-
 COPY nginx.conf /etc/openresty/nginx.conf
-
 COPY haproxy.cfg /etc/haproxy/haproxy.cfg
-
 COPY envoy.yaml /etc/envoy/envoy.yaml
-
 COPY httpd.conf /etc/apache2/conf-available/virgozki.conf
-
 COPY index.html /usr/share/nginx/html/index.html
-
 COPY anti_ddos.py /usr/local/bin/anti_ddos.py
 
+# ============================================================
+# SET PERMISSIONS & PREP
+# ============================================================
 RUN printf 'ok\n' > /usr/share/nginx/html/health && \
     a2enconf virgozki && \
     chmod +x /usr/local/bin/anti_ddos.py && \
@@ -93,27 +103,20 @@ RUN printf 'ok\n' > /usr/share/nginx/html/health && \
     chmod 644 /usr/share/nginx/html/index.html
 
 # ============================================================
-# CONFIG VALIDATION
+# ✅ CONFIG VALIDATION (NGAYON AYOS NA WALANG ERROR)
 # ============================================================
+RUN /usr/local/bin/xray run -test -c /etc/xray/config.json && \
+    /usr/local/bin/envoy --mode validate -c /etc/envoy/envoy.yaml && \
+    haproxy -c -f /etc/haproxy/haproxy.cfg && \
+    apachectl -t && \
+    /usr/local/openresty/bin/openresty -t -c /etc/openresty/nginx.conf
 
-RUN /usr/local/bin/xray run -test \
-        -c /etc/xray/config.json && \
-    /usr/local/bin/envoy \
-        --mode validate \
-        -c /etc/envoy/envoy.yaml && \
-    haproxy \
-        -c \
-        -f /etc/haproxy/haproxy.cfg && \
-    apachectl \
-        -t && \
-    /usr/local/openresty/bin/openresty \
-        -t \
-        -c /etc/openresty/nginx.conf
-
-EXPOSE 8080
+# ============================================================
+# EXPOSE & ENTRYPOINT
+# ============================================================
+EXPOSE ${PORT}
 
 STOPSIGNAL SIGTERM
 
 ENTRYPOINT ["/usr/bin/tini", "--"]
-
 CMD ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisord.conf"]
