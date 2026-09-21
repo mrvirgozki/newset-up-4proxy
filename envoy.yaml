@@ -1,11 +1,10 @@
 static_resources:
-
   listeners:
   - name: main_listener
     address:
       socket_address:
-        address: 0.0.0.0  # Pinalitan ko ng 0.0.0.0 para accessible sa Cloud Run, pwede mong ibalik sa 127.0.0.1 kung gusto mo
-        port_value: 8080  # Standard port para sa Cloud Run / 8082 pwede pa rin
+        address: 0.0.0.0
+        port_value: 8080
 
     filter_chains:
     - filters:
@@ -36,7 +35,6 @@ static_resources:
             - name: local_service
               domains:
               - "*"
-              # ✅ TAMA NGAYON: Ilagay dito ang request_headers_to_add
               request_headers_to_add:
               - header:
                   key: x-forwarded-proto
@@ -44,7 +42,6 @@ static_resources:
                 append_action: OVERWRITE_IF_EXISTS_OR_ADD
 
               routes:
-              # HEALTH CHECK
               - match:
                   path: /health
                 direct_response:
@@ -52,32 +49,27 @@ static_resources:
                   body:
                     inline_string: "ok\n"
 
-              # gRPC ROUTES
               - match:
                   prefix: /vless-grpc-virgozki/
                 route:
                   cluster: vless_grpc
                   timeout: 0s
-
               - match:
                   prefix: /vmess-grpc-virgozki/
                 route:
                   cluster: vmess_grpc
                   timeout: 0s
-
               - match:
                   prefix: /trojan-grpc-virgozki/
                 route:
                   cluster: trojan_grpc
                   timeout: 0s
-
               - match:
                   prefix: /ss-grpc-virgozki/
                 route:
                   cluster: ss_grpc
                   timeout: 0s
 
-              # TROJAN ROUTES
               - match:
                   path: /virgozki
                 route:
@@ -94,7 +86,6 @@ static_resources:
                   cluster: trojan_xhttp
                   timeout: 0s
 
-              # VMESS ROUTES
               - match:
                   path: /vmess-virgozki
                 route:
@@ -111,7 +102,6 @@ static_resources:
                   cluster: vmess_xhttp
                   timeout: 0s
 
-              # VLESS ROUTES
               - match:
                   path: /vless-virgozki
                 route:
@@ -128,7 +118,6 @@ static_resources:
                   cluster: vless_xhttp
                   timeout: 0s
 
-              # SHADOWSOCKS ROUTES
               - match:
                   path: /ss-virgozki
                 route:
@@ -145,16 +134,13 @@ static_resources:
                   cluster: ss_xhttp
                   timeout: 0s
 
-              # DEFAULT / WEB ROUTE
               - match:
                   prefix: /
                 route:
                   cluster: apache_web
                   timeout: 60s
 
-  # CLUSTERS (Wala binago dito, tama lahat!)
   clusters:
-  # TROJAN
   - name: trojan_ws
     connect_timeout: 5s
     type: STATIC
@@ -195,7 +181,6 @@ static_resources:
                 address: 127.0.0.1
                 port_value: 10002
 
-  # VMESS
   - name: vmess_ws
     connect_timeout: 5s
     type: STATIC
@@ -208,7 +193,7 @@ static_resources:
             address:
               socket_address:
                 address: 127.0.0.1
-               port_value: 10003
+                port_value: 10003
   - name: vmess_hu
     connect_timeout: 5s
     type: STATIC
@@ -236,7 +221,6 @@ static_resources:
                 address: 127.0.0.1
                 port_value: 10005
 
-  # VLESS
   - name: vless_ws
     connect_timeout: 5s
     type: STATIC
@@ -277,7 +261,6 @@ static_resources:
                 address: 127.0.0.1
                 port_value: 10008
 
-  # SHADOWSOCKS
   - name: ss_ws
     connect_timeout: 5s
     type: STATIC
@@ -318,7 +301,6 @@ static_resources:
                 address: 127.0.0.1
                 port_value: 10011
 
-  # gRPC CLUSTERS
   - name: vless_grpc
     connect_timeout: 5s
     type: STATIC
@@ -376,7 +358,6 @@ static_resources:
                 address: 127.0.0.1
                 port_value: 10015
 
-  # APACHE WEB
   - name: apache_web
     connect_timeout: 5s
     type: STATIC
@@ -397,4 +378,3 @@ admin:
     socket_address:
       address: 127.0.0.1
       port_value: 9901
-
