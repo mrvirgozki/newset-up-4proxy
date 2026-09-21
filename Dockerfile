@@ -1,9 +1,15 @@
+# ==============================================
+# MULTI-STAGE BASE IMAGES
+# ==============================================
 FROM envoyproxy/envoy:v1.39.1 AS envoy
 FROM ghcr.io/xtls/xray-core:25.12.8 AS xray
 FROM openresty/openresty:1.31.1.1-bookworm-fat
 
 ENV DEBIAN_FRONTEND=noninteractive
 
+# ==============================================
+# PORT CONFIG — TUGMA SA CLOUD RUN
+# ==============================================
 ENV PORT="${PORT:-8080}"
 ENV BIND_ADDR="${BIND_ADDR:-0.0.0.0}"
 
@@ -19,7 +25,10 @@ ENV OPENRESTY_GRPC_PORT="${OPENRESTY_GRPC_PORT:-8085}"
 
 WORKDIR /opt/virgozki
 
-RUN apt-get update && \
+# ==============================================
+# INSTALL DEPENDENCIES — IDINAGDAG ANG PYTHON3 PARA SA ANTI-DDOS
+# ==============================================
+RUN apt-get update && apt-get upgrade -y && \
 apt-get install -y --no-install-recommends \
 apache2 \
 apache2-utils \
@@ -32,16 +41,15 @@ tini \
 procps \
 iproute2 \
 net-tools \
-openssl && \
-a2enmod \
-proxy \
-proxy_http \
-proxy_wstunnel \
-headers \
-rewrite \
-http2 && \
-# ✅ Idinagdag: Tanggalin default Apache site para walang conflict
+openssl \
+python3 \
+python3-pip \
+iptables && \
+# ✅ ENABLE APACHE MODULES
+a2enmod proxy proxy_http proxy_wstunnel headers rewrite http2 ssl && \
+# ✅ DISABLE DEFAULT SITE PARA WALANG CONFLICT
 a2dissite 000-default && \
+# ✅ CREATE ALL REQUIRED DIRECTORIES
 mkdir -p \
 /etc/xray \
 /etc/haproxy \
@@ -56,23 +64,38 @@ mkdir -p \
 /run/haproxy \
 /var/log/xray \
 /var/log/apache2 && \
+# ✅ LINISIN ANG CACHE PARA MABILIS ANG BUILD
 rm -rf /var/lib/apt/lists/*
 
+# ==============================================
+# COPY BINARIES
+# ==============================================
 COPY --from=envoy /usr/local/bin/envoy /usr/local/bin/envoy
 COPY --from=xray /usr/local/bin/xray /usr/local/bin/xray
 COPY --from=xray /usr/local/share/xray/. /usr/local/share/xray/
 
+# ==============================================
+# COPY CONFIG FILES — KASAMA NA ANG ANTI-DDOS
+# ==============================================
 COPY config.json /etc/xray/config.json
 COPY nginx.conf /etc/openresty/nginx.conf
 COPY haproxy.cfg /etc/haproxy/haproxy.cfg
 COPY httpd.conf /etc/apache2/conf-available/virgozki.conf
 COPY index.html /usr/share/nginx/html/index.html
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY anti_ddos.py /usr/local/bin/anti_ddos.py
 
+# ==============================================
+# FINAL PERMISSIONS & SETUP
+# ==============================================
 RUN a2enconf virgozki && \
-chmod +x /usr/local/bin/entrypoint.sh
+chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/anti_ddos.py && \
+chown -R www-data:www-data /usr/share/nginx/html /var/log/apache2 /var/run/apache2 /run/haproxy /tmp/virgozki-logs
 
-EXPOSE 8080
+# ==============================================
+# EXPOSE PORTS
+# ==============================================
+EXPOSE 8080 8081 8083 8085
 
 STOPSIGNAL SIGTERM
 
