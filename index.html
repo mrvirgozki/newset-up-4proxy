@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>VIRGOZKI | CYBER SECURE PANEL</title>
+
     <style>
         :root {
             --neon-green: #00ff9d;
@@ -30,18 +31,24 @@
             min-height: 100vh;
             color: var(--text);
             padding: 18px 14px;
-            background: radial-gradient(circle at top, #0b152b 0%, var(--bg-main) 65%, #010208 100%);
+            background: radial-gradient(
+                circle at top,
+                #0b152b 0%,
+                var(--bg-main) 65%,
+                #010208 100%
+            );
             overflow-x: hidden;
         }
 
         body::before {
             content: '';
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: repeating-linear-gradient(transparent, rgba(0, 255, 157, 0.018) 1px, transparent 2px);
+            inset: 0;
+            background: repeating-linear-gradient(
+                transparent,
+                rgba(0, 255, 157, 0.018) 1px,
+                transparent 2px
+            );
             pointer-events: none;
             z-index: 0;
         }
@@ -61,7 +68,12 @@
             border-radius: 2px;
             padding: 20px 18px;
             position: relative;
-            clip-path: polygon(0 0, 100% 0, 97% 100%, 0 100%);
+            clip-path: polygon(
+                0 0,
+                100% 0,
+                97% 100%,
+                0 100%
+            );
         }
 
         .corner-mark {
@@ -131,7 +143,7 @@
         }
 
         @keyframes blink {
-            0%,100% { opacity: 1; }
+            0%, 100% { opacity: 1; }
             50% { opacity: 0.2; }
         }
 
@@ -176,7 +188,7 @@
             flex: 1;
             min-height: 70px;
             padding: 10px;
-            background: rgba(0,0,0,0.25);
+            background: rgba(0, 0, 0, 0.25);
             border: 1px solid rgba(0, 255, 157, 0.15);
             border-radius: 2px;
             color: var(--neon-blue);
@@ -296,7 +308,7 @@
             font-size: 9px;
             line-height: 1.4;
             color: var(--text-dim);
-            background: rgba(0,0,0,0.15);
+            background: rgba(0, 0, 0, 0.15);
             padding: 6px;
             border: 1px solid rgba(255, 42, 85, 0.1);
         }
@@ -501,7 +513,6 @@
             position: fixed;
             top: 18px;
             right: 18px;
-            left: auto;
             width: 140px;
             border: 1px solid rgba(199, 125, 255, 0.4);
             border-radius: 3px;
@@ -524,7 +535,7 @@
             width: 100%;
             padding: 2px 0;
             margin-bottom: 5px;
-            border-bottom: 1px solid rgba(199,125,255,0.2);
+            border-bottom: 1px solid rgba(199, 125, 255, 0.2);
             text-align: center;
             font-size: 8px;
             color: var(--neon-purple);
@@ -571,8 +582,7 @@
 
         .cyber-modal {
             position: fixed;
-            top: 0;
-            left: 0;
+            inset: 0;
             width: 100%;
             height: 100%;
             background: rgba(2, 5, 16, 0.96);
@@ -608,7 +618,6 @@
 
         .modal-list::-webkit-scrollbar-thumb {
             background: var(--border);
-            border-radius: 0;
         }
 
         .modal-item {
@@ -648,8 +657,7 @@
 
         .cyber-loading {
             position: fixed;
-            top: 0;
-            left: 0;
+            inset: 0;
             width: 100%;
             height: 100%;
             background: var(--bg-main);
@@ -675,7 +683,7 @@
         }
 
         @keyframes pulse {
-            0%,100% { opacity: 1; }
+            0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
         }
 
@@ -683,7 +691,6 @@
             width: 190px;
             height: 4px;
             background: rgba(0, 255, 157, 0.1);
-            border-radius: 0;
             overflow: hidden;
         }
 
@@ -706,17 +713,19 @@
 
 <div class="cyber-loading" id="loading-screen">
     <div class="load-text">INITIALIZING SYSTEM...</div>
+
     <div class="load-bar">
         <div class="load-fill"></div>
     </div>
-    <div class="load-sub" style="margin-top:10px; font-size:12px; color:var(--text-dim);">
+
+    <div style="margin-top:10px; font-size:12px; color:var(--text-dim);">
         LOADING SECURE INTERFACE
     </div>
 </div>
 
 <div class="container" id="main-content" style="display:none;">
 
-    <!-- ==================== HEADER ==================== -->
+    <!-- HEADER -->
     <div class="cyber-header">
         <div class="corner-mark"></div>
         <div class="corner-mark"></div>
@@ -724,61 +733,100 @@
         <div class="corner-mark"></div>
 
         <div class="header-title">VIRGOZKI VPN SYSTEM</div>
-        <div class="header-sub">SECURE CONNECTION INTERFACE v2.5.0</div>
+        <div class="header-sub">
+            SECURE CONNECTION INTERFACE v2.6.0
+        </div>
 
         <div class="status-line">
             <div class="pulse-dot"></div>
             <span>ONLINE | ENCRYPTED</span>
-            <span class="uptime" id="runtime-display">00:00:00</span>
+            <span class="uptime" id="runtime-display">
+                00:00:00
+            </span>
         </div>
     </div>
 
-    <!-- ==================== PROXY ENGINE — SECOND ==================== -->
+    <!-- PROXY ENGINE -->
     <div class="selector-block">
         <div class="selector-title">PROXY ENGINE</div>
+
         <div class="switch-grid" id="proxy-buttons"></div>
     </div>
 
-    <!-- ==================== MONITOR ==================== -->
+    <!-- MONITOR -->
     <div class="monitor-box">
-        <div class="monitor-title">REAL-TIME CONNECTION MONITOR</div>
+        <div class="monitor-title">
+            REAL-TIME CONNECTION MONITOR
+        </div>
 
         <div class="monitor-grid">
+
             <div class="monitor-item">
-                <span class="monitor-label">YOUR IP ADDRESS</span>
-                <span class="monitor-value" id="user-ip">LOADING...</span>
+                <span class="monitor-label">
+                    YOUR IP ADDRESS
+                </span>
+
+                <span class="monitor-value" id="user-ip">
+                    LOADING...
+                </span>
             </div>
 
             <div class="monitor-item">
-                <span class="monitor-label">COUNTRY</span>
-                <span class="monitor-value" id="user-country">LOADING...</span>
+                <span class="monitor-label">
+                    COUNTRY
+                </span>
+
+                <span class="monitor-value" id="user-country">
+                    LOADING...
+                </span>
             </div>
 
             <div class="monitor-item">
-                <span class="monitor-label">CITY / REGION</span>
-                <span class="monitor-value" id="user-city">LOADING...</span>
+                <span class="monitor-label">
+                    CITY / REGION
+                </span>
+
+                <span class="monitor-value" id="user-city">
+                    LOADING...
+                </span>
             </div>
 
             <div class="monitor-item">
-                <span class="monitor-label">INTERNET PROVIDER</span>
-                <span class="monitor-value" id="user-isp">LOADING...</span>
+                <span class="monitor-label">
+                    INTERNET PROVIDER
+                </span>
+
+                <span class="monitor-value" id="user-isp">
+                    LOADING...
+                </span>
             </div>
 
             <div class="monitor-item">
-                <span class="monitor-label">SERVER UPTIME</span>
-                <span class="monitor-value success" id="monitor-uptime">00:00:00</span>
+                <span class="monitor-label">
+                    SERVER UPTIME
+                </span>
+
+                <span class="monitor-value success" id="monitor-uptime">
+                    00:00:00
+                </span>
             </div>
 
             <div class="monitor-item">
-                <span class="monitor-label">PING LATENCY</span>
-                <span class="monitor-value" id="user-ping">-- MS</span>
+                <span class="monitor-label">
+                    PING LATENCY
+                </span>
+
+                <span class="monitor-value" id="user-ping">
+                    -- MS
+                </span>
             </div>
+
         </div>
 
         <div class="graph-container" id="sys-graph"></div>
     </div>
 
-    <!-- ==================== SYSTEM LOG ==================== -->
+    <!-- SYSTEM LOG -->
     <div class="log-box">
         <div class="log-title">
             <span>SYSTEM LOG</span>
@@ -788,8 +836,9 @@
         <div class="log-content" id="system-log"></div>
     </div>
 
-    <!-- ==================== DATA GRID ==================== -->
+    <!-- DATA GRID -->
     <div class="data-grid">
+
         <div class="data-card">
             <div class="data-label">TARGET HOST</div>
             <div class="data-value" id="info-host">---</div>
@@ -802,26 +851,38 @@
 
         <div class="data-card">
             <div class="data-label">PROTOCOL</div>
-            <div class="data-value" id="info-proto">VLESS</div>
+            <div class="data-value" id="info-proto">
+                VLESS
+            </div>
         </div>
 
         <div class="data-card">
             <div class="data-label">TRANSPORT</div>
-            <div class="data-value" id="info-transport">WEBSOCKET</div>
+            <div class="data-value" id="info-transport">
+                WEBSOCKET
+            </div>
         </div>
 
         <div class="data-card">
             <div class="data-label">PROXY ENGINE</div>
-            <div class="data-value success" id="info-proxy">OPENRESTY</div>
+            <div class="data-value success" id="info-proxy">
+                OPENRESTY
+            </div>
         </div>
+
     </div>
 
-    <!-- ==================== ADDRESS ==================== -->
+    <!-- ADDRESS -->
     <div class="selector-block">
-        <div class="selector-title">BUG HOST / ADDRESS</div>
+        <div class="selector-title">
+            TARGET HOST / ADDRESS
+        </div>
 
         <button class="select-btn" id="address-btn">
-            <span id="address-btn-txt">SELECT ADDRESS</span>
+            <span id="address-btn-txt">
+                SELECT ADDRESS
+            </span>
+
             <span>▼</span>
         </button>
 
@@ -830,12 +891,17 @@
         </div>
     </div>
 
-    <!-- ==================== SNI ==================== -->
+    <!-- SNI -->
     <div class="selector-block">
-        <div class="selector-title">SERVER NAME INDICATION</div>
+        <div class="selector-title">
+            SERVER NAME INDICATION
+        </div>
 
         <button class="select-btn" id="sni-btn">
-            <span id="sni-btn-txt">SELECT SNI</span>
+            <span id="sni-btn-txt">
+                SELECT SNI
+            </span>
+
             <span>▼</span>
         </button>
 
@@ -844,110 +910,231 @@
         </div>
     </div>
 
-    <!-- ==================== SECURITY PROTOCOL ==================== -->
+    <!-- PROTOCOL -->
     <div class="selector-block">
-        <div class="selector-title">SECURITY PROTOCOL</div>
+        <div class="selector-title">
+            SECURITY PROTOCOL
+        </div>
+
         <div class="switch-grid" id="proto-buttons"></div>
     </div>
 
-    <!-- ==================== TRANSPORT ==================== -->
+    <!-- TRANSPORT -->
     <div class="selector-block">
-        <div class="selector-title">TRANSPORT METHOD</div>
+        <div class="selector-title">
+            TRANSPORT METHOD
+        </div>
+
         <div class="switch-grid" id="trans-buttons"></div>
     </div>
 
-    <!-- ==================== GENERATED CONFIG ==================== -->
+    <!-- GENERATED CONFIG -->
     <div class="terminal-box">
-        <div class="terminal-header">GENERATED CONFIG</div>
+
+        <div class="terminal-header">
+            GENERATED CONFIG
+        </div>
 
         <button class="copy-terminal" id="copy-btn">
             COPY
         </button>
 
-        <textarea class="config-terminal" id="config-display" readonly>
-WAITING FOR INPUT...
-        </textarea>
+        <textarea
+            class="config-terminal"
+            id="config-display"
+            readonly
+        >WAITING FOR INPUT...</textarea>
+
     </div>
 
-    <!-- ==================== BYPASS #1 — BOTTOM ==================== -->
+    <!-- BYPASS 1 -->
     <div class="bypass-box">
+
         <div class="bypass-title">
             EMPTY FILES
         </div>
 
         <div class="bypass-code-wrapper">
-            <textarea class="bypass-code" id="bypass-config-1" readonly>NO FILES</textarea>
 
-            <button class="copy-bypass-btn" id="copy-bypass-1">
+            <textarea
+                class="bypass-code"
+                id="bypass-config-1"
+                readonly
+            >PUBLIC PATHS:
+NO FILES</textarea>
+
+            <button
+                class="copy-bypass-btn"
+                id="copy-bypass-1"
+            >
                 COPY
             </button>
+
         </div>
     </div>
 
-    <!-- ==================== BYPASS #2 — BOTTOM ==================== -->
+    <!-- BYPASS 2 -->
     <div class="bypass-box">
+
         <div class="bypass-title">
             EMPTY FILES
         </div>
 
         <div class="bypass-code-wrapper">
-            <textarea class="bypass-code" id="bypass-config-2" readonly>NO FILES</textarea>
 
-            <button class="copy-bypass-btn" id="copy-bypass-2">
+            <textarea
+                class="bypass-code"
+                id="bypass-config-2"
+                readonly
+            >NO FILES</textarea>
+
+            <button
+                class="copy-bypass-btn"
+                id="copy-bypass-2"
+            >
                 COPY
             </button>
+
         </div>
     </div>
 
 </div>
 
-<!-- ==================== FLOATING PLAYER ==================== -->
+<!-- FLOATING PLAYER -->
 <div class="cyber-player" id="floating-player">
-    <div class="player-drag-hint">⋮ DRAG ⋮</div>
+
+    <div class="player-drag-hint">
+        ⋮ DRAG ⋮
+    </div>
 
     <div class="player-name" id="song-name">
         SYSTEM SOUND - NEFFEX
     </div>
 
     <div class="player-controls">
-        <button class="ctrl-btn" id="prev" title="PREV">◀</button>
-        <button class="ctrl-btn" id="play" title="PLAY/PAUSE">▶</button>
-        <button class="ctrl-btn" id="stop" title="STOP">■</button>
-        <button class="ctrl-btn" id="next" title="NEXT">▶▶</button>
+
+        <button class="ctrl-btn" id="prev">
+            ◀
+        </button>
+
+        <button class="ctrl-btn" id="play">
+            ▶
+        </button>
+
+        <button class="ctrl-btn" id="stop">
+            ■
+        </button>
+
+        <button class="ctrl-btn" id="next">
+            ▶▶
+        </button>
+
     </div>
 </div>
 
-<!-- ==================== ADDRESS MODAL ==================== -->
+<!-- ADDRESS MODAL -->
 <div class="cyber-modal" id="address-modal">
-    <div class="modal-title">CHOOSE TARGET ADDRESS</div>
+
+    <div class="modal-title">
+        CHOOSE TARGET ADDRESS
+    </div>
+
     <div class="modal-list" id="address-list"></div>
-    <div class="modal-close" id="address-close">✕ CLOSE</div>
+
+    <div class="modal-close" id="address-close">
+        ✕ CLOSE
+    </div>
+
 </div>
 
-<!-- ==================== SNI MODAL ==================== -->
+<!-- SNI MODAL -->
 <div class="cyber-modal" id="sni-modal">
-    <div class="modal-title">CHOOSE SNI HOST</div>
+
+    <div class="modal-title">
+        CHOOSE SNI HOST
+    </div>
+
     <div class="modal-list" id="sni-list"></div>
-    <div class="modal-close" id="sni-close">✕ CLOSE</div>
+
+    <div class="modal-close" id="sni-close">
+        ✕ CLOSE
+    </div>
+
 </div>
 
 <script>
-(function() {
+(function () {
 
-    const UUID = 'b831381d-6324-4d53-ad4f-8cda48b30811';
-    const SS_METHOD = 'aes-256-gcm';
-    const SS_PASSWORD = 'virgozki';
+    /*
+     * ==========================================================
+     * VIRGOZKI CLIENT CONFIG GENERATOR
+     *
+     * PUBLIC FLOW:
+     *
+     * CLIENT
+     *   ↓
+     * TLS :443
+     *   ↓
+     * ENVOY
+     *   ↓
+     * HAPROXY
+     *   ↓
+     * OPENRESTY
+     *   ↓
+     * APACHE
+     *   ↓
+     * XRAY
+     *
+     * IMPORTANT:
+     * The four proxy engines are INTERNAL layers.
+     * They do NOT create /openresty, /haproxy, /envoy
+     * or /apache public paths.
+     * ==========================================================
+     */
 
-    let currentHost = window.location.hostname || '127.0.0.1';
+    const UUID =
+        'b831381d-6324-4d53-ad4f-8cda48b30811';
 
-    const PROTOCOLS = ['vless', 'trojan', 'vmess', 'shadowsocks'];
+    const TROJAN_PASSWORD =
+        'virgozki';
+
+    const SS_METHOD =
+        'aes-256-gcm';
+
+    const SS_PASSWORD =
+        'virgozki';
+
+    let currentHost =
+        window.location.hostname || '127.0.0.1';
+
+    /*
+     * ==========================================================
+     * PROTOCOLS
+     * ==========================================================
+     */
+
+    const PROTOCOLS = [
+        'vless',
+        'trojan',
+        'vmess',
+        'shadowsocks'
+    ];
 
     const PROTOCOL_LABELS = {
-        vless:'VLESS',
-        trojan:'TROJAN',
-        vmess:'VMESS',
-        shadowsocks:'SHADOWSOCKS'
+        vless: 'VLESS',
+        trojan: 'TROJAN',
+        vmess: 'VMESS',
+        shadowsocks: 'SHADOWSOCKS'
     };
+
+    /*
+     * ==========================================================
+     * INTERNAL PROXY ENGINE
+     *
+     * These are displayed only as the internal chain selector.
+     * No proxy-specific public path is generated.
+     * ==========================================================
+     */
 
     const PROXY_ENGINES = [
         'openresty',
@@ -963,12 +1150,19 @@ WAITING FOR INPUT...
         apache: 'APACHE'
     };
 
-    const PROXY_PREFIXES = {
-        openresty: '/openresty',
-        haproxy: '/haproxy',
-        envoy: '/envoy',
-        apache: '/apache'
-    };
+    /*
+     * IMPORTANT:
+     * No /openresty
+     * No /haproxy
+     * No /envoy
+     * No /apache
+     */
+
+    /*
+     * ==========================================================
+     * TRANSPORTS
+     * ==========================================================
+     */
 
     const TRANSPORTS = [
         'ws',
@@ -978,56 +1172,111 @@ WAITING FOR INPUT...
     ];
 
     const TRANSPORT_LABELS = {
-        ws:'WEBSOCKET',
-        httpupgrade:'HTTP UPGRADE',
-        xhttp:'XHTTP',
-        grpc:'gRPC'
+        ws: 'WEBSOCKET',
+        httpupgrade: 'HTTP UPGRADE',
+        xhttp: 'XHTTP',
+        grpc: 'gRPC'
     };
 
-    const GRPC_SERVICES = {
-        vless: 'vless-grpc',
-        trojan: 'trojan-grpc',
-        vmess: 'vmess-grpc',
-        shadowsocks: 'ss-grpc'
-    };
+    /*
+     * ==========================================================
+     * PUBLIC PATHS
+     *
+     * These must match the server-side nginx/OpenResty/Xray
+     * configuration.
+     * ==========================================================
+     */
 
     const PATHS = {
+
         vless: {
-            ws:'/vless-virgozki',
-            httpupgrade:'/vless-virgozki-hu',
-            xhttp:'/vless-virgozki-xhttp'
+            ws: '/vless-virgozki',
+            httpupgrade: '/vless-virgozki-hu',
+            xhttp: '/vless-virgozki-xhttp'
         },
 
         trojan: {
-            ws:'/virgozki',
-            httpupgrade:'/virgozki-hu',
-            xhttp:'/virgozki-xhttp'
+            ws: '/virgozki',
+            httpupgrade: '/virgozki-hu',
+            xhttp: '/virgozki-xhttp'
         },
 
         vmess: {
-            ws:'/vmess-virgozki',
-            httpupgrade:'/vmess-virgozki-hu',
-            xhttp:'/vmess-virgozki-xhttp'
+            ws: '/vmess-virgozki',
+            httpupgrade: '/vmess-virgozki-hu',
+            xhttp: '/vmess-virgozki-xhttp'
         },
 
         shadowsocks: {
-            ws:'/ss-virgozki',
-            httpupgrade:'/ss-virgozki-hu',
-            xhttp:'/ss-virgozki-xhttp'
+            ws: '/ss-virgozki',
+            httpupgrade: '/ss-virgozki-hu',
+            xhttp: '/ss-virgozki-xhttp'
         }
+
     };
 
+    /*
+     * ==========================================================
+     * gRPC SERVICE NAMES
+     *
+     * IMPORTANT:
+     * serviceName is NOT a URL path.
+     *
+     * Correct:
+     * vless-grpc
+     *
+     * Incorrect:
+     * /openresty/vless-grpc
+     * /haproxy/vless-grpc
+     * /envoy/vless-grpc
+     * /apache/vless-grpc
+     * ==========================================================
+     */
+
+    const GRPC_SERVICES = {
+
+        vless: 'vless-grpc',
+
+        trojan: 'trojan-grpc',
+
+        vmess: 'vmess-grpc',
+
+        shadowsocks: 'ss-grpc'
+
+    };
+
+    /*
+     * ==========================================================
+     * STATE
+     * ==========================================================
+     */
+
     let selectedProxy = 'openresty';
+
     let selectedProtocol = 'vless';
+
     let selectedTransport = 'ws';
+
     let selectedAddress = currentHost;
+
     let selectedSNI = currentHost;
+
     let isProcessing = false;
+
     let startTime = Date.now();
 
-    let addressList = [
+    /*
+     * ==========================================================
+     * ADDRESS LIST
+     * ==========================================================
+     */
+
+    const addressList = [
+
         currentHost,
-        '⬇️⬇️STS NO LOAD AND BYPASS⬇️⬇️',
+
+        '--- STS NO LOAD ---',
+
         'firebase.googleapis.com',
         'google.com',
         'firebase-settings.googleapis.com',
@@ -1047,14 +1296,26 @@ WAITING FOR INPUT...
         'mt0.googleapis.com',
         'redirector.gvt1.com',
         'firebaseremoteconfigrealtime.googleapis.com',
-        '⬇️⬇️FOR UNLI YOUTUBE ONLY⬇️⬇️',
+
+        '--- YOUTUBE ---',
+
         'youtube.com',
         'googlevideo.com'
+
     ];
 
-    let sniList = [
+    /*
+     * ==========================================================
+     * SNI LIST
+     * ==========================================================
+     */
+
+    const sniList = [
+
         currentHost,
-        '⬇️⬇️STS NO LOAD⬇️⬇️',
+
+        '--- STS NO LOAD ---',
+
         'fcmtoken.googleapis.com',
         'api.paymaya.com',
         'support.maya.ph',
@@ -1063,554 +1324,1808 @@ WAITING FOR INPUT...
         'firebaseinstallations.googleapis.com',
         'fonts.googleapis.com',
         'virgozki.googleapis.com',
-        'firebaseremoteconfigrealtime.googleapis.com',
         'benefits-client-production.voyagerapis.com',
         'cdn-settings.appsflyersdk.com',
         'app-analytics-services.com',
-        '⬇️⬇️FOR DITO BYPASS IWANTTFC ⬇️⬇️',
+
+        '--- IWANTTFC ---',
+
         'qa.iwanttfc.com',
         'help.iwanttfc.com',
         'support.iwanttfc.com',
         'api.iwanttfc.com',
         'iwant-trailer.akamaized.net',
-        '⬇️⬇️FOR UNLI YOUTUBE ONLY⬇️⬇️',
+
+        '--- YOUTUBE ---',
+
         'youtube.com',
         'googlevideo.com',
-        '⬇️⬇️BYPASS UNLI TIKTOK FOR STS, GTM AND DITO ZERO MB⬇️⬇️',
+
+        '--- TIKTOK ---',
+
         'api24-normal.tiktokv.com',
         'api24-normal-alisg.tiktokv.com',
         'api24-normal-useast1a.tiktokv.com',
-        'tiktok.surf2sawa.org',
         'tiktok.com',
         'www.tiktok.com',
         'm.tiktok.com'
+
     ];
 
-    const systemLog = document.getElementById('system-log');
-    const logTime = document.getElementById('log-time');
-    const sysGraph = document.getElementById('sys-graph');
+    /*
+     * ==========================================================
+     * DOM
+     * ==========================================================
+     */
 
-    const copyBypassBtn1 = document.getElementById('copy-bypass-1');
-    const bypassConfig1 = document.getElementById('bypass-config-1');
+    const systemLog =
+        document.getElementById('system-log');
 
-    const copyBypassBtn2 = document.getElementById('copy-bypass-2');
-    const bypassConfig2 = document.getElementById('bypass-config-2');
+    const logTime =
+        document.getElementById('log-time');
 
-    // ==================== MUSIC PLAYER ====================
+    const sysGraph =
+        document.getElementById('sys-graph');
+
+    const copyBypassBtn1 =
+        document.getElementById('copy-bypass-1');
+
+    const bypassConfig1 =
+        document.getElementById('bypass-config-1');
+
+    const copyBypassBtn2 =
+        document.getElementById('copy-bypass-2');
+
+    const bypassConfig2 =
+        document.getElementById('bypass-config-2');
+
+    /*
+     * ==========================================================
+     * MUSIC PLAYER
+     * ==========================================================
+     */
 
     const audio = new Audio();
+
     audio.volume = 0.7;
+
     audio.preload = 'none';
+
     audio.crossOrigin = 'anonymous';
 
     const songs = [
+
         {
-            name: "NEFFEX - Control",
-            url: "https://dl.dropboxusercontent.com/scl/fi/5qeqe89ibmyikcj7dmgie/NEFFEX-Control-Official-Lyric-Video-Copyright-Free-No.242-MP3_160K.mp3?rlkey=8mec522bb0mycbgeiw3b2p1st&st=n3xggf1g&dl=1"
+            name: 'NEFFEX - Control',
+            url: 'https://dl.dropboxusercontent.com/scl/fi/5qeqe89ibmyikcj7dmgie/NEFFEX-Control-Official-Lyric-Video-Copyright-Free-No.242-MP3_160K.mp3?rlkey=8mec522bb0mycbgeiw3b2p1st&st=n3xggf1g&dl=1'
         },
+
         {
-            name: "NEFFEX - Crown",
-            url: "https://dl.dropboxusercontent.com/scl/fi/z4sbip8lthzy5piuolpn2/NEFFEX-Crown-Copyright-Free-No.15-MP3_160K.mp3?rlkey=7gf528zikfyrxeav2blxh2ixl&st=b3diiygv&dl=1"
+            name: 'NEFFEX - Crown',
+            url: 'https://dl.dropboxusercontent.com/scl/fi/z4sbip8lthzy5piuolpn2/NEFFEX-Crown-Copyright-Free-No.15-MP3_160K.mp3?rlkey=7gf528zikfyrxeav2blxh2ixl&st=b3diiygv&dl=1'
         },
+
         {
-            name: "NEFFEX - Fight Back",
-            url: "https://dl.dropboxusercontent.com/scl/fi/3pjn86px04k8mq7q5q3h6/NEFFEX-Fight-Back-Official-Video-No.37-MP3_160K.mp3?rlkey=k1j7x2woagxujekwxano6n4ge&st=bcl0xd7o&dl=1"
+            name: 'NEFFEX - Fight Back',
+            url: 'https://dl.dropboxusercontent.com/scl/fi/3pjn86px04k8mq7q5q3h6/NEFFEX-Fight-Back-Official-Video-No.37-MP3_160K.mp3?rlkey=k1j7x2woagxujekwxano6n4ge&st=bcl0xd7o&dl=1'
         },
+
         {
-            name: "NEFFEX - Purpose",
-            url: "https://dl.dropboxusercontent.com/scl/fi/ixhlx1kiw3gqnij817rz7/NEFFEX-Purpose-Copyright-Free-No.177-MP3_160K.mp3?rlkey=civmcmnzols7yy2b64dduiq8y&st=j6kqivoc&dl=1"
+            name: 'NEFFEX - Purpose',
+            url: 'https://dl.dropboxusercontent.com/scl/fi/ixhlx1kiw3gqnij817rz7/NEFFEX-Purpose-Copyright-Free-No.177-MP3_160K.mp3?rlkey=civmcmnzols7yy2b64dduiq8y&st=j6kqivoc&dl=1'
         },
+
         {
-            name: "NEFFEX - Rumors",
-            url: "https://dl.dropboxusercontent.com/scl/fi/6trrxr9mcu9mhbl061dkj/NEFFEX-Rumors-Lyrics-MP3_160K.mp3?rlkey=fh14ss4axvmt4up01c467nrxk&st=dvsyyzsd&dl=1"
+            name: 'NEFFEX - Rumors',
+            url: 'https://dl.dropboxusercontent.com/scl/fi/6trrxr9mcu9mhbl061dkj/NEFFEX-Rumors-Lyrics-MP3_160K.mp3?rlkey=fh14ss4axvmt4up01c467nrxk&st=dvsyyzsd&dl=1'
         },
+
         {
-            name: "NEFFEX - Best of Me",
-            url: "https://dl.dropboxusercontent.com/scl/fi/rypimhnwa3f0sc7becgz8/NEFFEX-Best-of-Me-Copyright-Free-No.23-MP3_160K.mp3?rlkey=l6fqcjlklv2f08g8v9du23fb3&st=nguyidh9&dl=1"
+            name: 'NEFFEX - Best of Me',
+            url: 'https://dl.dropboxusercontent.com/scl/fi/rypimhnwa3f0sc7becgz8/NEFFEX-Best-of-Me-Copyright-Free-No.23-MP3_160K.mp3?rlkey=l6fqcjlklv2f08g8v9du23fb3&st=nguyidh9&dl=1'
         },
+
         {
-            name: "NEFFEX - Chance",
-            url: "https://dl.dropboxusercontent.com/scl/fi/cyxhytondpo74u1mbqdl5/NEFFEX-Chance-Copyright-Free-No.65-MP3_160K.mp3?rlkey=ha1km8kbvg6f8va6sozefdw96&st=v0eg4i31&dl=1"
+            name: 'NEFFEX - Chance',
+            url: 'https://dl.dropboxusercontent.com/scl/fi/cyxhytondpo74u1mbqdl5/NEFFEX-Chance-Copyright-Free-No.65-MP3_160K.mp3?rlkey=ha1km8kbvg6f8va6sozefdw96&st=v0eg4i31&dl=1'
         },
+
         {
-            name: "NEFFEX - Cold",
-            url: "https://dl.dropboxusercontent.com/scl/fi/3sxfjqb6ph9tfv6k1cz0h/NEFFEX-Cold-Copyright-Free-No.60-MP3_160K.mp3?rlkey=2wxp3ofoq9v26vxd9fh3iq9er&st=ghcd60wa&dl=1"
+            name: 'NEFFEX - Cold',
+            url: 'https://dl.dropboxusercontent.com/scl/fi/3sxfjqb6ph9tfv6k1cz0h/NEFFEX-Cold-Copyright-Free-No.60-MP3_160K.mp3?rlkey=2wxp3ofoq9v26vxd9fh3iq9er&st=ghcd60wa&dl=1'
         },
+
         {
-            name: "NEFFEX - Grateful",
-            url: "https://dl.dropboxusercontent.com/scl/fi/v5419s2y2klq6ookxpzrd/NEFFEX-Grateful-Copyright-Free-No.54-MP3_160K.mp3?rlkey=6to3htylrlnxsru26ik2neds1&st=q47h5sgq&dl=1"
+            name: 'NEFFEX - Grateful',
+            url: 'https://dl.dropboxusercontent.com/scl/fi/v5419s2y2klq6ookxpzrd/NEFFEX-Grateful-Copyright-Free-No.54-MP3_160K.mp3?rlkey=6to3htylrlnxsru26ik2neds1&st=q47h5sgq&dl=1'
         },
+
         {
-            name: "NEFFEX - Life",
-            url: "https://dl.dropboxusercontent.com/scl/fi/uw1f789tb9v4i2k4xyw42/NEFFEX-Life-Copyright-Free-No.42-MP3_160K.mp3?rlkey=y9y56c3ui6f8kx8ar6l2f9pzv&st=9sgmxut6&dl=1"
+            name: 'NEFFEX - Life',
+            url: 'https://dl.dropboxusercontent.com/scl/fi/uw1f789tb9v4i2k4xyw42/NEFFEX-Life-Copyright-Free-No.42-MP3_160K.mp3?rlkey=y9y56c3ui6f8kx8ar6l2f9pzv&st=9sgmxut6&dl=1'
         }
+
     ];
 
     let currentSongIndex = 0;
+
     let isPlaying = false;
 
-    const playBtn = document.getElementById('play');
-    const songName = document.getElementById('song-name');
+    const playBtn =
+        document.getElementById('play');
 
-    function loadSong(i) {
-        songName.textContent = songs[i].name;
-        audio.src = songs[i].url;
-        audio.preload = 'metadata';
+    const songName =
+        document.getElementById('song-name');
+
+    function loadSong(index) {
+
+        if (!songs[index]) {
+            return;
+        }
+
+        songName.textContent =
+            songs[index].name;
+
+        audio.src =
+            songs[index].url;
+
+        audio.preload =
+            'metadata';
     }
 
-    audio.addEventListener('ended', () => {
-        addLog(`🎵 Natapos ang kanta: ${songs[currentSongIndex].name}`, 'info');
-        nextSong();
-    });
+    audio.addEventListener(
+        'ended',
+        function () {
 
-    audio.onerror = () => {
-        addLog(`⚠️ Error sa kanta: ${songs[currentSongIndex].name} | Lilipat sa susunod`, 'info');
-        isPlaying = false;
-        playBtn.textContent = '▶';
-        nextSong();
-    };
+            addLog(
+                'Music track finished',
+                'info'
+            );
+
+            nextSong();
+        }
+    );
+
+    audio.addEventListener(
+        'error',
+        function () {
+
+            addLog(
+                'Music error - skipping track',
+                'info'
+            );
+
+            isPlaying = false;
+
+            playBtn.textContent = '▶';
+
+            nextSong();
+        }
+    );
 
     function togglePlay() {
+
         if (isPlaying) {
+
             audio.pause();
+
             isPlaying = false;
+
             playBtn.textContent = '▶';
-            addLog('Music paused', 'info');
-        } else {
-            audio.play().then(() => {
-                isPlaying = true;
-                playBtn.textContent = '⏸';
-                addLog(`🎵 Playing: ${songs[currentSongIndex].name}`, 'success');
-            }).catch(() => {
-                addLog('❌ Hindi ma-play. Subukan ulit', 'info');
-            });
+
+            addLog(
+                'Music paused',
+                'info'
+            );
+
+            return;
         }
+
+        audio.play()
+            .then(function () {
+
+                isPlaying = true;
+
+                playBtn.textContent = '⏸';
+
+                addLog(
+                    'Music playing',
+                    'success'
+                );
+
+            })
+            .catch(function () {
+
+                addLog(
+                    'Music playback blocked or unavailable',
+                    'info'
+                );
+
+            });
     }
 
     function nextSong() {
-        currentSongIndex = (currentSongIndex + 1) % songs.length;
+
+        currentSongIndex =
+            (currentSongIndex + 1) %
+            songs.length;
+
         loadSong(currentSongIndex);
 
         if (isPlaying) {
-            audio.play().catch(e => {});
+
+            audio.play()
+                .catch(function () {});
+
         }
     }
 
     function prevSong() {
-        currentSongIndex = (currentSongIndex - 1 + songs.length) % songs.length;
+
+        currentSongIndex =
+            (currentSongIndex - 1 + songs.length) %
+            songs.length;
+
         loadSong(currentSongIndex);
 
         if (isPlaying) {
-            audio.play().catch(e => {});
+
+            audio.play()
+                .catch(function () {});
+
         }
     }
 
     function stopMusic() {
+
         audio.pause();
+
         audio.currentTime = 0;
+
         isPlaying = false;
+
         playBtn.textContent = '▶';
-        addLog('Music stopped', 'info');
+
+        addLog(
+            'Music stopped',
+            'info'
+        );
     }
 
-    playBtn.addEventListener('click', togglePlay);
-    document.getElementById('prev').addEventListener('click', prevSong);
-    document.getElementById('next').addEventListener('click', nextSong);
-    document.getElementById('stop').addEventListener('click', stopMusic);
+    playBtn.addEventListener(
+        'click',
+        togglePlay
+    );
 
-    // ==================== END MUSIC PLAYER ====================
+    document
+        .getElementById('prev')
+        .addEventListener(
+            'click',
+            prevSong
+        );
 
-    async function fetchWithTimeout(url, options = {}, timeout = 15000) {
-        const controller = new AbortController();
-        const id = setTimeout(() => controller.abort(), timeout);
+    document
+        .getElementById('next')
+        .addEventListener(
+            'click',
+            nextSong
+        );
+
+    document
+        .getElementById('stop')
+        .addEventListener(
+            'click',
+            stopMusic
+        );
+
+    /*
+     * ==========================================================
+     * FETCH HELPER
+     * ==========================================================
+     */
+
+    async function fetchWithTimeout(
+        url,
+        options = {},
+        timeout = 10000
+    ) {
+
+        const controller =
+            new AbortController();
+
+        const timer =
+            setTimeout(
+                function () {
+                    controller.abort();
+                },
+                timeout
+            );
 
         try {
-            const response = await fetch(url, {
-                ...options,
-                signal: controller.signal,
-                cache: 'no-cache'
-            });
 
-            clearTimeout(id);
+            const response =
+                await fetch(
+                    url,
+                    {
+                        ...options,
+                        signal:
+                            controller.signal,
+                        cache:
+                            'no-cache'
+                    }
+                );
+
+            clearTimeout(timer);
+
             return response;
-        } catch (err) {
-            clearTimeout(id);
-            throw err;
+
+        } catch (error) {
+
+            clearTimeout(timer);
+
+            throw error;
         }
     }
+
+    /*
+     * ==========================================================
+     * USER INFO
+     *
+     * Monitoring only.
+     * Not part of the proxy chain.
+     * ==========================================================
+     */
 
     async function fetchUserInfo() {
-        try {
-            const res = await fetchWithTimeout('https://ipapi.co/json/');
 
-            if (!res.ok) {
-                throw new Error('Server error');
+        try {
+
+            const response =
+                await fetchWithTimeout(
+                    'https://ipapi.co/json/',
+                    {},
+                    8000
+                );
+
+            if (!response.ok) {
+                throw new Error(
+                    'IP information service error'
+                );
             }
 
-            const data = await res.json();
+            const data =
+                await response.json();
 
-            document.getElementById('user-ip').textContent =
-                data.ip || 'UNAVAILABLE';
+            document
+                .getElementById('user-ip')
+                .textContent =
+                data.ip ||
+                'UNAVAILABLE';
 
-            document.getElementById('user-country').textContent =
-                data.country_name || 'UNAVAILABLE';
+            document
+                .getElementById('user-country')
+                .textContent =
+                data.country_name ||
+                'UNAVAILABLE';
 
-            document.getElementById('user-city').textContent =
+            document
+                .getElementById('user-city')
+                .textContent =
                 `${data.city || 'UNAVAILABLE'}, ${data.region || ''}`;
 
-            document.getElementById('user-isp').textContent =
-                data.org || 'UNAVAILABLE';
+            document
+                .getElementById('user-isp')
+                .textContent =
+                data.org ||
+                'UNAVAILABLE';
 
-            addLog('Connection info loaded successfully', 'success');
+            addLog(
+                'Connection information loaded',
+                'success'
+            );
 
-        } catch (err) {
-            document.getElementById('user-ip').textContent = 'CHECK CONNECTION';
-            document.getElementById('user-country').textContent = 'CHECK CONNECTION';
-            document.getElementById('user-city').textContent = 'CHECK CONNECTION';
-            document.getElementById('user-isp').textContent = 'CHECK CONNECTION';
+        } catch (error) {
 
-            addLog('Timeout/error sa pag-load ng info', 'info');
+            document
+                .getElementById('user-ip')
+                .textContent =
+                'UNAVAILABLE';
+
+            document
+                .getElementById('user-country')
+                .textContent =
+                'UNAVAILABLE';
+
+            document
+                .getElementById('user-city')
+                .textContent =
+                'UNAVAILABLE';
+
+            document
+                .getElementById('user-isp')
+                .textContent =
+                'UNAVAILABLE';
+
+            addLog(
+                'Connection information unavailable',
+                'info'
+            );
         }
     }
 
-    function measurePing() {
-        const start = performance.now();
+    /*
+     * ==========================================================
+     * PING
+     *
+     * Monitoring only.
+     * ==========================================================
+     */
 
-        fetchWithTimeout(
-            'https://1.1.1.1/cdn-cgi/trace',
-            {
-                mode: 'no-cors',
-                cache: 'no-store'
-            },
-            10000
-        ).finally(() => {
+    async function measurePing() {
 
-            const ping = Math.round(performance.now() - start);
-            const pingEl = document.getElementById('user-ping');
+        const start =
+            performance.now();
 
-            pingEl.textContent = `${ping} MS`;
+        const pingEl =
+            document.getElementById(
+                'user-ping'
+            );
+
+        try {
+
+            await fetchWithTimeout(
+                'https://1.1.1.1/cdn-cgi/trace',
+                {
+                    mode: 'no-cors',
+                    cache: 'no-store'
+                },
+                5000
+            );
+
+            const ping =
+                Math.round(
+                    performance.now() - start
+                );
+
+            pingEl.textContent =
+                `${ping} MS`;
 
             pingEl.className =
                 ping < 100
                     ? 'monitor-value success'
                     : 'monitor-value';
-        });
+
+        } catch (error) {
+
+            pingEl.textContent =
+                'TIMEOUT';
+
+            pingEl.className =
+                'monitor-value';
+        }
     }
+
+    /*
+     * ==========================================================
+     * UPTIME
+     * ==========================================================
+     */
 
     function updateMonitorUptime() {
-        const d = Math.floor((Date.now() - startTime) / 1000);
+
+        const seconds =
+            Math.floor(
+                (Date.now() - startTime) /
+                1000
+            );
+
+        const hours =
+            Math.floor(seconds / 3600);
+
+        const minutes =
+            Math.floor(
+                (seconds % 3600) / 60
+            );
+
+        const secs =
+            seconds % 60;
 
         const uptime =
-            [3600, 60, 1]
-                .map(t => String(Math.floor(d / t) % 60).padStart(2, '0'))
-                .join(':');
+            [
+                hours,
+                minutes,
+                secs
+            ]
+            .map(function (value) {
+                return String(value)
+                    .padStart(2, '0');
+            })
+            .join(':');
 
-        document.getElementById('runtime-display').textContent = uptime;
-        document.getElementById('monitor-uptime').textContent = uptime;
+        document
+            .getElementById(
+                'runtime-display'
+            )
+            .textContent =
+            uptime;
+
+        document
+            .getElementById(
+                'monitor-uptime'
+            )
+            .textContent =
+            uptime;
     }
 
-    function addLog(msg, type='info') {
-        const now = new Date();
+    /*
+     * ==========================================================
+     * SYSTEM LOG
+     * ==========================================================
+     */
 
-        const timeStr = now.toLocaleTimeString(
-            'en-US',
-            { hour12:false }
+    function addLog(
+        message,
+        type = 'info'
+    ) {
+
+        const now =
+            new Date();
+
+        const timeString =
+            now.toLocaleTimeString(
+                'en-US',
+                {
+                    hour12: false
+                }
+            );
+
+        logTime.textContent =
+            timeString;
+
+        const entry =
+            document.createElement(
+                'div'
+            );
+
+        entry.className =
+            `log-entry log-${type}`;
+
+        const timeSpan =
+            document.createElement(
+                'span'
+            );
+
+        timeSpan.className =
+            'log-time';
+
+        timeSpan.textContent =
+            `[${timeString}]`;
+
+        entry.appendChild(
+            timeSpan
         );
 
-        logTime.textContent = timeStr;
+        entry.appendChild(
+            document.createTextNode(
+                ` ${message}`
+            )
+        );
 
-        const entry = document.createElement('div');
+        systemLog.appendChild(
+            entry
+        );
 
-        entry.className = `log-entry log-${type}`;
-
-        entry.innerHTML =
-            `<span class="log-time">[${timeStr}]</span> ${msg}`;
-
-        systemLog.appendChild(entry);
-        systemLog.scrollTop = systemLog.scrollHeight;
+        systemLog.scrollTop =
+            systemLog.scrollHeight;
     }
 
+    /*
+     * ==========================================================
+     * GRAPH
+     * ==========================================================
+     */
+
     const graphBars = 12;
-    let graphPoints = Array(graphBars).fill(0);
 
-    for (let i = 0; i < graphBars; i++) {
-        const bar = document.createElement('div');
+    const graphPoints =
+        Array(graphBars).fill(0);
 
-            bar.className = 'graph-dot';
-            bar.style.left = `${(i / graphBars) * 100}%`;
-            bar.style.height = '0%';
+    for (
+        let i = 0;
+        i < graphBars;
+        i++
+    ) {
 
-            sysGraph.appendChild(bar);
-        }
+        const bar =
+            document.createElement(
+                'div'
+            );
 
-        const graphBarsEl = sysGraph.querySelectorAll('.graph-dot');
+        bar.className =
+            'graph-dot';
 
-        function updateGraph() {
-            graphPoints.shift();
-            graphPoints.push(Math.floor(Math.random() * 70) + 20);
+        bar.style.left =
+            `${(i / graphBars) * 100}%`;
 
-            graphPoints.forEach((val, i) => {
-                graphBarsEl[i].style.height = val + '%';
-            });
-        }
+        bar.style.height =
+            '0%';
 
-        const loadingScreen = document.getElementById('loading-screen');
-        const mainContent = document.getElementById('main-content');
-        const infoHost = document.getElementById('info-host');
-        const infoSni = document.getElementById('info-sni');
-        const infoProto = document.getElementById('info-proto');
-        const infoTransport = document.getElementById('info-transport');
-        const infoProxy = document.getElementById('info-proxy');
-        const configDisplay = document.getElementById('config-display');
-        const copyBtn = document.getElementById('copy-btn');
-        const addressBtn = document.getElementById('address-btn');
-        const addressBtnTxt = document.getElementById('address-btn-txt');
-        const addressSelected = document.getElementById('address-selected');
-        const addressModal = document.getElementById('address-modal');
-        const addressListEl = document.getElementById('address-list');
-        const addressClose = document.getElementById('address-close');
-        const sniBtn = document.getElementById('sni-btn');
-        const sniBtnTxt = document.getElementById('sni-btn-txt');
-        const sniSelected = document.getElementById('sni-selected');
-        const sniModal = document.getElementById('sni-modal');
-        const sniListEl = document.getElementById('sni-list');
-        const sniClose = document.getElementById('sni-close');
-        const proxyButtons = document.getElementById('proxy-buttons');
-        const protoButtons = document.getElementById('proto-buttons');
-        const transButtons = document.getElementById('trans-buttons');
-        const player = document.getElementById('floating-player');
+        sysGraph.appendChild(
+            bar
+        );
+    }
 
-        let isDragging = false;
-        let offsetX;
-        let offsetY;
+    const graphBarsEl =
+        sysGraph.querySelectorAll(
+            '.graph-dot'
+        );
 
-        function dragStart(e) {
-            if (e.target.closest('.ctrl-btn')) return;
-            isDragging = true;
+    function updateGraph() {
 
-            const rect = player.getBoundingClientRect();
-            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        graphPoints.shift();
 
-            offsetX = clientX - rect.left;
-            offsetY = clientY - rect.top;
-            player.style.transition = 'none';
-        }
+        graphPoints.push(
+            Math.floor(
+                Math.random() * 70
+            ) + 20
+        );
 
-        function dragMove(e) {
-            if (!isDragging) return;
-            e.preventDefault();
+        graphPoints.forEach(
+            function (value, index) {
 
-            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                graphBarsEl[index]
+                    .style.height =
+                    `${value}%`;
 
-            const newX = Math.max(0, Math.min(window.innerWidth - player.offsetWidth, clientX - offsetX));
-            const newY = Math.max(0, Math.min(window.innerHeight - player.offsetHeight, clientY - offsetY));
-
-            player.style.left = newX + 'px';
-            player.style.top = newY + 'px';
-            player.style.right = 'auto';
-            player.style.bottom = 'auto';
-        }
-
-        function dragEnd() {
-            isDragging = false;
-            player.style.transition = 'all 0.2s ease';
-        }
-
-        player.addEventListener('mousedown', dragStart);
-        player.addEventListener('touchstart', dragStart);
-        document.addEventListener('mousemove', dragMove);
-        document.addEventListener('touchmove', dragMove, { passive: false });
-        document.addEventListener('mouseup', dragEnd);
-        document.addEventListener('touchend', dragEnd);
-
-        function getPublicPath() {
-            const prefix = PROXY_PREFIXES[selectedProxy];
-            const internalPath = PATHS[selectedProtocol][selectedTransport];
-            return prefix + internalPath;
-        }
-
-        function getGrpcService() {
-            return `${PROXY_PREFIXES[selectedProxy]}/${GRPC_SERVICES[selectedProtocol]}`;
-        }
-
-        function buildConfig() {
-            const addr = selectedAddress;
-            const sni = selectedSNI;
-            const host = currentHost;
-
-            if (selectedTransport === 'grpc') {
-                const grpcService = getGrpcService();
-                switch(selectedProtocol) {
-                    case 'vless':
-                        return `vless://${UUID}@${addr}:443?encryption=none&security=tls&type=grpc&serviceName=${encodeURIComponent(grpcService)}&authority=${encodeURIComponent(host)}&sni=${encodeURIComponent(sni)}&alpn=h2&fp=chrome#VLESS-GRPC-${PROXY_LABELS[selectedProxy]}`;
-                    case 'trojan':
-                        return `trojan://${SS_PASSWORD}@${addr}:443?security=tls&type=grpc&serviceName=${encodeURIComponent(grpcService)}&authority=${encodeURIComponent(host)}&sni=${encodeURIComponent(sni)}&alpn=h2&fp=chrome#TROJAN-GRPC-${PROXY_LABELS[selectedProxy]}`;
-                    case 'vmess':
-                        return `vmess://${btoa(JSON.stringify({
-                            v:'2', ps:`VMESS-GRPC-${PROXY_LABELS[selectedProxy]}`, add:addr, port:'443', id:UUID, aid:'0',
-                            scy:'auto', net:'grpc', host:host, path:grpcService, tls:'tls', sni:sni, fp:'chrome', alpn:'h2'
-                        })).replace(/=+$/,'')}`;
-                    case 'shadowsocks':
-                        const ssGrpcCred = btoa(`${SS_METHOD}:${SS_PASSWORD}`).replace(/=+$/,'');
-                        return `ss://${ssGrpcCred}@${addr}:443?type=grpc&serviceName=${encodeURIComponent(grpcService)}&security=tls&sni=${encodeURIComponent(sni)}&alpn=h2#SS-GRPC-${PROXY_LABELS[selectedProxy]}`;
-                }
             }
+        );
+    }
 
-            const path = getPublicPath();
-            let transportParam = '';
-            switch(selectedTransport) {
-                case 'ws': transportParam = `type=ws&path=${encodeURIComponent(path)}&host=${encodeURIComponent(host)}`; break;
-                case 'httpupgrade': transportParam = `type=httpupgrade&path=${encodeURIComponent(path)}&host=${encodeURIComponent(host)}`; break;
-                case 'xhttp': transportParam = `type=xhttp&path=${encodeURIComponent(path)}&host=${encodeURIComponent(host)}&mode=packet-upstream`; break;
-            }
+    /*
+     * ==========================================================
+     * DOM REFERENCES
+     * ==========================================================
+     */
 
-            switch(selectedProtocol) {
+    const loadingScreen =
+        document.getElementById(
+            'loading-screen'
+        );
+
+    const mainContent =
+        document.getElementById(
+            'main-content'
+        );
+
+    const infoHost =
+        document.getElementById(
+            'info-host'
+        );
+
+    const infoSni =
+        document.getElementById(
+            'info-sni'
+        );
+
+    const infoProto =
+        document.getElementById(
+            'info-proto'
+        );
+
+    const infoTransport =
+        document.getElementById(
+            'info-transport'
+        );
+
+    const infoProxy =
+        document.getElementById(
+            'info-proxy'
+        );
+
+    const configDisplay =
+        document.getElementById(
+            'config-display'
+        );
+
+    const copyBtn =
+        document.getElementById(
+            'copy-btn'
+        );
+
+    const addressBtn =
+        document.getElementById(
+            'address-btn'
+        );
+
+    const addressBtnTxt =
+        document.getElementById(
+            'address-btn-txt'
+        );
+
+    const addressSelected =
+        document.getElementById(
+            'address-selected'
+        );
+
+    const addressModal =
+        document.getElementById(
+            'address-modal'
+        );
+
+    const addressListEl =
+        document.getElementById(
+            'address-list'
+        );
+
+    const addressClose =
+        document.getElementById(
+            'address-close'
+        );
+
+    const sniBtn =
+        document.getElementById(
+            'sni-btn'
+        );
+
+    const sniBtnTxt =
+        document.getElementById(
+            'sni-btn-txt'
+        );
+
+    const sniSelected =
+        document.getElementById(
+            'sni-selected'
+        );
+
+    const sniModal =
+        document.getElementById(
+            'sni-modal'
+        );
+
+    const sniListEl =
+        document.getElementById(
+            'sni-list'
+        );
+
+    const sniClose =
+        document.getElementById(
+            'sni-close'
+        );
+
+    const proxyButtons =
+        document.getElementById(
+            'proxy-buttons'
+        );
+
+    const protoButtons =
+        document.getElementById(
+            'proto-buttons'
+        );
+
+    const transButtons =
+        document.getElementById(
+            'trans-buttons'
+        );
+
+    const player =
+        document.getElementById(
+            'floating-player'
+        );
+
+    /*
+     * ==========================================================
+     * DRAG PLAYER
+     * ==========================================================
+     */
+
+    let isDragging = false;
+
+    let offsetX = 0;
+
+    let offsetY = 0;
+
+    function dragStart(event) {
+
+        if (
+            event.target.closest(
+                '.ctrl-btn'
+            )
+        ) {
+            return;
+        }
+
+        isDragging = true;
+
+        const rect =
+            player.getBoundingClientRect();
+
+        const clientX =
+            event.touches
+                ? event.touches[0].clientX
+                : event.clientX;
+
+        const clientY =
+            event.touches
+                ? event.touches[0].clientY
+                : event.clientY;
+
+        offsetX =
+            clientX - rect.left;
+
+        offsetY =
+            clientY - rect.top;
+
+        player.style.transition =
+            'none';
+    }
+
+    function dragMove(event) {
+
+        if (!isDragging) {
+            return;
+        }
+
+        event.preventDefault();
+
+        const clientX =
+            event.touches
+                ? event.touches[0].clientX
+                : event.clientX;
+
+        const clientY =
+            event.touches
+                ? event.touches[0].clientY
+                : event.clientY;
+
+        const newX =
+            Math.max(
+                0,
+                Math.min(
+                    window.innerWidth -
+                    player.offsetWidth,
+                    clientX - offsetX
+                )
+            );
+
+        const newY =
+            Math.max(
+                0,
+                Math.min(
+                    window.innerHeight -
+                    player.offsetHeight,
+                    clientY - offsetY
+                )
+            );
+
+        player.style.left =
+            `${newX}px`;
+
+        player.style.top =
+            `${newY}px`;
+
+        player.style.right =
+            'auto';
+
+        player.style.bottom =
+            'auto';
+    }
+
+    function dragEnd() {
+
+        isDragging = false;
+
+        player.style.transition =
+            'all 0.2s ease';
+    }
+
+    player.addEventListener(
+        'mousedown',
+        dragStart
+    );
+
+    player.addEventListener(
+        'touchstart',
+        dragStart,
+        {
+            passive: true
+        }
+    );
+
+    document.addEventListener(
+        'mousemove',
+        dragMove
+    );
+
+    document.addEventListener(
+        'touchmove',
+        dragMove,
+        {
+            passive: false
+        }
+    );
+
+    document.addEventListener(
+        'mouseup',
+        dragEnd
+    );
+
+    document.addEventListener(
+        'touchend',
+        dragEnd
+    );
+
+    /*
+     * ==========================================================
+     * PATH FUNCTIONS
+     * ==========================================================
+     */
+
+    function getPublicPath() {
+
+        if (
+            selectedTransport === 'grpc'
+        ) {
+            return '';
+        }
+
+        return (
+            PATHS[selectedProtocol]
+                [selectedTransport]
+        );
+    }
+
+    function getGrpcService() {
+
+        return (
+            GRPC_SERVICES[
+                selectedProtocol
+            ]
+        );
+    }
+
+    /*
+     * ==========================================================
+     * CONFIG GENERATOR
+     * ==========================================================
+     */
+
+    function buildConfig() {
+
+        const addr =
+            selectedAddress;
+
+        const sni =
+            selectedSNI;
+
+        const host =
+            currentHost;
+
+        /*
+         * ======================================================
+         * gRPC
+         * ======================================================
+         */
+
+        if (
+            selectedTransport === 'grpc'
+        ) {
+
+            const grpcService =
+                getGrpcService();
+
+            switch (
+                selectedProtocol
+            ) {
+
                 case 'vless':
-                    const vlessAlpn = selectedTransport === 'xhttp' ? 'h2%2Chttp%2F1.1' : 'http%2F1.1';
-                    return `vless://${UUID}@${addr}:443?encryption=none&${transportParam}&security=tls&fp=chrome&sni=${encodeURIComponent(sni)}&alpn=${vlessAlpn}#VLESS-${selectedTransport.toUpperCase()}-${PROXY_LABELS[selectedProxy]}`;
+
+                    return (
+                        `vless://${UUID}@${addr}:443` +
+                        `?encryption=none` +
+                        `&security=tls` +
+                        `&type=grpc` +
+                        `&serviceName=${encodeURIComponent(grpcService)}` +
+                        `&authority=${encodeURIComponent(host)}` +
+                        `&sni=${encodeURIComponent(sni)}` +
+                        `&alpn=h2` +
+                        `&fp=chrome` +
+                        `#VLESS-GRPC-${PROXY_LABELS[selectedProxy]}`
+                    );
+
                 case 'trojan':
-                    const trojanAlpn = selectedTransport === 'xhttp' ? 'h2%2Chttp%2F1.1' : 'http%2F1.1';
-                    return `trojan://${SS_PASSWORD}@${addr}:443?${transportParam}&security=tls&fp=chrome&sni=${encodeURIComponent(sni)}&alpn=${trojanAlpn}#TROJAN-${selectedTransport.toUpperCase()}-${PROXY_LABELS[selectedProxy]}`;
-                case 'vmess':
-                    const alpnVal = selectedTransport === 'xhttp' ? 'h2,http/1.1' : 'http/1.1';
-                    return `vmess://${btoa(JSON.stringify({
-                        v:'2', ps:`VMESS-${selectedTransport.toUpperCase()}-${PROXY_LABELS[selectedProxy]}`, add:addr, port:'443', id:UUID, aid:'0',
-                        scy:'auto', net:selectedTransport, host:host, path:path, tls:'tls', sni:sni, fp:'chrome', alpn:alpnVal
-                    })).replace(/=+$/,'')}`;
-                case 'shadowsocks':
-                    const ssCred = btoa(`${SS_METHOD}:${SS_PASSWORD}`).replace(/=+$/,'');
-                    return `ss://${ssCred}@${addr}:443?${transportParam}&security=tls&sni=${encodeURIComponent(sni)}#SS-${selectedTransport.toUpperCase()}-${PROXY_LABELS[selectedProxy]}`;
+
+                    return (
+                        `trojan://${encodeURIComponent(TROJAN_PASSWORD)}@${addr}:443` +
+                        `?security=tls` +
+                        `&type=grpc` +
+                        `&serviceName=${encodeURIComponent(grpcService)}` +
+                        `&authority=${encodeURIComponent(host)}` +
+                        `&sni=${encodeURIComponent(sni)}` +
+                        `&alpn=h2` +
+                        `&fp=chrome` +
+                        `#TROJAN-GRPC-${PROXY_LABELS[selectedProxy]}`
+                    );
+
+                case 'vmess': {
+
+                    const vmessObject = {
+
+                        v: '2',
+
+                        ps:
+                            `VMESS-GRPC-${PROXY_LABELS[selectedProxy]}`,
+
+                        add: addr,
+
+                        port: '443',
+
+                        id: UUID,
+
+                        aid: '0',
+
+                        scy: 'auto',
+
+                        net: 'grpc',
+
+                        type: 'none',
+
+                        host: host,
+
+                        path: grpcService,
+
+                        tls: 'tls',
+
+                        sni: sni,
+
+                        fp: 'chrome',
+
+                        alpn: 'h2'
+
+                    };
+
+                    return (
+                        `vmess://${btoa(
+                            JSON.stringify(
+                                vmessObject
+                            )
+                        ).replace(/=+$/, '')}`
+                    );
+                }
+
+                case 'shadowsocks': {
+
+                    const ssGrpcCred =
+                        btoa(
+                            `${SS_METHOD}:${SS_PASSWORD}`
+                        ).replace(
+                            /=+$/,
+                            ''
+                        );
+
+                    return (
+                        `ss://${ssGrpcCred}@${addr}:443` +
+                        `?type=grpc` +
+                        `&serviceName=${encodeURIComponent(grpcService)}` +
+                        `&security=tls` +
+                        `&sni=${encodeURIComponent(sni)}` +
+                        `&alpn=h2` +
+                        `#SS-GRPC-${PROXY_LABELS[selectedProxy]}`
+                    );
+                }
+
+                default:
+
+                    return '';
             }
         }
 
-        function buildList(container, items, type) {
-            container.innerHTML = '';
-            items.forEach(item => {
-                const el = document.createElement('div');
-                el.className = 'modal-item';
-                el.textContent = item;
-                el.addEventListener('click', () => {
-                    if (type === 'address') {
-                        selectedAddress = item;
-                        addressSelected.textContent = 'TARGET SET: ' + item;
-                        addressBtnTxt.textContent = item;
-                        addLog(`Target address set: ${item}`, 'success');
-                        addressModal.classList.remove('show');
-                    } else {
-                        selectedSNI = item;
-                        sniSelected.textContent = 'SNI SET: ' + item;
-                        sniBtnTxt.textContent = item;
-                        addLog(`SNI set: ${item}`, 'success');
-                        sniModal.classList.remove('show');
+        /*
+         * ======================================================
+         * HTTP / WS / XHTTP
+         * ======================================================
+         */
+
+        const path =
+            getPublicPath();
+
+        let transportParam = '';
+
+        switch (
+            selectedTransport
+        ) {
+
+            case 'ws':
+
+                transportParam =
+                    `type=ws` +
+                    `&path=${encodeURIComponent(path)}` +
+                    `&host=${encodeURIComponent(host)}`;
+
+                break;
+
+            case 'httpupgrade':
+
+                transportParam =
+                    `type=httpupgrade` +
+                    `&path=${encodeURIComponent(path)}` +
+                    `&host=${encodeURIComponent(host)}`;
+
+                break;
+
+            case 'xhttp':
+
+                transportParam =
+                    `type=xhttp` +
+                    `&path=${encodeURIComponent(path)}` +
+                    `&host=${encodeURIComponent(host)}` +
+                    `&mode=packet-upstream`;
+
+                break;
+
+            default:
+
+                transportParam = '';
+
+        }
+
+        switch (
+            selectedProtocol
+        ) {
+
+            case 'vless': {
+
+                const alpn =
+                    selectedTransport === 'xhttp'
+                        ? 'h2%2Chttp%2F1.1'
+                        : 'http%2F1.1';
+
+                return (
+                    `vless://${UUID}@${addr}:443` +
+                    `?encryption=none` +
+                    `&${transportParam}` +
+                    `&security=tls` +
+                    `&fp=chrome` +
+                    `&sni=${encodeURIComponent(sni)}` +
+                    `&alpn=${alpn}` +
+                    `#VLESS-${selectedTransport.toUpperCase()}-${PROXY_LABELS[selectedProxy]}`
+                );
+            }
+
+            case 'trojan': {
+
+                const alpn =
+                    selectedTransport === 'xhttp'
+                        ? 'h2%2Chttp%2F1.1'
+                        : 'http%2F1.1';
+
+                return (
+                    `trojan://${encodeURIComponent(TROJAN_PASSWORD)}@${addr}:443` +
+                    `?${transportParam}` +
+                    `&security=tls` +
+                    `&fp=chrome` +
+                    `&sni=${encodeURIComponent(sni)}` +
+                    `&alpn=${alpn}` +
+                    `#TROJAN-${selectedTransport.toUpperCase()}-${PROXY_LABELS[selectedProxy]}`
+                );
+            }
+
+            case 'vmess': {
+
+                const alpn =
+                    selectedTransport === 'xhttp'
+                        ? 'h2,http/1.1'
+                        : 'http/1.1';
+
+                const vmessObject = {
+
+                    v: '2',
+
+                    ps:
+                        `VMESS-${selectedTransport.toUpperCase()}-${PROXY_LABELS[selectedProxy]}`,
+
+                    add: addr,
+
+                    port: '443',
+
+                    id: UUID,
+
+                    aid: '0',
+
+                    scy: 'auto',
+
+                    net: selectedTransport,
+
+                    type: 'none',
+
+                    host: host,
+
+                    path: path,
+
+                    tls: 'tls',
+
+                    sni: sni,
+
+                    fp: 'chrome',
+
+                    alpn: alpn
+
+                };
+
+                return (
+                    `vmess://${btoa(
+                        JSON.stringify(
+                            vmessObject
+                        )
+                    ).replace(/=+$/, '')}`
+                );
+            }
+
+            case 'shadowsocks': {
+
+                const ssCred =
+                    btoa(
+                        `${SS_METHOD}:${SS_PASSWORD}`
+                    ).replace(
+                        /=+$/,
+                        ''
+                    );
+
+                return (
+                    `ss://${ssCred}@${addr}:443` +
+                    `?${transportParam}` +
+                    `&security=tls` +
+                    `&sni=${encodeURIComponent(sni)}` +
+                    `#SS-${selectedTransport.toUpperCase()}-${PROXY_LABELS[selectedProxy]}`
+                );
+            }
+
+            default:
+
+                return '';
+        }
+    }
+
+    /*
+     * ==========================================================
+     * MODAL LIST
+     * ==========================================================
+     */
+
+    function buildList(
+        container,
+        items,
+        type
+    ) {
+
+        container.innerHTML = '';
+
+        items.forEach(
+            function (item) {
+
+                const el =
+                    document.createElement(
+                        'div'
+                    );
+
+                el.className =
+                    'modal-item';
+
+                /*
+                 * Separator entries are visual only.
+                 */
+
+                if (
+                    item.startsWith('---')
+                ) {
+
+                    el.style.color =
+                        'var(--neon-purple)';
+
+                    el.style.cursor =
+                        'default';
+
+                    el.style.fontWeight =
+                        '700';
+
+                    el.addEventListener(
+                        'click',
+                        function (event) {
+                            event.preventDefault();
+                        }
+                    );
+
+                } else {
+
+                    el.addEventListener(
+                        'click',
+                        function () {
+
+                            if (
+                                type === 'address'
+                            ) {
+
+                                selectedAddress =
+                                    item;
+
+                                addressSelected.textContent =
+                                    'TARGET SET: ' +
+                                    item;
+
+                                addressBtnTxt.textContent =
+                                    item;
+
+                                addLog(
+                                    'Target address selected',
+                                    'success'
+                                );
+
+                                addressModal.classList
+                                    .remove('show');
+
+                            } else {
+
+                                selectedSNI =
+                                    item;
+
+                                sniSelected.textContent =
+                                    'SNI SET: ' +
+                                    item;
+
+                                sniBtnTxt.textContent =
+                                    item;
+
+                                addLog(
+                                    'SNI selected',
+                                    'success'
+                                );
+
+                                sniModal.classList
+                                    .remove('show');
+                            }
+
+                            updateUI();
+                        }
+                    );
+                }
+
+                el.textContent =
+                    item;
+
+                container.appendChild(
+                    el
+                );
+            }
+        );
+    }
+
+    /*
+     * ==========================================================
+     * OPTION BUTTONS
+     * ==========================================================
+     */
+
+    function buildOptions(
+        container,
+        items,
+        activeItem,
+        labels
+    ) {
+
+        container.innerHTML = '';
+
+        items.forEach(
+            function (item) {
+
+                const button =
+                    document.createElement(
+                        'button'
+                    );
+
+                button.className =
+                    'switch-btn' +
+                    (
+                        item === activeItem
+                            ? ' active'
+                            : ''
+                    );
+
+                button.textContent =
+                    labels[item] ||
+                    item;
+
+                button.addEventListener(
+                    'click',
+                    function () {
+
+                        if (isProcessing) {
+                            return;
+                        }
+
+                        isProcessing =
+                            true;
+
+                        container
+                            .querySelectorAll(
+                                '.switch-btn'
+                            )
+                            .forEach(
+                                function (btn) {
+                                    btn.classList
+                                        .remove(
+                                            'active'
+                                        );
+                                }
+                            );
+
+                        button.classList
+                            .add('active');
+
+                        if (
+                            container ===
+                            proxyButtons
+                        ) {
+
+                            selectedProxy =
+                                item;
+                        }
+
+                        if (
+                            container ===
+                            protoButtons
+                        ) {
+
+                            selectedProtocol =
+                                item;
+                        }
+
+                        if (
+                            container ===
+                            transButtons
+                        ) {
+
+                            selectedTransport =
+                                item;
+                        }
+
+                        addLog(
+                            'Selected: ' +
+                            (labels[item] ||
+                            item),
+                            'success'
+                        );
+
+                        updateUI();
+
+                        setTimeout(
+                            function () {
+                                isProcessing =
+                                    false;
+                            },
+                            200
+                        );
                     }
+                );
+
+                container.appendChild(
+                    button
+                );
+            }
+        );
+    }
+
+    /*
+     * ==========================================================
+     * UPDATE UI
+     * ==========================================================
+     */
+
+    function updateUI() {
+
+        infoHost.textContent =
+            selectedAddress;
+
+        infoSni.textContent =
+            selectedSNI;
+
+        infoProto.textContent =
+            PROTOCOL_LABELS[
+                selectedProtocol
+            ];
+
+        infoTransport.textContent =
+            TRANSPORT_LABELS[
+                selectedTransport
+            ];
+
+        infoProxy.textContent =
+            PROXY_LABELS[
+                selectedProxy
+            ];
+
+        configDisplay.value =
+            buildConfig();
+
+        buildOptions(
+            proxyButtons,
+            PROXY_ENGINES,
+            selectedProxy,
+            PROXY_LABELS
+        );
+
+        buildOptions(
+            protoButtons,
+            PROTOCOLS,
+            selectedProtocol,
+            PROTOCOL_LABELS
+        );
+
+        buildOptions(
+            transButtons,
+            TRANSPORTS,
+            selectedTransport,
+            TRANSPORT_LABELS
+        );
+    }
+
+    /*
+     * ==========================================================
+     * COPY BUTTONS
+     * ==========================================================
+     */
+
+    async function copyText(
+        text,
+        button,
+        originalLabel,
+        successLabel
+    ) {
+
+        try {
+
+            await navigator.clipboard
+                .writeText(text);
+
+            button.textContent =
+                successLabel;
+
+            setTimeout(
+                function () {
+
+                    button.textContent =
+                        originalLabel;
+
+                },
+                2000
+            );
+
+            addLog(
+                'Configuration copied',
+                'success'
+            );
+
+        } catch (error) {
+
+            addLog(
+                'Copy permission denied',
+                'info'
+            );
+        }
+    }
+
+    copyBtn.addEventListener(
+        'click',
+        function () {
+
+            copyText(
+                configDisplay.value,
+                copyBtn,
+                'COPY',
+                'COPIED ✓'
+            );
+        }
+    );
+
+    copyBypassBtn1.addEventListener(
+        'click',
+        function () {
+
+            copyText(
+                bypassConfig1.value,
+                copyBypassBtn1,
+                'COPY',
+                'COPIED ✓'
+            );
+        }
+    );
+
+    copyBypassBtn2.addEventListener(
+        'click',
+        function () {
+
+            copyText(
+                bypassConfig2.value,
+                copyBypassBtn2,
+                'COPY',
+                'COPIED ✓'
+            );
+        }
+    );
+
+    /*
+     * ==========================================================
+     * ADDRESS MODAL
+     * ==========================================================
+     */
+
+    addressBtn.addEventListener(
+        'click',
+        function () {
+
+            buildList(
+                addressListEl,
+                addressList,
+                'address'
+            );
+
+            addressModal.classList
+                .add('show');
+
+            addLog(
+                'Opening address list',
+                'info'
+            );
+        }
+    );
+
+    addressClose.addEventListener(
+        'click',
+        function () {
+
+            addressModal.classList
+                .remove('show');
+        }
+    );
+
+    /*
+     * ==========================================================
+     * SNI MODAL
+     * ==========================================================
+     */
+
+    sniBtn.addEventListener(
+        'click',
+        function () {
+
+            buildList(
+                sniListEl,
+                sniList,
+                'sni'
+            );
+
+            sniModal.classList
+                .add('show');
+
+            addLog(
+                'Opening SNI list',
+                'info'
+            );
+        }
+    );
+
+    sniClose.addEventListener(
+        'click',
+        function () {
+
+            sniModal.classList
+                .remove('show');
+        }
+    );
+
+    /*
+     * ==========================================================
+     * CLOSE MODAL WITH ESC
+     * ==========================================================
+     */
+
+    document.addEventListener(
+        'keydown',
+        function (event) {
+
+            if (
+                event.key === 'Escape'
+            ) {
+
+                addressModal.classList
+                    .remove('show');
+
+                sniModal.classList
+                    .remove('show');
+            }
+        }
+    );
+
+    /*
+     * ==========================================================
+     * STARTUP
+     * ==========================================================
+     */
+
+    window.addEventListener(
+        'load',
+        function () {
+
+            loadSong(
+                currentSongIndex
+            );
+
+            setTimeout(
+                function () {
+
+                    loadingScreen.classList
+                        .add('hidden');
+
+                    mainContent.style.display =
+                        'flex';
+
                     updateUI();
-                });
-                container.appendChild(el);
-            });
+
+                    fetchUserInfo();
+
+                    measurePing();
+
+                    setInterval(
+                        updateMonitorUptime,
+                        1000
+                    );
+
+                    setInterval(
+                        updateGraph,
+                        1200
+                    );
+
+                    setInterval(
+                        measurePing,
+                        10000
+                    );
+
+                    addLog(
+                        'System interface loaded',
+                        'success'
+                    );
+
+                    addLog(
+                        'TLS configuration generator ready',
+                        'success'
+                    );
+
+                    addLog(
+                        '4 internal proxy layers detected',
+                        'success'
+                    );
+
+                    addLog(
+                        'Public proxy prefixes disabled',
+                        'success'
+                    );
+
+                    addLog(
+                        'gRPC service names synchronized',
+                        'success'
+                    );
+
+                    addLog(
+                        'Ready for configuration generation',
+                        'info'
+                    );
+
+                },
+                3500
+            );
         }
+    );
 
-        function buildOptions(container, items, activeItem, labels) {
-            container.innerHTML = '';
-            items.forEach(item => {
-                const b = document.createElement('button');
-                b.className = 'switch-btn' + (item === activeItem ? ' active' : '');
-                b.textContent = labels[item] || item;
-                b.addEventListener('click', () => {
-                    if (isProcessing) return;
-                    isProcessing = true;
-                    container.querySelectorAll('.switch-btn').forEach(btn => btn.classList.remove('active'));
-                    b.classList.add('active');
-                    if (container === proxyButtons) selectedProxy = item;
-                    if (container === protoButtons) selectedProtocol = item;
-                    if (container === transButtons) selectedTransport = item;
-                    addLog(`Switched to: ${labels[item] || item}`, 'success');
-                    updateUI();
-                    setTimeout(() => isProcessing = false, 200);
-                });
-                container.appendChild(b);
-            });
-        }
-
-        function updateUI() {
-            infoHost.textContent = selectedAddress;
-            infoSni.textContent = selectedSNI;
-            infoProto.textContent = PROTOCOL_LABELS[selectedProtocol];
-            infoTransport.textContent = TRANSPORT_LABELS[selectedTransport];
-            infoProxy.textContent = PROXY_LABELS[selectedProxy];
-            configDisplay.value = buildConfig();
-            buildOptions(proxyButtons, PROXY_ENGINES, selectedProxy, PROXY_LABELS);
-            buildOptions(protoButtons, PROTOCOLS, selectedProtocol, PROTOCOL_LABELS);
-            buildOptions(transButtons, TRANSPORTS, selectedTransport, TRANSPORT_LABELS);
-        }
-
-        copyBypassBtn1.addEventListener('click', () => {
-            navigator.clipboard.writeText(bypassConfig1.value)
-                .then(() => {
-                    copyBypassBtn1.textContent = 'COPIED ✓';
-                    setTimeout(() => copyBypassBtn1.textContent = 'COPY', 2000);
-                    addLog('Bypass Config 1 copied!', 'success');
-                })
-                .catch(() => addLog('Copy failed', 'info'));
-        });
-
-        copyBypassBtn2.addEventListener('click', () => {
-            navigator.clipboard.writeText(bypassConfig2.value)
-                .then(() => {
-                    copyBypassBtn2.textContent = 'COPIED ✓';
-                    setTimeout(() => copyBypassBtn2.textContent = 'COPY', 2000);
-                    addLog('Bypass Config 2 copied!', 'success');
-                })
-                .catch(() => addLog('Copy failed', 'info'));
-        });
-
-        copyBtn.addEventListener('click', () => {
-            navigator.clipboard.writeText(configDisplay.value)
-                .then(() => {
-                    copyBtn.textContent = 'COPIED ✓';
-                    setTimeout(() => copyBtn.textContent = 'COPY', 2000);
-                    addLog('Generated Config copied!', 'success');
-                })
-                .catch(() => addLog('Copy permission denied', 'info'));
-        });
-
-        addressBtn.addEventListener('click', () => {
-            buildList(addressListEl, addressList, 'address');
-            addressModal.classList.add('show');
-            addLog('Opening address list', 'info');
-        });
-        addressClose.addEventListener('click', () => addressModal.classList.remove('show'));
-
-        sniBtn.addEventListener('click', () => {
-            buildList(sniListEl, sniList, 'sni');
-            sniModal.classList.add('show');
-            addLog('Opening SNI list', 'info');
-        });
-        sniClose.addEventListener('click', () => sniModal.classList.remove('show'));
-
-        window.addEventListener('load', () => {
-            setTimeout(() => {
-                loadingScreen.classList.add('hidden');
-                mainContent.style.display = 'flex';
-                updateUI();
-                fetchUserInfo();
-                measurePing();
-                setInterval(updateMonitorUptime, 1000);
-                setInterval(updateGraph, 1200);
-                setInterval(measurePing, 10000);
-                addLog('System interface loaded successfully', 'success');
-                addLog('Encryption modules active', 'success');
-                addLog('Real-time monitor initialized', 'success');
-                addLog('4 proxy engines available', 'success');
-                addLog('gRPC transport initialized', 'success');
-                addLog('Ready for configuration generation', 'info');
-            }, 3500);
-        });
-
-    })();
+})();
 </script>
 
 </body>
 </html>
-   
