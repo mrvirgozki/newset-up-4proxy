@@ -82,7 +82,6 @@ COPY index.html /usr/share/nginx/html/index.html
 
 COPY anti_ddos.py /usr/local/bin/anti_ddos.py
 
-
 RUN printf 'ok\n' > /usr/share/nginx/html/health && \
     a2enconf virgozki && \
     chmod +x /usr/local/bin/anti_ddos.py && \
@@ -92,6 +91,24 @@ RUN printf 'ok\n' > /usr/share/nginx/html/health && \
     chmod 644 /etc/envoy/envoy.yaml && \
     chmod 644 /etc/apache2/conf-available/virgozki.conf && \
     chmod 644 /usr/share/nginx/html/index.html
+
+# ============================================================
+# CONFIG VALIDATION
+# ============================================================
+
+RUN /usr/local/bin/xray run -test \
+        -c /etc/xray/config.json && \
+    /usr/local/bin/envoy \
+        --mode validate \
+        -c /etc/envoy/envoy.yaml && \
+    haproxy \
+        -c \
+        -f /etc/haproxy/haproxy.cfg && \
+    apachectl \
+        -t && \
+    /usr/local/openresty/bin/openresty \
+        -t \
+        -c /etc/openresty/nginx.conf
 
 EXPOSE 8080
 
