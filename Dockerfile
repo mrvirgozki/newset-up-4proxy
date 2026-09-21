@@ -26,7 +26,7 @@ ENV OPENRESTY_GRPC_PORT="${OPENRESTY_GRPC_PORT:-8085}"
 WORKDIR /opt/virgozki
 
 # ==============================================
-# INSTALL DEPENDENCIES — ✅ KUMPLETO NA KASAMA ANG NETCAT
+# INSTALL DEPENDENCIES — ✅ KUMPLETO AT WALANG ERROR
 # ==============================================
 RUN apt-get update && apt-get upgrade -y && \
 apt-get install -y --no-install-recommends \
@@ -45,15 +45,9 @@ openssl \
 python3 \
 python3-pip \
 iptables \
-netcat-openbsd && \  # ✅ IDINAGDAG — SOLUSYON SA MISSING NC ERROR
-
-# ✅ ENABLE APACHE MODULES
+netcat-openbsd && \
 a2enmod proxy proxy_http proxy_wstunnel headers rewrite http2 ssl && \
-
-# ✅ DISABLE DEFAULT SITE PARA WALANG CONFLICT
 a2dissite 000-default && \
-
-# ✅ CREATE ALL REQUIRED DIRECTORIES
 mkdir -p \
 /etc/xray \
 /etc/haproxy \
@@ -68,8 +62,6 @@ mkdir -p \
 /run/haproxy \
 /var/log/xray \
 /var/log/apache2 && \
-
-# ✅ LINISIN ANG CACHE PARA MABILIS ANG BUILD AT MALIIT ANG SIZE
 rm -rf /var/lib/apt/lists/*
 
 # ==============================================
@@ -80,7 +72,7 @@ COPY --from=xray /usr/local/bin/xray /usr/local/bin/xray
 COPY --from=xray /usr/local/share/xray/. /usr/local/share/xray/
 
 # ==============================================
-# COPY CONFIG FILES — KASAMA NA ANG LAHAT
+# COPY CONFIG FILES
 # ==============================================
 COPY config.json /etc/xray/config.json
 COPY nginx.conf /etc/openresty/nginx.conf
@@ -98,7 +90,7 @@ chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/anti_ddos.py && \
 chown -R www-data:www-data /usr/share/nginx/html /var/log/apache2 /var/run/apache2 /run/haproxy /tmp/virgozki-logs
 
 # ==============================================
-# EXPOSE PORTS — PARA LAMANG SA DOKUMENTASYON
+# EXPOSE PORTS
 # ==============================================
 EXPOSE 8080
 
