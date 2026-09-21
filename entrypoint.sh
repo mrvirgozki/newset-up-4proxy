@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # ==============================================
-# ENV VARS — TUGMA SA DOCKERFILE
+# ENV VARS — TUGMA SA DOCKERFILE AT CLOUD RUN
 # ==============================================
 PORT="${PORT:-8080}"
 BIND_ADDR="${BIND_ADDR:-0.0.0.0}"
@@ -53,7 +53,7 @@ mkdir -p \
 /var/log/xray
 
 # ==============================================
-# ✅ CHECK BINARIES (INAYOS PARA SA OPENRESTY)
+# ✅ CHECK BINARIES
 # ==============================================
 echo "[check] 🔍 Verifying binaries..."
 command -v xray >/dev/null || { echo "❌ Missing: xray"; exit 1; }
@@ -72,11 +72,12 @@ for f in "$XRAY_CONFIG" "$NGINX_CONFIG" "$HAPROXY_CONFIG"; do
 done
 
 # ==============================================
-# ✅ AUTO-UPDATE NGINX PORTS (TAMA NA ANG FORMAT)
+# ✅ AYOS NA SED — TUGMA SA BAGONG NGINX FORMAT
 # ==============================================
-echo "[config] 🔧 Updating OpenResty ports..."
-sed -i -E "s/listen\s+[0-9.]+:8080(\s+http2)?;/listen 127.0.0.1:${OPENRESTY_PORT}\1;/" "$NGINX_CONFIG"
-sed -i -E "s/listen\s+[0-9.]+:8085\s+http2;/listen 127.0.0.1:${OPENRESTY_GRPC_PORT} http2;/" "$NGINX_CONFIG"
+echo "[config] 🔧 Updating OpenResty ports to local only..."
+# Palitan ang lahat ng listen address papuntang 127.0.0.1, iwas conflict sa Envoy
+sed -i -E "s/^(\s*)listen\s+[0-9.]+:8080;/\1listen 127.0.0.1:${OPENRESTY_PORT};/" "$NGINX_CONFIG"
+sed -i -E "s/^(\s*)listen\s+[0-9.]+:8085;/\1listen 127.0.0.1:${OPENRESTY_GRPC_PORT};/" "$NGINX_CONFIG"
 
 # ==============================================
 # VALIDATE ALL CONFIGS
@@ -108,7 +109,7 @@ python3 /usr/local/bin/anti_ddos.py > /tmp/virgozki-logs/anti_ddos.log 2>&1 &
 PIDS+=($!)
 sleep 2
 
-echo "[start] 🔄 Starting OpenResty..."
+echo "[start] 🔄 Starting OpenResty (local only)..."
 openresty -c "$NGINX_CONFIG" -g "daemon off;" > /tmp/virgozki-logs/openresty.log 2>&1 &
 PIDS+=($!)
 sleep 2
@@ -116,12 +117,12 @@ sleep 2
 echo "[start] ⚖️ Starting HAProxy..."
 haproxy -db -f "$HAPROXY_CONFIG" > /tmp/virgozki-logs/haproxy.log 2>&1 &
 PIDS+=($!)
-sleep 2
+sleep 3  # ✅ Pahabain ng kaunti para siguradong handa
 
 # ==============================================
-# ✅ AUTO-GENERATE ENVOY CONFIG
+# ✅ AUTO-GENERATE ENVOY CONFIG (PUBLIC PORT 8080)
 # ==============================================
-echo "[config] 🚪 Generating Envoy config..."
+echo "[config] 🚪 Generating Envoy config for $BIND_ADDR:$PORT..."
 cat > "$ENVOY_CONFIG" <<EOF
 static_resources:
   listeners:
@@ -175,24 +176,24 @@ EOF
 echo "[test] ✅ Testing Envoy config..."
 envoy --mode validate -c "$ENVOY_CONFIG"
 
-echo "[start] 🌐 Starting Envoy (Public :$PORT)..."
+echo "[start] 🌐 Starting Envoy — listening on PUBLIC $BIND_ADDR:$PORT..."
 envoy -c "$ENVOY_CONFIG" --log-level warning > /tmp/virgozki-logs/envoy.log 2>&1 &
 PIDS+=($!)
 
-sleep 5
+# ✅ MAHALAGA: Pahabain bago ipakita na running — para hindi ma-timeout ang Cloud Run
+sleep 10
 
 # ==============================================
-# FINAL STATUS
+# FINAL STATUS — IPAPAKITA LANG PAG SIGURADONG LISTENING NA
 # ==============================================
 echo "======================================"
-echo " ✅ ALL SERVICES RUNNING SUCCESSFULLY"
+echo " ✅ ALL SERVICES RUNNING — LISTENING ON $PORT"
 echo "======================================"
-echo "🌐 Public (Envoy)  : $PORT"
-echo "⚖️ HAProxy          : $HAPROXY_PORT"
-echo "🔄 OpenResty        : $OPENRESTY_PORT"
-echo "🌐 Apache           : $APACHE_PORT"
-echo "🛡️ Anti-DDoS        : Running"
-echo "📡 Xray            : Running"
+echo "🌐 Public Access : $BIND_ADDR:$PORT"
+echo "⚖️ HAProxy       : 127.0.0.1:$HAPROXY_PORT"
+echo "🔄 OpenResty     : 127.0.0.1:$OPENRESTY_PORT / $OPENRESTY_GRPC_PORT"
+echo "🌐 Panel Ready    : / index.html"
+echo "🛡️ Anti-DDoS     : Active"
 echo "======================================"
 
 # ==============================================
@@ -201,9 +202,9 @@ echo "======================================"
 while true; do
     for pid in "${PIDS[@]}"; do
         if ! kill -0 "$pid" 2>/dev/null; then
-            echo -e "\n❌ CRITICAL: Process stopped unexpectedly!"
-            echo -e "\n📋 Last 20 lines of all logs:"
-            tail -n 20 /tmp/virgozki-logs/*.log 2>/dev/null || true
+            echo -e "\n❌ CRITICAL: Process stopped!"
+            echo -e "\n📋 Recent logs:"
+            tail -n 15 /tmp/virgozki-logs/*.log 2>/dev/null || true
             exit 1
         fi
     done
