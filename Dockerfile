@@ -19,12 +19,43 @@ ENV OPENRESTY_GRPC_PORT="${OPENRESTY_GRPC_PORT:-8085}"
 
 WORKDIR /opt/virgozki
 
-RUN apt-get update && apt-get upgrade -y && \
+RUN apt-get update && \
 apt-get install -y --no-install-recommends \
-apache2 apache2-utils haproxy ca-certificates curl wget unzip tini procps iproute2 net-tools openssl && \
-a2enmod proxy proxy_http proxy_wstunnel headers rewrite http2 ssl && \
+apache2 \
+apache2-utils \
+haproxy \
+ca-certificates \
+curl \
+wget \
+unzip \
+tini \
+procps \
+iproute2 \
+net-tools \
+openssl && \
+a2enmod \
+proxy \
+proxy_http \
+proxy_wstunnel \
+headers \
+rewrite \
+http2 && \
+# ✅ Idinagdag: Tanggalin default Apache site para walang conflict
 a2dissite 000-default && \
-mkdir -p /etc/xray /etc/haproxy /etc/envoy /etc/apache2/conf-available /etc/apache2/conf-enabled /tmp/virgozki /tmp/virgozki-logs /usr/share/nginx/html /usr/local/share/xray /var/run/apache2 /run/haproxy /var/log/xray /var/log/apache2 && \
+mkdir -p \
+/etc/xray \
+/etc/haproxy \
+/etc/envoy \
+/etc/apache2/conf-available \
+/etc/apache2/conf-enabled \
+/tmp/virgozki \
+/tmp/virgozki-logs \
+/usr/share/nginx/html \
+/usr/local/share/xray \
+/var/run/apache2 \
+/run/haproxy \
+/var/log/xray \
+/var/log/apache2 && \
 rm -rf /var/lib/apt/lists/*
 
 COPY --from=envoy /usr/local/bin/envoy /usr/local/bin/envoy
@@ -38,9 +69,10 @@ COPY httpd.conf /etc/apache2/conf-available/virgozki.conf
 COPY index.html /usr/share/nginx/html/index.html
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 
-RUN a2enconf virgozki && chmod +x /usr/local/bin/entrypoint.sh && chown -R www-data:www-data /usr/share/nginx/html /var/log/apache2 /var/run/apache2
+RUN a2enconf virgozki && \
+chmod +x /usr/local/bin/entrypoint.sh
 
-EXPOSE 8080 8081 8083 8085
+EXPOSE 8080
 
 STOPSIGNAL SIGTERM
 
