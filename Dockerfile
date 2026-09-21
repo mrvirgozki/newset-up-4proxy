@@ -1,17 +1,6 @@
-# ==============================================
-# MULTI-STAGE BASE IMAGES
-# ==============================================
-
 FROM envoyproxy/envoy:v1.39.1 AS envoy
-
 FROM ghcr.io/xtls/xray-core:25.12.8 AS xray
-
 FROM openresty/openresty:1.31.1.1-bookworm-fat
-
-
-# ==============================================
-# ENVIRONMENT
-# ==============================================
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -27,11 +16,6 @@ ENV ENVOY_PORT=8082
 ENV APACHE_PORT=8083
 
 WORKDIR /opt/virgozki
-
-
-# ==============================================
-# INSTALL DEPENDENCIES
-# ==============================================
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -50,7 +34,6 @@ RUN apt-get update && \
         openssl \
         python3 \
         python3-pip \
-        iptables \
         netcat-openbsd && \
     a2enmod \
         proxy \
@@ -59,8 +42,7 @@ RUN apt-get update && \
         proxy_wstunnel \
         headers \
         rewrite \
-        http2 \
-        ssl && \
+        http2 && \
     a2dissite 000-default && \
     mkdir -p \
         /etc/xray \
@@ -78,106 +60,43 @@ RUN apt-get update && \
         /var/log/apache2 && \
     rm -rf /var/lib/apt/lists/*
 
+COPY --from=envoy /usr/local/bin/envoy /usr/local/bin/envoy
 
-# ==============================================
-# COPY ENVOY
-# ==============================================
+COPY --from=xray /usr/local/bin/xray /usr/local/bin/xray
 
-COPY --from=envoy \
-    /usr/local/bin/envoy \
-    /usr/local/bin/envoy
+COPY --from=xray /usr/local/share/xray/. /usr/local/share/xray/
 
+COPY supervisord.conf /etc/supervisord.conf
 
-# ==============================================
-# COPY XRAY
-# ==============================================
+COPY config.json /etc/xray/config.json
 
-COPY --from=xray \
-    /usr/local/bin/xray \
-    /usr/local/bin/xray
+COPY nginx.conf /etc/openresty/nginx.conf
 
-COPY --from=xray \
-    /usr/local/share/xray/. \
-    /usr/local/share/xray/
+COPY haproxy.cfg /etc/haproxy/haproxy.cfg
 
+COPY envoy.yaml /etc/envoy/envoy.yaml
 
-# ==============================================
-# COPY CONFIGURATION FILES
-# ==============================================
+COPY httpd.conf /etc/apache2/conf-available/virgozki.conf
 
-COPY supervisord.conf \
-    /etc/supervisord.conf
+COPY index.html /usr/share/nginx/html/index.html
 
-COPY config.json \
-    /etc/xray/config.json
-
-COPY nginx.conf \
-    /etc/openresty/nginx.conf
-
-COPY haproxy.cfg \
-    /etc/haproxy/haproxy.cfg
-
-COPY envoy.yaml \
-    /etc/envoy/envoy.yaml
-
-COPY httpd.conf \
-    /etc/apache2/conf-available/virgozki.conf
-
-COPY index.html \
-    /usr/share/nginx/html/index.html
-
-COPY anti_ddos.py \
-    /usr/local/bin/anti_ddos.py
+COPY anti_ddos.py /usr/local/bin/anti_ddos.py
 
 
-# ==============================================
-# HEALTH FILE FOR APACHE / ENVOY
-# ==============================================
-
-RUN printf 'ok\n' > /usr/share/nginx/html/health
-
-
-# ==============================================
-# FINAL SETUP
-# ==============================================
-
-RUN a2enconf virgozki && \
+RUN printf 'ok\n' > /usr/share/nginx/html/health && \
+    a2enconf virgozki && \
     chmod +x /usr/local/bin/anti_ddos.py && \
     chmod 644 /etc/xray/config.json && \
     chmod 644 /etc/openresty/nginx.conf && \
     chmod 644 /etc/haproxy/haproxy.cfg && \
     chmod 644 /etc/envoy/envoy.yaml && \
     chmod 644 /etc/apache2/conf-available/virgozki.conf && \
-    chmod 644 /usr/share/nginx/html/index.html && \
-    chown -R www-data:www-data \
-        /usr/share/nginx/html \
-        /var/log/apache2 \
-        /tmp/virgozki-logs
-
-
-# ==============================================
-# CLOUD RUN PORT
-# ==============================================
+    chmod 644 /usr/share/nginx/html/index.html
 
 EXPOSE 8080
 
-
-# ==============================================
-# SIGNAL HANDLING
-# ==============================================
-
 STOPSIGNAL SIGTERM
-
-
-# ==============================================
-# TINI + SUPERVISOR
-# ==============================================
 
 ENTRYPOINT ["/usr/bin/tini", "--"]
 
-CMD [
-    "/usr/bin/supervisord",
-    "-n",
-    "-c",
-    "/etc/supervisord.conf"
-]
+CMD ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisord.conf"]
