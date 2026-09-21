@@ -1,15 +1,20 @@
 # ==============================================
 # MULTI-STAGE BASE IMAGES
 # ==============================================
+
 FROM envoyproxy/envoy:v1.39.1 AS envoy
+
 FROM ghcr.io/xtls/xray-core:25.12.8 AS xray
+
 FROM openresty/openresty:1.31.1.1-bookworm-fat
+
+
+# ==============================================
+# ENVIRONMENT
+# ==============================================
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# ==============================================
-# CLOUD RUN / INTERNAL PORTS
-# ==============================================
 ENV PORT=8080
 ENV BIND_ADDR=0.0.0.0
 
@@ -23,91 +28,156 @@ ENV APACHE_PORT=8083
 
 WORKDIR /opt/virgozki
 
+
 # ==============================================
 # INSTALL DEPENDENCIES
 # ==============================================
+
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-    apache2 \
-    apache2-utils \
-    haproxy \
-    supervisor \
-    ca-certificates \
-    curl \
-    wget \
-    unzip \
-    tini \
-    procps \
-    iproute2 \
-    net-tools \
-    openssl \
-    python3 \
-    python3-pip \
-    iptables \
-    netcat-openbsd && \
-    a2enmod proxy proxy_http proxy_wstunnel headers rewrite http2 ssl && \
+        apache2 \
+        apache2-utils \
+        haproxy \
+        supervisor \
+        ca-certificates \
+        curl \
+        wget \
+        unzip \
+        tini \
+        procps \
+        iproute2 \
+        net-tools \
+        openssl \
+        python3 \
+        python3-pip \
+        iptables \
+        netcat-openbsd && \
+    a2enmod \
+        proxy \
+        proxy_http \
+        proxy_http2 \
+        proxy_wstunnel \
+        headers \
+        rewrite \
+        http2 \
+        ssl && \
     a2dissite 000-default && \
     mkdir -p \
-    /etc/xray \
-    /etc/haproxy \
-    /etc/envoy \
-    /etc/apache2/conf-available \
-    /etc/apache2/conf-enabled \
-    /tmp/virgozki \
-    /tmp/virgozki-logs \
-    /usr/share/nginx/html \
-    /usr/local/share/xray \
-    /var/run/apache2 \
-    /run/haproxy \
-    /var/log/xray \
-    /var/log/apache2 && \
+        /etc/xray \
+        /etc/haproxy \
+        /etc/envoy \
+        /etc/apache2/conf-available \
+        /etc/apache2/conf-enabled \
+        /tmp/virgozki \
+        /tmp/virgozki-logs \
+        /usr/share/nginx/html \
+        /usr/local/share/xray \
+        /var/run/apache2 \
+        /run/haproxy \
+        /var/log/xray \
+        /var/log/apache2 && \
     rm -rf /var/lib/apt/lists/*
+
 
 # ==============================================
 # COPY ENVOY
 # ==============================================
-COPY --from=envoy /usr/local/bin/envoy /usr/local/bin/envoy
+
+COPY --from=envoy \
+    /usr/local/bin/envoy \
+    /usr/local/bin/envoy
+
 
 # ==============================================
 # COPY XRAY
 # ==============================================
-COPY --from=xray /usr/local/bin/xray /usr/local/bin/xray
-COPY --from=xray /usr/local/share/xray/. /usr/local/share/xray/
+
+COPY --from=xray \
+    /usr/local/bin/xray \
+    /usr/local/bin/xray
+
+COPY --from=xray \
+    /usr/local/share/xray/. \
+    /usr/local/share/xray/
+
 
 # ==============================================
-# COPY CONFIG FILES
+# COPY CONFIGURATION FILES
 # ==============================================
-COPY supervisord.conf /etc/supervisord.conf
-COPY config.json /etc/xray/config.json
-COPY nginx.conf /etc/openresty/nginx.conf
-COPY haproxy.cfg /etc/haproxy/haproxy.cfg
-COPY envoy.yaml /etc/envoy/envoy.yaml
-COPY httpd.conf /etc/apache2/conf-available/virgozki.conf
-COPY index.html /usr/share/nginx/html/index.html
-COPY anti_ddos.py /usr/local/bin/anti_ddos.py
+
+COPY supervisord.conf \
+    /etc/supervisord.conf
+
+COPY config.json \
+    /etc/xray/config.json
+
+COPY nginx.conf \
+    /etc/openresty/nginx.conf
+
+COPY haproxy.cfg \
+    /etc/haproxy/haproxy.cfg
+
+COPY envoy.yaml \
+    /etc/envoy/envoy.yaml
+
+COPY httpd.conf \
+    /etc/apache2/conf-available/virgozki.conf
+
+COPY index.html \
+    /usr/share/nginx/html/index.html
+
+COPY anti_ddos.py \
+    /usr/local/bin/anti_ddos.py
+
+
+# ==============================================
+# HEALTH FILE FOR APACHE / ENVOY
+# ==============================================
+
+RUN printf 'ok\n' > /usr/share/nginx/html/health
+
 
 # ==============================================
 # FINAL SETUP
 # ==============================================
+
 RUN a2enconf virgozki && \
     chmod +x /usr/local/bin/anti_ddos.py && \
+    chmod 644 /etc/xray/config.json && \
+    chmod 644 /etc/openresty/nginx.conf && \
+    chmod 644 /etc/haproxy/haproxy.cfg && \
+    chmod 644 /etc/envoy/envoy.yaml && \
+    chmod 644 /etc/apache2/conf-available/virgozki.conf && \
+    chmod 644 /usr/share/nginx/html/index.html && \
     chown -R www-data:www-data \
-    /usr/share/nginx/html \
-    /var/log/apache2 \
-    /var/run/apache2 \
-    /run/haproxy \
-    /tmp/virgozki-logs
+        /usr/share/nginx/html \
+        /var/log/apache2 \
+        /tmp/virgozki-logs
+
 
 # ==============================================
 # CLOUD RUN PORT
 # ==============================================
+
 EXPOSE 8080
+
+
+# ==============================================
+# SIGNAL HANDLING
+# ==============================================
 
 STOPSIGNAL SIGTERM
 
+
 # ==============================================
-# SUPERVISOR STARTUP
+# TINI + SUPERVISOR
 # ==============================================
+
 ENTRYPOINT ["/usr/bin/tini", "--"]
 
-CMD ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisord.conf"]
+CMD [
+    "/usr/bin/supervisord",
+    "-n",
+    "-c",
+    "/etc/supervisord.conf"
+]
