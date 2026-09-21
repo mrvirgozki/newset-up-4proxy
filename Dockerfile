@@ -44,14 +44,9 @@ RUN apt-get update && \
         python3 \
         python3-pip \
         netcat-openbsd && \
-    a2enmod \
-        proxy \
-        proxy_http \
-        proxy_http2 \
-        proxy_wstunnel \
-        headers \
-        rewrite \
-        http2 && \
+    # Enable Apache modules in correct order
+    a2enmod proxy proxy_http proxy_http2 proxy_wstunnel headers rewrite && \
+    a2enmod http2 && \
     a2dissite 000-default && \
     mkdir -p \
         /etc/xray \
@@ -102,7 +97,7 @@ RUN printf 'ok\n' > /usr/share/nginx/html/health && \
     chmod 644 /usr/share/nginx/html/index.html
 
 # ============================================================
-# CONFIG VALIDATION
+# CONFIG VALIDATION (FAIL FAST IF WRONG)
 # ============================================================
 RUN /usr/local/bin/xray run -test -c /etc/xray/config.json && \
     /usr/local/bin/envoy --mode validate -c /etc/envoy/envoy.yaml && \
