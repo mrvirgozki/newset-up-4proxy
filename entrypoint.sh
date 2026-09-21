@@ -124,7 +124,7 @@ sleep 2
 echo "[start] ⚖️ Starting HAProxy..."
 haproxy -db -f "$HAPROXY_CONFIG" > /tmp/virgozki-logs/haproxy.log 2>&1 &
 PIDS+=($!)
-sleep 3
+sleep 5  # ✅ DAGDAG: SIGURADONG HANDA NA ANG HAPROXY BAGO ANG ENVOY
 
 # ==============================================
 # ✅ AUTO-GENERATE ENVOY CONFIG
@@ -161,7 +161,7 @@ static_resources:
               "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
   clusters:
   - name: haproxy_http
-    connect_timeout: 5s
+    connect_timeout: 10s  # ✅ HABAIN ANG KONEKSYON
     type: STATIC
     load_assignment:
       cluster_name: haproxy_http
@@ -187,13 +187,17 @@ echo "[start] 🌐 Starting Envoy — listening on PUBLIC $BIND_ADDR:$PORT..."
 envoy -c "$ENVOY_CONFIG" --log-level warning > /tmp/virgozki-logs/envoy.log 2>&1 &
 PIDS+=($!)
 
+# ✅ DAGDAG: PAHINGA MUNA BAGO I-CHECK ANG PORT
+sleep 5
+
 # ==============================================
-# ✅ PAGHIHINTAY SA PORT
+# ✅ PINABUTING PAG-CHECK NG PORT
 # ==============================================
 echo "[wait] ⏳ Waiting for public port $PORT to be ready..."
 READY=0
 for i in {1..30}; do
-    if nc -z "$BIND_ADDR" "$PORT"; then
+    # Gamitin ang 127.0.0.1 para siguradong makita ang loob ng container
+    if nc -z 127.0.0.1 "$PORT"; then
         READY=1
         echo "[ready] ✅ Successfully listening on $BIND_ADDR:$PORT!"
         break
@@ -232,3 +236,4 @@ while true; do
     done
     sleep 5
 done
+
