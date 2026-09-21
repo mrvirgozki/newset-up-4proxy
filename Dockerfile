@@ -1,9 +1,13 @@
 # ============================================================
 # BASE IMAGES
 # ============================================================
+# ✅ Inayos: Lahat ng FROM ay may AS para ma-parse nang tama ng lumang builder
 FROM envoyproxy/envoy:v1.39.1 AS envoy
 FROM ghcr.io/xtls/xray-core:25.12.8 AS xray
-FROM openresty/openresty:1.31.1.1-bookworm-fat
+FROM openresty/openresty:1.31.1.1-bookworm-fat AS final
+
+# ✅ Dagdag: Tiyak na format ng shell para walang parsing error
+SHELL [["/bin/bash", "-c"]]
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -16,11 +20,11 @@ ENV BIND_ADDR=0.0.0.0
 ENV XRAY_LOCATION_ASSET=/usr/local/share/xray
 ENV XRAY_LOCATION_CONFIG=/etc/xray
 
-# ✅ INAYOS: Walang conflict — Envoy = Public Port 8080, iba na ang iba
+# ✅ Walang conflict — Envoy = Public Port 8080, iba na ang iba
 ENV HAPROXY_PORT=8081
 ENV ENVOY_PORT=8080
 ENV APACHE_PORT=8083
-ENV OPENRESTY_PORT=8084 # ✅ Binago para hindi magbanggaan sa 8080
+ENV OPENRESTY_PORT=8084
 
 WORKDIR /opt/virgozki
 
@@ -103,7 +107,7 @@ RUN printf 'ok\n' > /usr/share/nginx/html/health && \
     chmod 644 /usr/share/nginx/html/index.html
 
 # ============================================================
-# ✅ CONFIG VALIDATION (NGAYON AYOS NA WALANG ERROR)
+# CONFIG VALIDATION
 # ============================================================
 RUN /usr/local/bin/xray run -test -c /etc/xray/config.json && \
     /usr/local/bin/envoy --mode validate -c /etc/envoy/envoy.yaml && \
@@ -120,3 +124,4 @@ STOPSIGNAL SIGTERM
 
 ENTRYPOINT ["/usr/bin/tini", "--"]
 CMD ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisord.conf"]
+
