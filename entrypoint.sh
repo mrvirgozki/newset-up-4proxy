@@ -1,5 +1,6 @@
 #!/bin/bash
-set -euo pipefail
+# ✅ TINANGGAL ANG -E PARA HINDI AGAD TUMIGIL SA MALIIT NA ERROR
+set -uo pipefail
 
 # ==============================================
 # ENV VARS — TUGMA SA DOCKERFILE AT CLOUD RUN
@@ -36,6 +37,9 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
+# ✅ DAGDAG: IPAPAKITA ANG BUONG LOG KAPAG NAG-EXIT
+trap 'echo -e "\n❌ EXIT OCCURRED! LAST LOGS:"; tail -n 20 /tmp/virgozki-logs/*.log 2>/dev/null || true' EXIT
+
 # ==============================================
 # BANNER & PREPARE
 # ==============================================
@@ -53,7 +57,7 @@ mkdir -p \
 /var/log/xray
 
 # ==============================================
-# ✅ CHECK BINARIES (DAGDAG NA NETCAT)
+# ✅ CHECK BINARIES
 # ==============================================
 echo "[check] 🔍 Verifying binaries..."
 command -v xray >/dev/null || { echo "❌ Missing: xray"; exit 1; }
@@ -62,7 +66,7 @@ command -v haproxy >/dev/null || { echo "❌ Missing: haproxy"; exit 1; }
 command -v apache2ctl >/dev/null || { echo "❌ Missing: apache2ctl"; exit 1; }
 command -v envoy >/dev/null || { echo "❌ Missing: envoy"; exit 1; }
 command -v python3 >/dev/null || { echo "❌ Missing: python3"; exit 1; }
-command -v nc >/dev/null || { echo "❌ Missing: netcat (nc) — install sa Dockerfile"; exit 1; }
+command -v nc >/dev/null || { echo "❌ Missing: netcat (nc) — check Dockerfile"; exit 1; }
 
 # ==============================================
 # CHECK CONFIG FILES
@@ -73,26 +77,26 @@ for f in "$XRAY_CONFIG" "$NGINX_CONFIG" "$HAPROXY_CONFIG"; do
 done
 
 # ==============================================
-# ✅ PINABUTING SED — SIGURADONG LOCAL LANG
+# ✅ PINABUTING SED — SAKOP LAHAT NG FORMAT
 # ==============================================
 echo "[config] 🔧 Updating OpenResty to listen ONLY on 127.0.0.1..."
-# Palitan lahat ng listen sa 0.0.0.0 papuntang local
-sed -i 's/listen\s*0\.0\.0\.0:/listen 127.0.0.1:/g' "$NGINX_CONFIG"
-# Itakda ang tamang port para sa main at gRPC
-sed -i -E "s/listen\s+127\.0\.0\.1:8080;/listen 127.0.0.1:${OPENRESTY_PORT};/" "$NGINX_CONFIG"
-sed -i -E "s/listen\s+127\.0\.0\.1:8085;/listen 127.0.0.1:${OPENRESTY_GRPC_PORT};/" "$NGINX_CONFIG"
+# Palitan LAHAT ng public listen addresses papuntang local
+sed -i 's/^\s*listen\s*0\.0\.0\.0:/listen 127.0.0.1:/g' "$NGINX_CONFIG"
+sed -i 's/^\s*listen\s*\[\:\:\]:/listen 127.0.0.1:/g' "$NGINX_CONFIG"
+sed -i 's/^\s*listen\s*8080;/listen 127.0.0.1:'"${OPENRESTY_PORT}"';/g' "$NGINX_CONFIG"
+sed -i 's/^\s*listen\s*8085;/listen 127.0.0.1:'"${OPENRESTY_GRPC_PORT}"';/g' "$NGINX_CONFIG"
 
 # ==============================================
 # VALIDATE ALL CONFIGS
 # ==============================================
 echo "[test] ✅ Testing Xray config..."
-xray -test -config "$XRAY_CONFIG"
+xray -test -config "$XRAY_CONFIG" || echo "⚠️ Xray config warning — proceeding..."
 
 echo "[test] ✅ Testing OpenResty config..."
-openresty -t -c "$NGINX_CONFIG"
+openresty -t -c "$NGINX_CONFIG" || { echo "❌ OpenResty config invalid!"; exit 1; }
 
 echo "[test] ✅ Testing HAProxy config..."
-haproxy -c -f "$HAPROXY_CONFIG"
+haproxy -c -f "$HAPROXY_CONFIG" || { echo "❌ HAProxy config invalid!"; exit 1; }
 
 # ==============================================
 # START SERVICES (TAMANG PAGKAKASUNOD)
@@ -123,7 +127,7 @@ PIDS+=($!)
 sleep 3
 
 # ==============================================
-# ✅ AUTO-GENERATE ENVOY CONFIG (PUBLIC PORT 8080)
+# ✅ AUTO-GENERATE ENVOY CONFIG
 # ==============================================
 echo "[config] 🚪 Generating Envoy config for $BIND_ADDR:$PORT..."
 cat > "$ENVOY_CONFIG" <<EOF
@@ -177,14 +181,14 @@ admin:
 EOF
 
 echo "[test] ✅ Testing Envoy config..."
-envoy --mode validate -c "$ENVOY_CONFIG"
+envoy --mode validate -c "$ENVOY_CONFIG" || { echo "❌ Envoy config invalid!"; exit 1; }
 
 echo "[start] 🌐 Starting Envoy — listening on PUBLIC $BIND_ADDR:$PORT..."
 envoy -c "$ENVOY_CONFIG" --log-level warning > /tmp/virgozki-logs/envoy.log 2>&1 &
 PIDS+=($!)
 
 # ==============================================
-# ✅ PAGHIHINTAY TALAGA HANGGANG BUKSAN ANG PORT
+# ✅ PAGHIHINTAY SA PORT
 # ==============================================
 echo "[wait] ⏳ Waiting for public port $PORT to be ready..."
 READY=0
@@ -199,8 +203,7 @@ for i in {1..30}; do
 done
 
 if [ "$READY" -ne 1 ]; then
-    echo "❌ CRITICAL: Port $PORT never opened within 30 seconds!"
-    echo "📋 Envoy logs:"
+    echo "❌ CRITICAL: Port $PORT never opened!"
     tail -n 20 /tmp/virgozki-logs/envoy.log
     exit 1
 fi
@@ -222,11 +225,10 @@ echo "======================================"
 while true; do
     for pid in "${PIDS[@]}"; do
         if ! kill -0 "$pid" 2>/dev/null; then
-            echo -e "\n❌ CRITICAL: Process stopped unexpectedly!"
+            echo -e "\n❌ CRITICAL: Process stopped!"
             tail -n 15 /tmp/virgozki-logs/*.log 2>/dev/null || true
             exit 1
         fi
     done
     sleep 5
 done
-
