@@ -3,7 +3,19 @@ set -euo pipefail
 
 # ============================================================
 # VIRGOZKI 4-PROXY + gRPC | CLOUD RUN DEPLOY
-# Envoy -> HAProxy -> OpenResty -> Apache -> Xray
+#
+# Cloud Run :8080
+#      ↓
+# OpenResty :8080
+#      ├── Xray :10000-10015
+#      └── HAProxy :8081
+#              ↓
+#           Envoy :8082
+#              ↓
+#           Apache :8083
+#
+# Supervisor manages:
+# Xray / Apache / Envoy / HAProxy / OpenResty / anti_ddos
 # ============================================================
 
 # --------------------------
@@ -105,7 +117,6 @@ done
 echo
 
 read -rp "Ilagay ang numero [0]: " REG_CHOICE
-
 REG_CHOICE="${REG_CHOICE:-0}"
 
 if [[ "$REG_CHOICE" == "0" ]]; then
@@ -178,16 +189,15 @@ echo -e "${CYAN}==================================================${RESET}"
 echo -e "${CYAN}PILIIN ANG SERVER PROFILE${RESET}"
 echo -e "${CYAN}==================================================${RESET}"
 
-echo -e "${YELLOW}1) ${GREEN}PINAKAMURA${RESET}   — 1 CPU / 1Gi RAM"
-echo -e "${YELLOW}2) ${GREEN}NORMAL${RESET}       — 1 CPU / 2Gi RAM"
-echo -e "${YELLOW}3) ${GREEN}MABILIS${RESET}      — 2 CPU / 4Gi RAM"
-echo -e "${YELLOW}4) ${GREEN}MATATAG${RESET}      — 4 CPU / 8Gi RAM"
-echo -e "${YELLOW}5) ${GREEN}PINAKA-MALAKAS${RESET} — 8 CPU / 16Gi RAM"
+echo -e "${YELLOW}1) ${GREEN}PINAKAMURA${RESET}       — 1 CPU / 1Gi RAM"
+echo -e "${YELLOW}2) ${GREEN}NORMAL${RESET}           — 1 CPU / 2Gi RAM"
+echo -e "${YELLOW}3) ${GREEN}MABILIS${RESET}          — 2 CPU / 4Gi RAM"
+echo -e "${YELLOW}4) ${GREEN}MATATAG${RESET}          — 4 CPU / 8Gi RAM"
+echo -e "${YELLOW}5) ${GREEN}PINAKA-MALAKAS${RESET}  — 8 CPU / 16Gi RAM"
 
 echo
 
 read -rp "Ilagay ang numero [2]: " MODE
-
 MODE="${MODE:-2}"
 
 case "$MODE" in
@@ -229,7 +239,6 @@ case "$MODE" in
 
     *)
         echo -e "${RED}❌ INVALID SERVER PROFILE.${RESET}"
-        echo -e "${YELLOW}Pumili lamang ng 1-5.${RESET}"
         exit 1
         ;;
 
@@ -252,12 +261,15 @@ echo -e "${CYAN}==================================================${RESET}"
 
 REQUIRED_FILES=(
     "Dockerfile"
-    "config.json"
+    "supervisord.conf"
     "nginx.conf"
     "haproxy.cfg"
+    "envoy.yaml"
     "httpd.conf"
-    "entrypoint.sh"
     "index.html"
+    "config.json"
+    "deploy.sh"
+    "anti_ddos.py"
 )
 
 for FILE in "${REQUIRED_FILES[@]}"; do
@@ -288,20 +300,20 @@ fi
 echo -e "${GREEN}✓ config.json OK${RESET}"
 
 # ============================================================
-# 7. CHECK ENTRYPOINT
+# 7. CHECK SHELL SCRIPT
 # ============================================================
 
 echo
-echo -e "${CYAN}Checking entrypoint.sh...${RESET}"
+echo -e "${CYAN}Checking deploy.sh syntax...${RESET}"
 
-if ! bash -n entrypoint.sh; then
+if ! bash -n deploy.sh; then
 
-    echo -e "${RED}❌ MALI ANG entrypoint.sh${RESET}"
+    echo -e "${RED}❌ MALI ANG deploy.sh${RESET}"
     exit 1
 
 fi
 
-echo -e "${GREEN}✓ entrypoint.sh syntax OK${RESET}"
+echo -e "${GREEN}✓ deploy.sh syntax OK${RESET}"
 
 # ============================================================
 # 8. CHECK DOCKERFILE
@@ -319,16 +331,38 @@ fi
 
 echo -e "${GREEN}✓ Dockerfile basic check OK${RESET}"
 
-echo
-echo -e "${GREEN}==================================================${RESET}"
-echo -e "${GREEN}ALL PROJECT FILES READY ✅${RESET}"
-echo -e "${GREEN}==================================================${RESET}"
-echo
-
 # ============================================================
-# 9. ENABLE REQUIRED APIS
+# 9. CHECK REQUIRED DOCKER COPY FILES
 # ============================================================
 
+echo
+echo -e "${CYAN}Checking Dockerfile configuration...${RESET}"
+
+for FILE in \
+    "supervisord.conf" \
+    "config.json" \
+    "nginx.conf" \
+    "haproxy.cfg" \
+    "envoy.yaml" \
+    "httpd.conf" \
+    "index.html" \
+    "anti_ddos.py"
+do
+
+    if ! grep -q "COPY.*${FILE}" Dockerfile; then
+        echo -e "${RED}❌ ${FILE} ay hindi naka-COPY sa Dockerfile.${RESET}"
+        exit 1
+    fi
+
+done
+
+echo -e "${GREEN}✓ Dockerfile COPY checks OK${RESET}"
+
+# ============================================================
+# 10. ENABLE REQUIRED APIS
+# ============================================================
+
+echo
 echo -e "${CYAN}Checking Google Cloud APIs...${RESET}"
 
 gcloud services enable \
@@ -339,10 +373,9 @@ gcloud services enable \
     --quiet
 
 echo -e "${GREEN}✓ Required APIs enabled${RESET}"
-echo
 
 # ============================================================
-# 10. ARTIFACT REGISTRY
+# 11. ARTIFACT REGISTRY
 # ============================================================
 
 AR_REPO="virgozki"
@@ -350,6 +383,7 @@ AR_LOCATION="$REGION"
 IMAGE_NAME="$SERVICE_NAME"
 IMAGE="${AR_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${AR_REPO}/${IMAGE_NAME}:latest"
 
+echo
 echo -e "${CYAN}==================================================${RESET}"
 echo -e "${CYAN}CHECKING ARTIFACT REGISTRY${RESET}"
 echo -e "${CYAN}==================================================${RESET}"
@@ -384,7 +418,7 @@ echo -e "${GREEN}${IMAGE}${RESET}"
 echo
 
 # ============================================================
-# 11. BUILD IMAGE
+# 12. BUILD IMAGE
 # ============================================================
 
 echo -e "${CYAN}==================================================${RESET}"
@@ -410,7 +444,7 @@ echo -e "${GREEN}==================================================${RESET}"
 echo
 
 # ============================================================
-# 12. DEPLOY CLOUD RUN
+# 13. DEPLOY CLOUD RUN
 # ============================================================
 
 echo -e "${CYAN}==================================================${RESET}"
@@ -441,7 +475,7 @@ then
 fi
 
 # ============================================================
-# 13. GET SERVICE URL
+# 14. GET SERVICE URL
 # ============================================================
 
 SERVICE_URL="$(
@@ -453,7 +487,7 @@ SERVICE_URL="$(
 )"
 
 # ============================================================
-# 14. FINAL RESULT
+# 15. FINAL RESULT
 # ============================================================
 
 echo
@@ -469,10 +503,11 @@ echo -e "${CYAN}CPU           :${RESET} ${CPU} vCPU"
 echo -e "${CYAN}RAM           :${RESET} ${RAM}"
 echo -e "${CYAN}MAX INSTANCES :${RESET} ${MAX_INST}"
 echo
-echo -e "${CYAN}CHAIN:${RESET}"
-echo -e "${GREEN}Envoy → HAProxy → OpenResty → Apache → Xray${RESET}"
+echo -e "${CYAN}ARCHITECTURE:${RESET}"
+echo -e "${GREEN}Cloud Run → OpenResty → HAProxy → Envoy → Apache${RESET}"
+echo -e "${GREEN}                     ↘ Xray${RESET}"
 echo
-echo -e "${CYAN}PUBLIC PORT:${RESET} 8080"
+echo -e "${CYAN}CONTAINER PORT:${RESET} 8080"
 echo
 echo -e "${CYAN}SERVICE URL:${RESET}"
 echo -e "${BOLD}${GREEN}${SERVICE_URL}${RESET}"
@@ -480,4 +515,3 @@ echo
 echo -e "${GREEN}==================================================${RESET}"
 echo -e "${GREEN}READY TO USE 🚀${RESET}"
 echo -e "${GREEN}==================================================${RESET}"
-echo
