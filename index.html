@@ -725,7 +725,6 @@
 
 <div class="container" id="main-content" style="display:none;">
 
-    <!-- HEADER -->
     <div class="cyber-header">
         <div class="corner-mark"></div>
         <div class="corner-mark"></div>
@@ -733,6 +732,7 @@
         <div class="corner-mark"></div>
 
         <div class="header-title">VIRGOZKI VPN SYSTEM</div>
+
         <div class="header-sub">
             SECURE CONNECTION INTERFACE v2.6.0
         </div>
@@ -740,21 +740,20 @@
         <div class="status-line">
             <div class="pulse-dot"></div>
             <span>ONLINE | ENCRYPTED</span>
+
             <span class="uptime" id="runtime-display">
                 00:00:00
             </span>
         </div>
     </div>
 
-    <!-- PROXY ENGINE -->
     <div class="selector-block">
         <div class="selector-title">PROXY ENGINE</div>
-
         <div class="switch-grid" id="proxy-buttons"></div>
     </div>
 
-    <!-- MONITOR -->
     <div class="monitor-box">
+
         <div class="monitor-title">
             REAL-TIME CONNECTION MONITOR
         </div>
@@ -826,17 +825,17 @@
         <div class="graph-container" id="sys-graph"></div>
     </div>
 
-    <!-- SYSTEM LOG -->
     <div class="log-box">
+
         <div class="log-title">
             <span>SYSTEM LOG</span>
             <span id="log-time">--:--:--</span>
         </div>
 
         <div class="log-content" id="system-log"></div>
+
     </div>
 
-    <!-- DATA GRID -->
     <div class="data-grid">
 
         <div class="data-card">
@@ -851,84 +850,85 @@
 
         <div class="data-card">
             <div class="data-label">PROTOCOL</div>
-            <div class="data-value" id="info-proto">
-                VLESS
-            </div>
+            <div class="data-value" id="info-proto">VLESS</div>
         </div>
 
         <div class="data-card">
             <div class="data-label">TRANSPORT</div>
-            <div class="data-value" id="info-transport">
-                WEBSOCKET
-            </div>
+            <div class="data-value" id="info-transport">WEBSOCKET</div>
         </div>
 
         <div class="data-card">
             <div class="data-label">PROXY ENGINE</div>
-            <div class="data-value success" id="info-proxy">
-                OPENRESTY
-            </div>
+            <div class="data-value success" id="info-proxy">OPENRESTY</div>
         </div>
 
     </div>
 
-    <!-- ADDRESS -->
     <div class="selector-block">
+
         <div class="selector-title">
             TARGET HOST / ADDRESS
         </div>
 
         <button class="select-btn" id="address-btn">
+
             <span id="address-btn-txt">
                 SELECT ADDRESS
             </span>
 
             <span>▼</span>
+
         </button>
 
         <div class="selected-info" id="address-selected">
             NO TARGET SELECTED
         </div>
+
     </div>
 
-    <!-- SNI -->
     <div class="selector-block">
+
         <div class="selector-title">
             SERVER NAME INDICATION
         </div>
 
         <button class="select-btn" id="sni-btn">
+
             <span id="sni-btn-txt">
                 SELECT SNI
             </span>
 
             <span>▼</span>
+
         </button>
 
         <div class="selected-info" id="sni-selected">
             NO SNI SELECTED
         </div>
+
     </div>
 
-    <!-- PROTOCOL -->
     <div class="selector-block">
+
         <div class="selector-title">
             SECURITY PROTOCOL
         </div>
 
         <div class="switch-grid" id="proto-buttons"></div>
+
     </div>
 
-    <!-- TRANSPORT -->
     <div class="selector-block">
+
         <div class="selector-title">
             TRANSPORT METHOD
         </div>
 
         <div class="switch-grid" id="trans-buttons"></div>
+
     </div>
 
-    <!-- GENERATED CONFIG -->
     <div class="terminal-box">
 
         <div class="terminal-header">
@@ -947,7 +947,6 @@
 
     </div>
 
-    <!-- BYPASS 1 -->
     <div class="bypass-box">
 
         <div class="bypass-title">
@@ -970,9 +969,9 @@
             </button>
 
         </div>
+
     </div>
 
-    <!-- BYPASS 2 -->
     <div class="bypass-box">
 
         <div class="bypass-title">
@@ -995,11 +994,11 @@
             </button>
 
         </div>
+
     </div>
 
 </div>
 
-<!-- FLOATING PLAYER -->
 <div class="cyber-player" id="floating-player">
 
     <div class="player-drag-hint">
@@ -1012,26 +1011,18 @@
 
     <div class="player-controls">
 
-        <button class="ctrl-btn" id="prev">
-            ◀
-        </button>
+        <button class="ctrl-btn" id="prev">◀</button>
 
-        <button class="ctrl-btn" id="play">
-            ▶
-        </button>
+        <button class="ctrl-btn" id="play">▶</button>
 
-        <button class="ctrl-btn" id="stop">
-            ■
-        </button>
+        <button class="ctrl-btn" id="stop">■</button>
 
-        <button class="ctrl-btn" id="next">
-            ▶▶
-        </button>
+        <button class="ctrl-btn" id="next">▶▶</button>
 
     </div>
+
 </div>
 
-<!-- ADDRESS MODAL -->
 <div class="cyber-modal" id="address-modal">
 
     <div class="modal-title">
@@ -1046,7 +1037,6 @@
 
 </div>
 
-<!-- SNI MODAL -->
 <div class="cyber-modal" id="sni-modal">
 
     <div class="modal-title">
@@ -1085,9 +1075,13 @@
      * XRAY
      *
      * IMPORTANT:
-     * The four proxy engines are INTERNAL layers.
-     * They do NOT create /openresty, /haproxy, /envoy
-     * or /apache public paths.
+     * PROXY ENGINES ARE INTERNAL ONLY.
+     *
+     * NO PUBLIC:
+     * /openresty
+     * /haproxy
+     * /envoy
+     * /apache
      * ==========================================================
      */
 
@@ -1106,6 +1100,7 @@
     let currentHost =
         window.location.hostname || '127.0.0.1';
 
+
     /*
      * ==========================================================
      * PROTOCOLS
@@ -1120,18 +1115,26 @@
     ];
 
     const PROTOCOL_LABELS = {
+
         vless: 'VLESS',
+
         trojan: 'TROJAN',
+
         vmess: 'VMESS',
+
         shadowsocks: 'SHADOWSOCKS'
+
     };
+
 
     /*
      * ==========================================================
-     * INTERNAL PROXY ENGINE
+     * INTERNAL PROXY ENGINES
      *
-     * These are displayed only as the internal chain selector.
-     * No proxy-specific public path is generated.
+     * IMPORTANT:
+     * These are only selectors.
+     *
+     * They MUST NOT modify public paths.
      * ==========================================================
      */
 
@@ -1143,19 +1146,17 @@
     ];
 
     const PROXY_LABELS = {
+
         openresty: 'OPENRESTY',
+
         haproxy: 'HAPROXY',
+
         envoy: 'ENVOY',
+
         apache: 'APACHE'
+
     };
 
-    /*
-     * IMPORTANT:
-     * No /openresty
-     * No /haproxy
-     * No /envoy
-     * No /apache
-     */
 
     /*
      * ==========================================================
@@ -1171,78 +1172,126 @@
     ];
 
     const TRANSPORT_LABELS = {
+
         ws: 'WEBSOCKET',
+
         httpupgrade: 'HTTP UPGRADE',
+
         xhttp: 'XHTTP',
+
         grpc: 'gRPC'
+
     };
+
 
     /*
      * ==========================================================
      * PUBLIC PATHS
      *
-     * These must match the server-side nginx/OpenResty/Xray
-     * configuration.
+     * These MUST match nginx/OpenResty/Xray.
+     *
+     * NO PROXY PREFIXES.
      * ==========================================================
      */
 
     const PATHS = {
 
         vless: {
-            ws: '/vless-virgozki',
-            httpupgrade: '/vless-virgozki-hu',
-            xhttp: '/vless-virgozki-xhttp'
+
+            ws:
+                '/vless-virgozki',
+
+            httpupgrade:
+                '/vless-virgozki-hu',
+
+            xhttp:
+                '/vless-virgozki-xhttp'
+
         },
 
         trojan: {
-            ws: '/virgozki',
-            httpupgrade: '/virgozki-hu',
-            xhttp: '/virgozki-xhttp'
+
+            ws:
+                '/virgozki',
+
+            httpupgrade:
+                '/virgozki-hu',
+
+            xhttp:
+                '/virgozki-xhttp'
+
         },
 
         vmess: {
-            ws: '/vmess-virgozki',
-            httpupgrade: '/vmess-virgozki-hu',
-            xhttp: '/vmess-virgozki-xhttp'
+
+            ws:
+                '/vmess-virgozki',
+
+            httpupgrade:
+                '/vmess-virgozki-hu',
+
+            xhttp:
+                '/vmess-virgozki-xhttp'
+
         },
 
         shadowsocks: {
-            ws: '/ss-virgozki',
-            httpupgrade: '/ss-virgozki-hu',
-            xhttp: '/ss-virgozki-xhttp'
+
+            ws:
+                '/ss-virgozki',
+
+            httpupgrade:
+                '/ss-virgozki-hu',
+
+            xhttp:
+                '/ss-virgozki-xhttp'
+
         }
 
     };
+
 
     /*
      * ==========================================================
      * gRPC SERVICE NAMES
      *
      * IMPORTANT:
-     * serviceName is NOT a URL path.
      *
-     * Correct:
-     * vless-grpc
+     * These are SERVICE NAMES,
+     * NOT URL PATHS.
      *
-     * Incorrect:
-     * /openresty/vless-grpc
-     * /haproxy/vless-grpc
-     * /envoy/vless-grpc
-     * /apache/vless-grpc
+     * They MUST match config.json.
+     *
+     * VLESS:
+     * vless-grpc-virgozki
+     *
+     * VMESS:
+     * vmess-grpc-virgozki
+     *
+     * TROJAN:
+     * trojan-grpc-virgozki
+     *
+     * SHADOWSOCKS:
+     * ss-grpc-virgozki
      * ==========================================================
      */
 
     const GRPC_SERVICES = {
 
-        vless: 'vless-grpc',
+        vless:
+            'vless-grpc-virgozki',
 
-        trojan: 'trojan-grpc',
+        trojan:
+            'trojan-grpc-virgozki',
 
-        vmess: 'vmess-grpc',
+        vmess:
+            'vmess-grpc-virgozki',
 
-        shadowsocks: 'ss-grpc'
+        shadowsocks:
+            'ss-grpc-virgozki'
 
     };
+
 
     /*
      * ==========================================================
@@ -1250,19 +1299,27 @@
      * ==========================================================
      */
 
-    let selectedProxy = 'openresty';
+    let selectedProxy =
+        'openresty';
 
-    let selectedProtocol = 'vless';
+    let selectedProtocol =
+        'vless';
 
-    let selectedTransport = 'ws';
+    let selectedTransport =
+        'ws';
 
-    let selectedAddress = currentHost;
+    let selectedAddress =
+        currentHost;
 
-    let selectedSNI = currentHost;
+    let selectedSNI =
+        currentHost;
 
-    let isProcessing = false;
+    let isProcessing =
+        false;
 
-    let startTime = Date.now();
+    let startTime =
+        Date.now();
+
 
     /*
      * ==========================================================
@@ -1302,6 +1359,7 @@
         'googlevideo.com'
 
     ];
+
 
     /*
      * ==========================================================
@@ -1351,6 +1409,7 @@
 
     ];
 
+
     /*
      * ==========================================================
      * DOM
@@ -1358,25 +1417,40 @@
      */
 
     const systemLog =
-        document.getElementById('system-log');
+        document.getElementById(
+            'system-log'
+        );
 
     const logTime =
-        document.getElementById('log-time');
+        document.getElementById(
+            'log-time'
+        );
 
     const sysGraph =
-        document.getElementById('sys-graph');
+        document.getElementById(
+            'sys-graph'
+        );
 
     const copyBypassBtn1 =
-        document.getElementById('copy-bypass-1');
+        document.getElementById(
+            'copy-bypass-1'
+        );
 
     const bypassConfig1 =
-        document.getElementById('bypass-config-1');
+        document.getElementById(
+            'bypass-config-1'
+        );
 
     const copyBypassBtn2 =
-        document.getElementById('copy-bypass-2');
+        document.getElementById(
+            'copy-bypass-2'
+        );
 
     const bypassConfig2 =
-        document.getElementById('bypass-config-2');
+        document.getElementById(
+            'bypass-config-2'
+        );
+
 
     /*
      * ==========================================================
@@ -1384,77 +1458,117 @@
      * ==========================================================
      */
 
-    const audio = new Audio();
+    const audio =
+        new Audio();
 
-    audio.volume = 0.7;
+    audio.volume =
+        0.7;
 
-    audio.preload = 'none';
+    audio.preload =
+        'none';
 
-    audio.crossOrigin = 'anonymous';
+    audio.crossOrigin =
+        'anonymous';
 
     const songs = [
 
         {
-            name: 'NEFFEX - Control',
-            url: 'https://dl.dropboxusercontent.com/scl/fi/5qeqe89ibmyikcj7dmgie/NEFFEX-Control-Official-Lyric-Video-Copyright-Free-No.242-MP3_160K.mp3?rlkey=8mec522bb0mycbgeiw3b2p1st&st=n3xggf1g&dl=1'
+            name:
+                'NEFFEX - Control',
+
+            url:
+                'https://dl.dropboxusercontent.com/scl/fi/5qeqe89ibmyikcj7dmgie/NEFFEX-Control-Official-Lyric-Video-Copyright-Free-No.242-MP3_160K.mp3?rlkey=8mec522bb0mycbgeiw3b2p1st&st=n3xggf1g&dl=1'
         },
 
         {
-            name: 'NEFFEX - Crown',
-            url: 'https://dl.dropboxusercontent.com/scl/fi/z4sbip8lthzy5piuolpn2/NEFFEX-Crown-Copyright-Free-No.15-MP3_160K.mp3?rlkey=7gf528zikfyrxeav2blxh2ixl&st=b3diiygv&dl=1'
+            name:
+                'NEFFEX - Crown',
+
+            url:
+                'https://dl.dropboxusercontent.com/scl/fi/z4sbip8lthzy5piuolpn2/NEFFEX-Crown-Copyright-Free-No.15-MP3_160K.mp3?rlkey=7gf528zikfyrxeav2blxh2ixl&st=b3diiygv&dl=1'
         },
 
         {
-            name: 'NEFFEX - Fight Back',
-            url: 'https://dl.dropboxusercontent.com/scl/fi/3pjn86px04k8mq7q5q3h6/NEFFEX-Fight-Back-Official-Video-No.37-MP3_160K.mp3?rlkey=k1j7x2woagxujekwxano6n4ge&st=bcl0xd7o&dl=1'
+            name:
+                'NEFFEX - Fight Back',
+
+            url:
+                'https://dl.dropboxusercontent.com/scl/fi/3pjn86px04k8mq7q5q3h6/NEFFEX-Fight-Back-Official-Video-No.37-MP3_160K.mp3?rlkey=k1j7x2woagxujekwxano6n4ge&st=bcl0xd7o&dl=1'
         },
 
         {
-            name: 'NEFFEX - Purpose',
-            url: 'https://dl.dropboxusercontent.com/scl/fi/ixhlx1kiw3gqnij817rz7/NEFFEX-Purpose-Copyright-Free-No.177-MP3_160K.mp3?rlkey=civmcmnzols7yy2b64dduiq8y&st=j6kqivoc&dl=1'
+            name:
+                'NEFFEX - Purpose',
+
+            url:
+                'https://dl.dropboxusercontent.com/scl/fi/ixhlx1kiw3gqnij817rz7/NEFFEX-Purpose-Copyright-Free-No.177-MP3_160K.mp3?rlkey=civmcmnzols7yy2b64dduiq8y&st=j6kqivoc&dl=1'
         },
 
         {
-            name: 'NEFFEX - Rumors',
-            url: 'https://dl.dropboxusercontent.com/scl/fi/6trrxr9mcu9mhbl061dkj/NEFFEX-Rumors-Lyrics-MP3_160K.mp3?rlkey=fh14ss4axvmt4up01c467nrxk&st=dvsyyzsd&dl=1'
+            name:
+                'NEFFEX - Rumors',
+
+            url:
+                'https://dl.dropboxusercontent.com/scl/fi/6trrxr9mcu9mhbl061dkj/NEFFEX-Rumors-Lyrics-MP3_160K.mp3?rlkey=fh14ss4axvmt4up01c467nrxk&st=dvsyyzsd&dl=1'
         },
 
         {
-            name: 'NEFFEX - Best of Me',
-            url: 'https://dl.dropboxusercontent.com/scl/fi/rypimhnwa3f0sc7becgz8/NEFFEX-Best-of-Me-Copyright-Free-No.23-MP3_160K.mp3?rlkey=l6fqcjlklv2f08g8v9du23fb3&st=nguyidh9&dl=1'
+            name:
+                'NEFFEX - Best of Me',
+
+            url:
+                'https://dl.dropboxusercontent.com/scl/fi/rypimhnwa3f0sc7becgz8/NEFFEX-Best-of-Me-Copyright-Free-No.23-MP3_160K.mp3?rlkey=l6fqcjlklv2f08g8v9du23fb3&st=nguyidh9&dl=1'
         },
 
         {
-            name: 'NEFFEX - Chance',
-            url: 'https://dl.dropboxusercontent.com/scl/fi/cyxhytondpo74u1mbqdl5/NEFFEX-Chance-Copyright-Free-No.65-MP3_160K.mp3?rlkey=ha1km8kbvg6f8va6sozefdw96&st=v0eg4i31&dl=1'
+            name:
+                'NEFFEX - Chance',
+
+            url:
+                'https://dl.dropboxusercontent.com/scl/fi/cyxhytondpo74u1mbqdl5/NEFFEX-Chance-Copyright-Free-No.65-MP3_160K.mp3?rlkey=ha1km8kbvg6f8va6sozefdw96&st=v0eg4i31&dl=1'
         },
 
         {
-            name: 'NEFFEX - Cold',
-            url: 'https://dl.dropboxusercontent.com/scl/fi/3sxfjqb6ph9tfv6k1cz0h/NEFFEX-Cold-Copyright-Free-No.60-MP3_160K.mp3?rlkey=2wxp3ofoq9v26vxd9fh3iq9er&st=ghcd60wa&dl=1'
+            name:
+                'NEFFEX - Cold',
+
+            url:
+                'https://dl.dropboxusercontent.com/scl/fi/3sxfjqb6ph9tfv6k1cz0h/NEFFEX-Cold-Copyright-Free-No.60-MP3_160K.mp3?rlkey=2wxp3ofoq9v26vxd9fh3iq9er&st=ghcd60wa&dl=1'
         },
 
         {
-            name: 'NEFFEX - Grateful',
-            url: 'https://dl.dropboxusercontent.com/scl/fi/v5419s2y2klq6ookxpzrd/NEFFEX-Grateful-Copyright-Free-No.54-MP3_160K.mp3?rlkey=6to3htylrlnxsru26ik2neds1&st=q47h5sgq&dl=1'
+            name:
+                'NEFFEX - Grateful',
+
+            url:
+                'https://dl.dropboxusercontent.com/scl/fi/v5419s2y2klq6ookxpzrd/NEFFEX-Grateful-Copyright-Free-No.54-MP3_160K.mp3?rlkey=6to3htylrlnxsru26ik2neds1&st=q47h5sgq&dl=1'
         },
 
         {
-            name: 'NEFFEX - Life',
-            url: 'https://dl.dropboxusercontent.com/scl/fi/uw1f789tb9v4i2k4xyw42/NEFFEX-Life-Copyright-Free-No.42-MP3_160K.mp3?rlkey=y9y56c3ui6f8kx8ar6l2f9pzv&st=9sgmxut6&dl=1'
+            name:
+                'NEFFEX - Life',
+
+            url:
+                'https://dl.dropboxusercontent.com/scl/fi/uw1f789tb9v4i2k4xyw42/NEFFEX-Life-Copyright-Free-No.42-MP3_160K.mp3?rlkey=y9y56c3ui6f8kx8ar6l2f9pzv&st=9sgmxut6&dl=1'
         }
 
     ];
 
-    let currentSongIndex = 0;
+    let currentSongIndex =
+        0;
 
-    let isPlaying = false;
+    let isPlaying =
+        false;
 
     const playBtn =
-        document.getElementById('play');
+        document.getElementById(
+            'play'
+        );
 
     const songName =
-        document.getElementById('song-name');
+        document.getElementById(
+            'song-name'
+        );
 
     function loadSong(index) {
 
@@ -1494,9 +1608,11 @@
                 'info'
             );
 
-            isPlaying = false;
+            isPlaying =
+                false;
 
-            playBtn.textContent = '▶';
+            playBtn.textContent =
+                '▶';
 
             nextSong();
         }
@@ -1508,9 +1624,11 @@
 
             audio.pause();
 
-            isPlaying = false;
+            isPlaying =
+                false;
 
-            playBtn.textContent = '▶';
+            playBtn.textContent =
+                '▶';
 
             addLog(
                 'Music paused',
@@ -1523,9 +1641,11 @@
         audio.play()
             .then(function () {
 
-                isPlaying = true;
+                isPlaying =
+                    true;
 
-                playBtn.textContent = '⏸';
+                playBtn.textContent =
+                    '⏸';
 
                 addLog(
                     'Music playing',
@@ -1549,7 +1669,9 @@
             (currentSongIndex + 1) %
             songs.length;
 
-        loadSong(currentSongIndex);
+        loadSong(
+            currentSongIndex
+        );
 
         if (isPlaying) {
 
@@ -1565,7 +1687,9 @@
             (currentSongIndex - 1 + songs.length) %
             songs.length;
 
-        loadSong(currentSongIndex);
+        loadSong(
+            currentSongIndex
+        );
 
         if (isPlaying) {
 
@@ -1579,11 +1703,14 @@
 
         audio.pause();
 
-        audio.currentTime = 0;
+        audio.currentTime =
+            0;
 
-        isPlaying = false;
+        isPlaying =
+            false;
 
-        playBtn.textContent = '▶';
+        playBtn.textContent =
+            '▶';
 
         addLog(
             'Music stopped',
@@ -1617,6 +1744,7 @@
             stopMusic
         );
 
+
     /*
      * ==========================================================
      * FETCH HELPER
@@ -1635,7 +1763,9 @@
         const timer =
             setTimeout(
                 function () {
+
                     controller.abort();
+
                 },
                 timeout
             );
@@ -1647,31 +1777,40 @@
                     url,
                     {
                         ...options,
+
                         signal:
                             controller.signal,
+
                         cache:
                             'no-cache'
                     }
                 );
 
-            clearTimeout(timer);
+            clearTimeout(
+                timer
+            );
 
             return response;
 
         } catch (error) {
 
-            clearTimeout(timer);
+            clearTimeout(
+                timer
+            );
 
             throw error;
+
         }
     }
 
+
     /*
      * ==========================================================
-     * USER INFO
+     * USER INFORMATION
      *
-     * Monitoring only.
-     * Not part of the proxy chain.
+     * MONITORING ONLY.
+     *
+     * NOT PART OF PROXY ROUTING.
      * ==========================================================
      */
 
@@ -1687,33 +1826,43 @@
                 );
 
             if (!response.ok) {
+
                 throw new Error(
                     'IP information service error'
                 );
+
             }
 
             const data =
                 await response.json();
 
             document
-                .getElementById('user-ip')
+                .getElementById(
+                    'user-ip'
+                )
                 .textContent =
                 data.ip ||
                 'UNAVAILABLE';
 
             document
-                .getElementById('user-country')
+                .getElementById(
+                    'user-country'
+                )
                 .textContent =
                 data.country_name ||
                 'UNAVAILABLE';
 
             document
-                .getElementById('user-city')
+                .getElementById(
+                    'user-city'
+                )
                 .textContent =
                 `${data.city || 'UNAVAILABLE'}, ${data.region || ''}`;
 
             document
-                .getElementById('user-isp')
+                .getElementById(
+                    'user-isp'
+                )
                 .textContent =
                 data.org ||
                 'UNAVAILABLE';
@@ -1726,22 +1875,30 @@
         } catch (error) {
 
             document
-                .getElementById('user-ip')
+                .getElementById(
+                    'user-ip'
+                )
                 .textContent =
                 'UNAVAILABLE';
 
             document
-                .getElementById('user-country')
+                .getElementById(
+                    'user-country'
+                )
                 .textContent =
                 'UNAVAILABLE';
 
             document
-                .getElementById('user-city')
+                .getElementById(
+                    'user-city'
+                )
                 .textContent =
                 'UNAVAILABLE';
 
             document
-                .getElementById('user-isp')
+                .getElementById(
+                    'user-isp'
+                )
                 .textContent =
                 'UNAVAILABLE';
 
@@ -1752,11 +1909,12 @@
         }
     }
 
+
     /*
      * ==========================================================
      * PING
      *
-     * Monitoring only.
+     * MONITORING ONLY.
      * ==========================================================
      */
 
@@ -1775,15 +1933,19 @@
             await fetchWithTimeout(
                 'https://1.1.1.1/cdn-cgi/trace',
                 {
-                    mode: 'no-cors',
-                    cache: 'no-store'
+                    mode:
+                        'no-cors',
+
+                    cache:
+                        'no-store'
                 },
                 5000
             );
 
             const ping =
                 Math.round(
-                    performance.now() - start
+                    performance.now() -
+                    start
                 );
 
             pingEl.textContent =
@@ -1801,8 +1963,10 @@
 
             pingEl.className =
                 'monitor-value';
+
         }
     }
+
 
     /*
      * ==========================================================
@@ -1814,12 +1978,15 @@
 
         const seconds =
             Math.floor(
-                (Date.now() - startTime) /
+                (Date.now() -
+                startTime) /
                 1000
             );
 
         const hours =
-            Math.floor(seconds / 3600);
+            Math.floor(
+                seconds / 3600
+            );
 
         const minutes =
             Math.floor(
@@ -1836,8 +2003,10 @@
                 secs
             ]
             .map(function (value) {
+
                 return String(value)
                     .padStart(2, '0');
+
             })
             .join(':');
 
@@ -1855,6 +2024,7 @@
             .textContent =
             uptime;
     }
+
 
     /*
      * ==========================================================
@@ -1874,7 +2044,8 @@
             now.toLocaleTimeString(
                 'en-US',
                 {
-                    hour12: false
+                    hour12:
+                        false
                 }
             );
 
@@ -1918,16 +2089,20 @@
             systemLog.scrollHeight;
     }
 
+
     /*
      * ==========================================================
      * GRAPH
      * ==========================================================
      */
 
-    const graphBars = 12;
+    const graphBars =
+        12;
 
     const graphPoints =
-        Array(graphBars).fill(0);
+        Array(
+            graphBars
+        ).fill(0);
 
     for (
         let i = 0;
@@ -1970,7 +2145,10 @@
         );
 
         graphPoints.forEach(
-            function (value, index) {
+            function (
+                value,
+                index
+            ) {
 
                 graphBarsEl[index]
                     .style.height =
@@ -1979,6 +2157,7 @@
             }
         );
     }
+
 
     /*
      * ==========================================================
@@ -2111,17 +2290,21 @@
             'floating-player'
         );
 
+
     /*
      * ==========================================================
      * DRAG PLAYER
      * ==========================================================
      */
 
-    let isDragging = false;
+    let isDragging =
+        false;
 
-    let offsetX = 0;
+    let offsetX =
+        0;
 
-    let offsetY = 0;
+    let offsetY =
+        0;
 
     function dragStart(event) {
 
@@ -2133,7 +2316,8 @@
             return;
         }
 
-        isDragging = true;
+        isDragging =
+            true;
 
         const rect =
             player.getBoundingClientRect();
@@ -2149,10 +2333,12 @@
                 : event.clientY;
 
         offsetX =
-            clientX - rect.left;
+            clientX -
+            rect.left;
 
         offsetY =
-            clientY - rect.top;
+            clientY -
+            rect.top;
 
         player.style.transition =
             'none';
@@ -2182,7 +2368,8 @@
                 Math.min(
                     window.innerWidth -
                     player.offsetWidth,
-                    clientX - offsetX
+                    clientX -
+                    offsetX
                 )
             );
 
@@ -2192,7 +2379,8 @@
                 Math.min(
                     window.innerHeight -
                     player.offsetHeight,
-                    clientY - offsetY
+                    clientY -
+                    offsetY
                 )
             );
 
@@ -2211,7 +2399,8 @@
 
     function dragEnd() {
 
-        isDragging = false;
+        isDragging =
+            false;
 
         player.style.transition =
             'all 0.2s ease';
@@ -2253,6 +2442,7 @@
         dragEnd
     );
 
+
     /*
      * ==========================================================
      * PATH FUNCTIONS
@@ -2262,25 +2452,49 @@
     function getPublicPath() {
 
         if (
-            selectedTransport === 'grpc'
+            selectedTransport ===
+            'grpc'
         ) {
+
             return '';
+
         }
 
-        return (
-            PATHS[selectedProtocol]
-                [selectedTransport]
-        );
+        const protocolPaths =
+            PATHS[
+                selectedProtocol
+            ];
+
+        if (
+            !protocolPaths ||
+            !protocolPaths[
+                selectedTransport
+            ]
+        ) {
+
+            return '';
+
+        }
+
+        return protocolPaths[
+            selectedTransport
+        ];
     }
+
+
+    /*
+     * ==========================================================
+     * gRPC SERVICE
+     * ==========================================================
+     */
 
     function getGrpcService() {
 
-        return (
-            GRPC_SERVICES[
-                selectedProtocol
-            ]
-        );
+        return GRPC_SERVICES[
+            selectedProtocol
+        ];
     }
+
 
     /*
      * ==========================================================
@@ -2299,6 +2513,7 @@
         const host =
             currentHost;
 
+
         /*
          * ======================================================
          * gRPC
@@ -2306,11 +2521,16 @@
          */
 
         if (
-            selectedTransport === 'grpc'
+            selectedTransport ===
+            'grpc'
         ) {
 
             const grpcService =
                 getGrpcService();
+
+            if (!grpcService) {
+                return '';
+            }
 
             switch (
                 selectedProtocol
@@ -2331,6 +2551,7 @@
                         `#VLESS-GRPC-${PROXY_LABELS[selectedProxy]}`
                     );
 
+
                 case 'trojan':
 
                     return (
@@ -2345,40 +2566,55 @@
                         `#TROJAN-GRPC-${PROXY_LABELS[selectedProxy]}`
                     );
 
+
                 case 'vmess': {
 
                     const vmessObject = {
 
-                        v: '2',
+                        v:
+                            '2',
 
                         ps:
                             `VMESS-GRPC-${PROXY_LABELS[selectedProxy]}`,
 
-                        add: addr,
+                        add:
+                            addr,
 
-                        port: '443',
+                        port:
+                            '443',
 
-                        id: UUID,
+                        id:
+                            UUID,
 
-                        aid: '0',
+                        aid:
+                            '0',
 
-                        scy: 'auto',
+                        scy:
+                            'auto',
 
-                        net: 'grpc',
+                        net:
+                            'grpc',
 
-                        type: 'none',
+                        type:
+                            'none',
 
-                        host: host,
+                        host:
+                            host,
 
-                        path: grpcService,
+                        path:
+                            grpcService,
 
-                        tls: 'tls',
+                        tls:
+                            'tls',
 
-                        sni: sni,
+                        sni:
+                            sni,
 
-                        fp: 'chrome',
+                        fp:
+                            'chrome',
 
-                        alpn: 'h2'
+                        alpn:
+                            'h2'
 
                     };
 
@@ -2387,9 +2623,13 @@
                             JSON.stringify(
                                 vmessObject
                             )
-                        ).replace(/=+$/, '')}`
+                        ).replace(
+                            /=+$/,
+                            ''
+                        )}`
                     );
                 }
+
 
                 case 'shadowsocks': {
 
@@ -2412,22 +2652,26 @@
                     );
                 }
 
+
                 default:
 
                     return '';
             }
         }
 
+
         /*
          * ======================================================
-         * HTTP / WS / XHTTP
+         * HTTP / WS / HTTPUPGRADE / XHTTP
          * ======================================================
          */
 
         const path =
             getPublicPath();
 
-        let transportParam = '';
+        let transportParam =
+            '';
+
 
         switch (
             selectedTransport
@@ -2442,6 +2686,7 @@
 
                 break;
 
+
             case 'httpupgrade':
 
                 transportParam =
@@ -2451,21 +2696,35 @@
 
                 break;
 
+
             case 'xhttp':
+
+                /*
+                 * IMPORTANT:
+                 *
+                 * packet-up
+                 *
+                 * NOT:
+                 *
+                 * packet-upstream
+                 */
 
                 transportParam =
                     `type=xhttp` +
                     `&path=${encodeURIComponent(path)}` +
                     `&host=${encodeURIComponent(host)}` +
-                    `&mode=packet-upstream`;
+                    `&mode=packet-up`;
 
                 break;
 
+
             default:
 
-                transportParam = '';
+                transportParam =
+                    '';
 
         }
+
 
         switch (
             selectedProtocol
@@ -2474,7 +2733,8 @@
             case 'vless': {
 
                 const alpn =
-                    selectedTransport === 'xhttp'
+                    selectedTransport ===
+                    'xhttp'
                         ? 'h2%2Chttp%2F1.1'
                         : 'http%2F1.1';
 
@@ -2490,10 +2750,12 @@
                 );
             }
 
+
             case 'trojan': {
 
                 const alpn =
-                    selectedTransport === 'xhttp'
+                    selectedTransport ===
+                    'xhttp'
                         ? 'h2%2Chttp%2F1.1'
                         : 'http%2F1.1';
 
@@ -2508,45 +2770,61 @@
                 );
             }
 
+
             case 'vmess': {
 
                 const alpn =
-                    selectedTransport === 'xhttp'
+                    selectedTransport ===
+                    'xhttp'
                         ? 'h2,http/1.1'
                         : 'http/1.1';
 
                 const vmessObject = {
 
-                    v: '2',
+                    v:
+                        '2',
 
                     ps:
                         `VMESS-${selectedTransport.toUpperCase()}-${PROXY_LABELS[selectedProxy]}`,
 
-                    add: addr,
+                    add:
+                        addr,
 
-                    port: '443',
+                    port:
+                        '443',
 
-                    id: UUID,
+                    id:
+                        UUID,
 
-                    aid: '0',
+                    aid:
+                        '0',
 
-                    scy: 'auto',
+                    scy:
+                        'auto',
 
-                    net: selectedTransport,
+                    net:
+                        selectedTransport,
 
-                    type: 'none',
+                    type:
+                        'none',
 
-                    host: host,
+                    host:
+                        host,
 
-                    path: path,
+                    path:
+                        path,
 
-                    tls: 'tls',
+                    tls:
+                        'tls',
 
-                    sni: sni,
+                    sni:
+                        sni,
 
-                    fp: 'chrome',
+                    fp:
+                        'chrome',
 
-                    alpn: alpn
+                    alpn:
+                        alpn
 
                 };
 
@@ -2555,9 +2833,13 @@
                         JSON.stringify(
                             vmessObject
                         )
-                    ).replace(/=+$/, '')}`
+                    ).replace(
+                        /=+$/,
+                        ''
+                    )}`
                 );
             }
+
 
             case 'shadowsocks': {
 
@@ -2578,11 +2860,13 @@
                 );
             }
 
+
             default:
 
                 return '';
         }
     }
+
 
     /*
      * ==========================================================
@@ -2596,7 +2880,8 @@
         type
     ) {
 
-        container.innerHTML = '';
+        container.innerHTML =
+            '';
 
         items.forEach(
             function (item) {
@@ -2609,9 +2894,6 @@
                 el.className =
                     'modal-item';
 
-                /*
-                 * Separator entries are visual only.
-                 */
 
                 if (
                     item.startsWith('---')
@@ -2628,8 +2910,12 @@
 
                     el.addEventListener(
                         'click',
-                        function (event) {
+                        function (
+                            event
+                        ) {
+
                             event.preventDefault();
+
                         }
                     );
 
@@ -2640,17 +2926,20 @@
                         function () {
 
                             if (
-                                type === 'address'
+                                type ===
+                                'address'
                             ) {
 
                                 selectedAddress =
                                     item;
 
-                                addressSelected.textContent =
+                                addressSelected
+                                    .textContent =
                                     'TARGET SET: ' +
                                     item;
 
-                                addressBtnTxt.textContent =
+                                addressBtnTxt
+                                    .textContent =
                                     item;
 
                                 addLog(
@@ -2658,19 +2947,24 @@
                                     'success'
                                 );
 
-                                addressModal.classList
-                                    .remove('show');
+                                addressModal
+                                    .classList
+                                    .remove(
+                                        'show'
+                                    );
 
                             } else {
 
                                 selectedSNI =
                                     item;
 
-                                sniSelected.textContent =
+                                sniSelected
+                                    .textContent =
                                     'SNI SET: ' +
                                     item;
 
-                                sniBtnTxt.textContent =
+                                sniBtnTxt
+                                    .textContent =
                                     item;
 
                                 addLog(
@@ -2678,11 +2972,15 @@
                                     'success'
                                 );
 
-                                sniModal.classList
-                                    .remove('show');
+                                sniModal
+                                    .classList
+                                    .remove(
+                                        'show'
+                                    );
                             }
 
                             updateUI();
+
                         }
                     );
                 }
@@ -2693,9 +2991,11 @@
                 container.appendChild(
                     el
                 );
+
             }
         );
     }
+
 
     /*
      * ==========================================================
@@ -2710,7 +3010,8 @@
         labels
     ) {
 
-        container.innerHTML = '';
+        container.innerHTML =
+            '';
 
         items.forEach(
             function (item) {
@@ -2723,7 +3024,8 @@
                 button.className =
                     'switch-btn' +
                     (
-                        item === activeItem
+                        item ===
+                        activeItem
                             ? ' active'
                             : ''
                     );
@@ -2736,7 +3038,9 @@
                     'click',
                     function () {
 
-                        if (isProcessing) {
+                        if (
+                            isProcessing
+                        ) {
                             return;
                         }
 
@@ -2749,15 +3053,20 @@
                             )
                             .forEach(
                                 function (btn) {
+
                                     btn.classList
                                         .remove(
                                             'active'
                                         );
+
                                 }
                             );
 
                         button.classList
-                            .add('active');
+                            .add(
+                                'active'
+                            );
+
 
                         if (
                             container ===
@@ -2768,6 +3077,7 @@
                                 item;
                         }
 
+
                         if (
                             container ===
                             protoButtons
@@ -2776,6 +3086,7 @@
                             selectedProtocol =
                                 item;
                         }
+
 
                         if (
                             container ===
@@ -2786,10 +3097,13 @@
                                 item;
                         }
 
+
                         addLog(
                             'Selected: ' +
-                            (labels[item] ||
-                            item),
+                            (
+                                labels[item] ||
+                                item
+                            ),
                             'success'
                         );
 
@@ -2797,20 +3111,25 @@
 
                         setTimeout(
                             function () {
+
                                 isProcessing =
                                     false;
+
                             },
                             200
                         );
+
                     }
                 );
 
                 container.appendChild(
                     button
                 );
+
             }
         );
     }
+
 
     /*
      * ==========================================================
@@ -2844,12 +3163,14 @@
         configDisplay.value =
             buildConfig();
 
+
         buildOptions(
             proxyButtons,
             PROXY_ENGINES,
             selectedProxy,
             PROXY_LABELS
         );
+
 
         buildOptions(
             protoButtons,
@@ -2858,6 +3179,7 @@
             PROTOCOL_LABELS
         );
 
+
         buildOptions(
             transButtons,
             TRANSPORTS,
@@ -2865,6 +3187,7 @@
             TRANSPORT_LABELS
         );
     }
+
 
     /*
      * ==========================================================
@@ -2881,8 +3204,11 @@
 
         try {
 
-            await navigator.clipboard
-                .writeText(text);
+            await navigator
+                .clipboard
+                .writeText(
+                    text
+                );
 
             button.textContent =
                 successLabel;
@@ -2908,6 +3234,7 @@
                 'Copy permission denied',
                 'info'
             );
+
         }
     }
 
@@ -2921,6 +3248,7 @@
                 'COPY',
                 'COPIED ✓'
             );
+
         }
     );
 
@@ -2934,6 +3262,7 @@
                 'COPY',
                 'COPIED ✓'
             );
+
         }
     );
 
@@ -2947,8 +3276,10 @@
                 'COPY',
                 'COPIED ✓'
             );
+
         }
     );
+
 
     /*
      * ==========================================================
@@ -2967,12 +3298,15 @@
             );
 
             addressModal.classList
-                .add('show');
+                .add(
+                    'show'
+                );
 
             addLog(
                 'Opening address list',
                 'info'
             );
+
         }
     );
 
@@ -2981,9 +3315,13 @@
         function () {
 
             addressModal.classList
-                .remove('show');
+                .remove(
+                    'show'
+                );
+
         }
     );
+
 
     /*
      * ==========================================================
@@ -3002,12 +3340,15 @@
             );
 
             sniModal.classList
-                .add('show');
+                .add(
+                    'show'
+                );
 
             addLog(
                 'Opening SNI list',
                 'info'
             );
+
         }
     );
 
@@ -3016,13 +3357,17 @@
         function () {
 
             sniModal.classList
-                .remove('show');
+                .remove(
+                    'show'
+                );
+
         }
     );
 
+
     /*
      * ==========================================================
-     * CLOSE MODAL WITH ESC
+     * ESC
      * ==========================================================
      */
 
@@ -3031,17 +3376,27 @@
         function (event) {
 
             if (
-                event.key === 'Escape'
+                event.key ===
+                'Escape'
             ) {
 
-                addressModal.classList
-                    .remove('show');
+                addressModal
+                    .classList
+                    .remove(
+                        'show'
+                    );
 
-                sniModal.classList
-                    .remove('show');
+                sniModal
+                    .classList
+                    .remove(
+                        'show'
+                    );
+
             }
+
         }
     );
+
 
     /*
      * ==========================================================
@@ -3060,8 +3415,11 @@
             setTimeout(
                 function () {
 
-                    loadingScreen.classList
-                        .add('hidden');
+                    loadingScreen
+                        .classList
+                        .add(
+                            'hidden'
+                        );
 
                     mainContent.style.display =
                         'flex';
@@ -3109,6 +3467,11 @@
 
                     addLog(
                         'gRPC service names synchronized',
+                        'success'
+                    );
+
+                    addLog(
+                        'XHTTP mode packet-up synchronized',
                         'success'
                     );
 
