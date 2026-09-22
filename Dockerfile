@@ -42,12 +42,14 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV PORT=8080
 ENV BIND_ADDR=0.0.0.0
 
+
 # ============================================================
 # XRAY
 # ============================================================
 
 ENV XRAY_LOCATION_ASSET=/usr/local/share/xray
 ENV XRAY_LOCATION_CONFIG=/etc/xray
+
 
 # ============================================================
 # INTERNAL PORTS
@@ -59,6 +61,10 @@ ENV APACHE_PORT=8083
 ENV OPENRESTY_PORT=8084
 ENV HAPROXY_GRPC_PORT=8086
 
+
+# ============================================================
+# WORK DIRECTORY
+# ============================================================
 
 WORKDIR /opt/virgozki
 
@@ -115,18 +121,14 @@ RUN apt-get update && \
 # COPY ENVOY
 # ============================================================
 
-COPY --from=envoy \
-    /usr/local/bin/envoy \
-    /usr/local/bin/envoy
+COPY --from=envoy /usr/local/bin/envoy /usr/local/bin/envoy
 
 
 # ============================================================
 # COPY XRAY
 # ============================================================
 
-COPY --from=xray \
-    /usr/local/bin/xray \
-    /usr/local/bin/xray
+COPY --from=xray /usr/local/bin/xray /usr/local/bin/xray
 
 COPY --from=xray \
     /usr/local/share/xray/. \
@@ -138,12 +140,19 @@ COPY --from=xray \
 # ============================================================
 
 COPY supervisord.conf /etc/supervisord.conf
+
 COPY config.json /etc/xray/config.json
+
 COPY nginx.conf /etc/openresty/nginx.conf
+
 COPY haproxy.cfg /etc/haproxy/haproxy.cfg
+
 COPY envoy.yaml /etc/envoy/envoy.yaml
+
 COPY httpd.conf /etc/apache2/conf-available/virgozki.conf
+
 COPY index.html /usr/share/nginx/html/index.html
+
 COPY anti_ddos.py /usr/local/bin/anti_ddos.py
 
 
@@ -207,9 +216,4 @@ ENTRYPOINT ["/usr/bin/tini", "--"]
 # SUPERVISOR
 # ============================================================
 
-CMD [
-    "/usr/bin/supervisord",
-    "-n",
-    "-c",
-    "/etc/supervisord.conf"
-]
+CMD ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisord.conf"]
