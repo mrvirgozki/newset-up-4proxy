@@ -559,10 +559,12 @@ static_resources:
 # ADMIN
 # ============================================================
 admin:
-
   access_log_path: /dev/stderr
 
   address:
     socket_address:
       address: 127.0.0.1
       port_value: 9901
+
+  allow_paths:
+    - exact: /ready
