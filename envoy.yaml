@@ -1,6 +1,22 @@
 # ============================================================
 # VIRGOZKI 4-PROXY + gRPC + XHTTP
 # ENVOY | CLOUD RUN
+#
+# PUBLIC:
+#   Cloud Run -> Envoy :8080
+#
+# INTERNAL:
+#   Xray:
+#     WS            :10000-10011
+#     gRPC          :10012-10015
+#
+#   Apache         :8083
+#
+# HEALTH:
+#   http://127.0.0.1:8080/health
+#
+# ADMIN:
+#   http://127.0.0.1:9901/ready
 # ============================================================
 
 static_resources:
@@ -18,10 +34,6 @@ static_resources:
           address: 0.0.0.0
           port_value: 8080
 
-      # IMPORTANT:
-      # Walang connect_timeout dito.
-      # connect_timeout ay para sa CLUSTERS.
-
       per_connection_buffer_limit_bytes: 1048576
 
       filter_chains:
@@ -29,6 +41,7 @@ static_resources:
         - filters:
 
             - name: envoy.filters.network.http_connection_manager
+
               typed_config:
                 "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
 
@@ -36,39 +49,56 @@ static_resources:
 
                 codec_type: AUTO
 
-                # ------------------------------------------------
+                # ==================================================
                 # TIMEOUTS
-                # ------------------------------------------------
+                # ==================================================
+
                 request_timeout: 0s
                 stream_idle_timeout: 3600s
-                request_headers_timeout: 30s
 
-                # ------------------------------------------------
+                # ==================================================
                 # PATH HANDLING
-                # ------------------------------------------------
+                # ==================================================
+
                 normalize_path: true
                 merge_slashes: true
 
-                # ------------------------------------------------
+                # ==================================================
                 # ACCESS LOG
-                # ------------------------------------------------
+                # ==================================================
+
                 access_log:
+
                   - name: envoy.access_loggers.stdout
+
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.access_loggers.stream.v3.StdoutAccessLog
 
-                # ------------------------------------------------
+                # ==================================================
                 # WEBSOCKET / HTTP UPGRADE
-                # ------------------------------------------------
+                # ==================================================
+
                 upgrade_configs:
 
                   - upgrade_type: websocket
 
-                  - upgrade_type: HTTP/1.1
+                  - upgrade_type: httpupgrade
 
-                # ------------------------------------------------
-                # ROUTES
-                # ------------------------------------------------
+                # ==================================================
+                # HTTP FILTERS
+                # ==================================================
+
+                http_filters:
+
+                  - name: envoy.filters.http.router
+
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+
+                # ==================================================
+                # ROUTING
+                # ==================================================
+
                 route_config:
 
                   name: virgozki_routes
@@ -82,155 +112,265 @@ static_resources:
 
                       routes:
 
-                        # =========================================
+                        # ==================================================
+                        # HEALTH
+                        # IMPORTANT:
+                        # Cloud Run / local health checker can use:
+                        # /health
+                        # ==================================================
+
+                        - match:
+                            path: /health
+
+                          direct_response:
+                            status: 200
+
+                            body:
+                              inline_string: "ok\n"
+
+
+                        # ==================================================
+                        # READY
+                        # Public listener copy of readiness endpoint
+                        # ==================================================
+
+                        - match:
+                            path: /ready
+
+                          direct_response:
+                            status: 200
+
+                            body:
+                              inline_string: "ready\n"
+
+
+                        # ==================================================
                         # VLESS gRPC
-                        # =========================================
+                        # Xray :10012
+                        # serviceName:
+                        # vless-grpc-virgozki
+                        # ==================================================
+
                         - match:
                             prefix: /vless-grpc-virgozki/
+
                           route:
                             cluster: vless_grpc
                             timeout: 0s
 
-                        # =========================================
+
+                        # ==================================================
                         # VMESS gRPC
-                        # =========================================
+                        # Xray :10013
+                        # ==================================================
+
                         - match:
                             prefix: /vmess-grpc-virgozki/
+
                           route:
                             cluster: vmess_grpc
                             timeout: 0s
 
-                        # =========================================
+
+                        # ==================================================
                         # TROJAN gRPC
-                        # =========================================
+                        # Xray :10014
+                        # ==================================================
+
                         - match:
                             prefix: /trojan-grpc-virgozki/
+
                           route:
                             cluster: trojan_grpc
                             timeout: 0s
 
-                        # =========================================
+
+                        # ==================================================
                         # SHADOWSOCKS gRPC
-                        # =========================================
+                        # Xray :10015
+                        # ==================================================
+
                         - match:
                             prefix: /ss-grpc-virgozki/
+
                           route:
                             cluster: ss_grpc
                             timeout: 0s
 
-                        # =========================================
+
+                        # ==================================================
                         # TROJAN XHTTP
-                        # =========================================
+                        # Xray :10002
+                        #
+                        # config.json:
+                        # /virgozki-xhttp
+                        # ==================================================
+
                         - match:
                             prefix: /virgozki-xhttp
+
                           route:
                             cluster: trojan_xhttp
                             timeout: 0s
 
-                        # =========================================
+
+                        # ==================================================
                         # VMESS XHTTP
-                        # =========================================
+                        # Xray :10005
+                        # ==================================================
+
                         - match:
                             prefix: /vmess-virgozki-xhttp
+
                           route:
                             cluster: vmess_xhttp
                             timeout: 0s
 
-                        # =========================================
+
+                        # ==================================================
                         # VLESS XHTTP
-                        # =========================================
+                        # Xray :10008
+                        # ==================================================
+
                         - match:
                             prefix: /vless-virgozki-xhttp
+
                           route:
                             cluster: vless_xhttp
                             timeout: 0s
 
-                        # =========================================
+
+                        # ==================================================
                         # SHADOWSOCKS XHTTP
-                        # =========================================
+                        # Xray :10011
+                        # ==================================================
+
                         - match:
                             prefix: /ss-virgozki-xhttp
+
                           route:
                             cluster: ss_xhttp
                             timeout: 0s
 
-                        # =========================================
+
+                        # ==================================================
                         # TROJAN WS
-                        # =========================================
+                        # Xray :10000
+                        #
+                        # config.json:
+                        # /virgozki
+                        # ==================================================
+
                         - match:
-                            path: /virgozki-trojan-ws
+                            path: /virgozki
+
                           route:
                             cluster: trojan_ws
                             timeout: 0s
 
-                        # =========================================
+
+                        # ==================================================
                         # TROJAN HTTPUPGRADE
-                        # =========================================
+                        # Xray :10001
+                        #
+                        # config.json:
+                        # /virgozki-hu
+                        # ==================================================
+
                         - match:
-                            path: /virgozki-trojan-httpupgrade
+                            path: /virgozki-hu
+
                           route:
                             cluster: trojan_httpupgrade
                             timeout: 0s
 
-                        # =========================================
+
+                        # ==================================================
                         # VMESS WS
-                        # =========================================
+                        # Xray :10003
+                        # ==================================================
+
                         - match:
-                            path: /virgozki-vmess-ws
+                            path: /vmess-virgozki
+
                           route:
                             cluster: vmess_ws
                             timeout: 0s
 
-                        # =========================================
+
+                        # ==================================================
                         # VMESS HTTPUPGRADE
-                        # =========================================
+                        # Xray :10004
+                        # ==================================================
+
                         - match:
-                            path: /virgozki-vmess-httpupgrade
+                            path: /vmess-virgozki-hu
+
                           route:
                             cluster: vmess_httpupgrade
                             timeout: 0s
 
-                        # =========================================
+
+                        # ==================================================
                         # VLESS WS
-                        # =========================================
+                        # Xray :10006
+                        # ==================================================
+
                         - match:
-                            path: /virgozki-vless-ws
+                            path: /vless-virgozki
+
                           route:
                             cluster: vless_ws
                             timeout: 0s
 
-                        # =========================================
+
+                        # ==================================================
                         # VLESS HTTPUPGRADE
-                        # =========================================
+                        # Xray :10007
+                        # ==================================================
+
                         - match:
-                            path: /virgozki-vless-httpupgrade
+                            path: /vless-virgozki-hu
+
                           route:
                             cluster: vless_httpupgrade
                             timeout: 0s
 
-                        # =========================================
+
+                        # ==================================================
                         # SHADOWSOCKS WS
-                        # =========================================
+                        # Xray :10009
+                        # ==================================================
+
                         - match:
-                            path: /virgozki-ss-ws
+                            path: /ss-virgozki
+
                           route:
                             cluster: ss_ws
                             timeout: 0s
 
-                        # =========================================
+
+                        # ==================================================
                         # SHADOWSOCKS HTTPUPGRADE
-                        # =========================================
+                        # Xray :10010
+                        # ==================================================
+
                         - match:
-                            path: /virgozki-ss-httpupgrade
+                            path: /ss-virgozki-hu
+
                           route:
                             cluster: ss_httpupgrade
                             timeout: 0s
 
-                        # =========================================
-                        # DEFAULT -> APACHE PANEL
-                        # =========================================
+
+                        # ==================================================
+                        # DEFAULT
+                        # Apache panel :8083
+                        # ==================================================
+
                         - match:
                             prefix: /
+
                           route:
                             cluster: apache_web
                             timeout: 60s
@@ -239,21 +379,31 @@ static_resources:
   # ============================================================
   # CLUSTERS
   # ============================================================
+
   clusters:
+
 
     # ==========================================================
     # TROJAN WS :10000
     # ==========================================================
+
     - name: trojan_ws
+
       connect_timeout: 5s
       type: STATIC
 
       load_assignment:
+
         cluster_name: trojan_ws
+
         endpoints:
+
           - lb_endpoints:
+
               - endpoint:
+
                   address:
+
                     socket_address:
                       address: 127.0.0.1
                       port_value: 10000
@@ -262,16 +412,24 @@ static_resources:
     # ==========================================================
     # TROJAN HTTPUPGRADE :10001
     # ==========================================================
+
     - name: trojan_httpupgrade
+
       connect_timeout: 5s
       type: STATIC
 
       load_assignment:
+
         cluster_name: trojan_httpupgrade
+
         endpoints:
+
           - lb_endpoints:
+
               - endpoint:
+
                   address:
+
                     socket_address:
                       address: 127.0.0.1
                       port_value: 10001
@@ -280,16 +438,24 @@ static_resources:
     # ==========================================================
     # TROJAN XHTTP :10002
     # ==========================================================
+
     - name: trojan_xhttp
+
       connect_timeout: 5s
       type: STATIC
 
       load_assignment:
+
         cluster_name: trojan_xhttp
+
         endpoints:
+
           - lb_endpoints:
+
               - endpoint:
+
                   address:
+
                     socket_address:
                       address: 127.0.0.1
                       port_value: 10002
@@ -298,16 +464,24 @@ static_resources:
     # ==========================================================
     # VMESS WS :10003
     # ==========================================================
+
     - name: vmess_ws
+
       connect_timeout: 5s
       type: STATIC
 
       load_assignment:
+
         cluster_name: vmess_ws
+
         endpoints:
+
           - lb_endpoints:
+
               - endpoint:
+
                   address:
+
                     socket_address:
                       address: 127.0.0.1
                       port_value: 10003
@@ -316,16 +490,24 @@ static_resources:
     # ==========================================================
     # VMESS HTTPUPGRADE :10004
     # ==========================================================
+
     - name: vmess_httpupgrade
+
       connect_timeout: 5s
       type: STATIC
 
       load_assignment:
+
         cluster_name: vmess_httpupgrade
+
         endpoints:
+
           - lb_endpoints:
+
               - endpoint:
+
                   address:
+
                     socket_address:
                       address: 127.0.0.1
                       port_value: 10004
@@ -334,16 +516,24 @@ static_resources:
     # ==========================================================
     # VMESS XHTTP :10005
     # ==========================================================
+
     - name: vmess_xhttp
+
       connect_timeout: 5s
       type: STATIC
 
       load_assignment:
+
         cluster_name: vmess_xhttp
+
         endpoints:
+
           - lb_endpoints:
+
               - endpoint:
+
                   address:
+
                     socket_address:
                       address: 127.0.0.1
                       port_value: 10005
@@ -352,16 +542,24 @@ static_resources:
     # ==========================================================
     # VLESS WS :10006
     # ==========================================================
+
     - name: vless_ws
+
       connect_timeout: 5s
       type: STATIC
 
       load_assignment:
+
         cluster_name: vless_ws
+
         endpoints:
+
           - lb_endpoints:
+
               - endpoint:
+
                   address:
+
                     socket_address:
                       address: 127.0.0.1
                       port_value: 10006
@@ -370,16 +568,24 @@ static_resources:
     # ==========================================================
     # VLESS HTTPUPGRADE :10007
     # ==========================================================
+
     - name: vless_httpupgrade
+
       connect_timeout: 5s
       type: STATIC
 
       load_assignment:
+
         cluster_name: vless_httpupgrade
+
         endpoints:
+
           - lb_endpoints:
+
               - endpoint:
+
                   address:
+
                     socket_address:
                       address: 127.0.0.1
                       port_value: 10007
@@ -388,16 +594,24 @@ static_resources:
     # ==========================================================
     # VLESS XHTTP :10008
     # ==========================================================
+
     - name: vless_xhttp
+
       connect_timeout: 5s
       type: STATIC
 
       load_assignment:
+
         cluster_name: vless_xhttp
+
         endpoints:
+
           - lb_endpoints:
+
               - endpoint:
+
                   address:
+
                     socket_address:
                       address: 127.0.0.1
                       port_value: 10008
@@ -406,16 +620,24 @@ static_resources:
     # ==========================================================
     # SHADOWSOCKS WS :10009
     # ==========================================================
+
     - name: ss_ws
+
       connect_timeout: 5s
       type: STATIC
 
       load_assignment:
+
         cluster_name: ss_ws
+
         endpoints:
+
           - lb_endpoints:
+
               - endpoint:
+
                   address:
+
                     socket_address:
                       address: 127.0.0.1
                       port_value: 10009
@@ -424,16 +646,24 @@ static_resources:
     # ==========================================================
     # SHADOWSOCKS HTTPUPGRADE :10010
     # ==========================================================
+
     - name: ss_httpupgrade
+
       connect_timeout: 5s
       type: STATIC
 
       load_assignment:
+
         cluster_name: ss_httpupgrade
+
         endpoints:
+
           - lb_endpoints:
+
               - endpoint:
+
                   address:
+
                     socket_address:
                       address: 127.0.0.1
                       port_value: 10010
@@ -442,16 +672,24 @@ static_resources:
     # ==========================================================
     # SHADOWSOCKS XHTTP :10011
     # ==========================================================
+
     - name: ss_xhttp
+
       connect_timeout: 5s
       type: STATIC
 
       load_assignment:
+
         cluster_name: ss_xhttp
+
         endpoints:
+
           - lb_endpoints:
+
               - endpoint:
+
                   address:
+
                     socket_address:
                       address: 127.0.0.1
                       port_value: 10011
@@ -460,18 +698,26 @@ static_resources:
     # ==========================================================
     # VLESS gRPC :10012
     # ==========================================================
+
     - name: vless_grpc
+
       connect_timeout: 5s
       type: STATIC
 
       http2_protocol_options: {}
 
       load_assignment:
+
         cluster_name: vless_grpc
+
         endpoints:
+
           - lb_endpoints:
+
               - endpoint:
+
                   address:
+
                     socket_address:
                       address: 127.0.0.1
                       port_value: 10012
@@ -480,18 +726,26 @@ static_resources:
     # ==========================================================
     # VMESS gRPC :10013
     # ==========================================================
+
     - name: vmess_grpc
+
       connect_timeout: 5s
       type: STATIC
 
       http2_protocol_options: {}
 
       load_assignment:
+
         cluster_name: vmess_grpc
+
         endpoints:
+
           - lb_endpoints:
+
               - endpoint:
+
                   address:
+
                     socket_address:
                       address: 127.0.0.1
                       port_value: 10013
@@ -500,18 +754,26 @@ static_resources:
     # ==========================================================
     # TROJAN gRPC :10014
     # ==========================================================
+
     - name: trojan_grpc
+
       connect_timeout: 5s
       type: STATIC
 
       http2_protocol_options: {}
 
       load_assignment:
+
         cluster_name: trojan_grpc
+
         endpoints:
+
           - lb_endpoints:
+
               - endpoint:
+
                   address:
+
                     socket_address:
                       address: 127.0.0.1
                       port_value: 10014
@@ -520,36 +782,49 @@ static_resources:
     # ==========================================================
     # SHADOWSOCKS gRPC :10015
     # ==========================================================
+
     - name: ss_grpc
+
       connect_timeout: 5s
       type: STATIC
 
       http2_protocol_options: {}
 
       load_assignment:
+
         cluster_name: ss_grpc
+
         endpoints:
+
           - lb_endpoints:
+
               - endpoint:
-                  address:
-                    socket_address:
-                      address: 127.0.0.1
-                      port_value: 10015
+
+                  address: 127.0.0.1
+                  port_value: 10015
 
 
     # ==========================================================
     # APACHE PANEL :8083
     # ==========================================================
+
     - name: apache_web
+
       connect_timeout: 5s
       type: STATIC
 
       load_assignment:
+
         cluster_name: apache_web
+
         endpoints:
+
           - lb_endpoints:
+
               - endpoint:
+
                   address:
+
                     socket_address:
                       address: 127.0.0.1
                       port_value: 8083
@@ -558,13 +833,20 @@ static_resources:
 # ============================================================
 # ADMIN
 # ============================================================
+
 admin:
+
   access_log_path: /dev/stderr
 
   address:
+
     socket_address:
       address: 127.0.0.1
       port_value: 9901
 
+  # Admin readiness endpoint:
+  # http://127.0.0.1:9901/ready
+
   allow_paths:
+
     - exact: /ready
