@@ -1,41 +1,55 @@
 #!/bin/bash
 set -euo pipefail
 
-# ============================================================
+# ==============================================================================
 # VIRGOZKI 4-PROXY + gRPC | CLOUD RUN
 # DEBIAN BOOKWORM
 #
-# ARCHITECTURE
+# REGION:
+#   us-central1
 #
-# Cloud Run :8080
-#       |
-#       v
-#     Envoy
-#     /   \
-#    /     \
-#  Xray   Apache
+# PUBLIC:
+#   Cloud Run -> Envoy :8080
 #
-# INTERNAL ONLY:
+# INTERNAL:
 #   HAProxy   :8081 / :8086
 #   OpenResty :8084
 #   Apache    :8083
 #   Xray      :10000-10015
 #
 # IMPORTANT:
-#   DEPLOY=false by default.
-#   Set DEPLOY=true only when ready.
-# ============================================================
+#   DEPLOY=false by default
+#   Build/validation muna.
+#
+#   Actual deployment:
+#       DEPLOY=true ./deploy.sh
+# ==============================================================================
 
 
-# ============================================================
+# ==============================================================================
+# COLORS
+# ==============================================================================
+
+BOLD='\033[1m'
+RESET='\033[0m'
+
+GREEN='\033[1;32m'
+RED='\033[1;31m'
+CYAN='\033[1;36m'
+YELLOW='\033[1;33m'
+MAGENTA='\033[1;35m'
+WHITE='\033[1;37m'
+
+
+# ==============================================================================
 # CONFIG
-# ============================================================
+# ==============================================================================
 
-PROJECT_ID="${PROJECT_ID:-$(gcloud config get-value project 2>/dev/null)}"
+PROJECT_ID="${PROJECT_ID:-$(gcloud config get-value project 2>/dev/null | tr -d '[:space:]')}"
 
-REGION="${REGION:-asia-southeast1}"
+REGION="${REGION:-us-central1}"
 
-SERVICE_NAME="${SERVICE_NAME:-virgozki}"
+SERVICE_NAME="${SERVICE_NAME:-virgozki-4proxy}"
 
 REPOSITORY="${REPOSITORY:-virgozki}"
 
@@ -46,84 +60,96 @@ IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/${IMAGE_NAME}:latest
 DEPLOY="${DEPLOY:-false}"
 
 
-# ============================================================
+# ==============================================================================
 # CLOUD RUN RESOURCES
-# ============================================================
+# ==============================================================================
 
 CPU="${CPU:-2}"
-RAM="${RAM:-2Gi}"
+RAM="${RAM:-4Gi}"
 
-MAX_INST="${MAX_INST:-10}"
+MAX_INSTANCES="${MAX_INSTANCES:-4}"
 
 CONCURRENCY="${CONCURRENCY:-80}"
 
 TIMEOUT="${TIMEOUT:-3600}"
 
 
-# ============================================================
-# COLORS
-# ============================================================
+# ==============================================================================
+# LOADING
+# ==============================================================================
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
+loading() {
 
+    local text="$1"
 
-# ============================================================
-# FUNCTIONS
-# ============================================================
+    local spinner='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
+
+    for ((i=0; i<2; i++)); do
+
+        for ((j=0; j<${#spinner}; j++)); do
+
+            echo -ne "\r  ${CYAN}${spinner:$j:1} ${text}...${RESET}"
+
+            sleep 0.05
+
+        done
+
+    done
+
+    echo -ne "\r  ${GREEN}DONE: ${text}${RESET}\n"
+}
+
 
 info() {
-    echo -e "${BLUE}[INFO]${NC} $1"
+    echo -e "  ${CYAN}[INFO]${RESET} $1"
 }
+
 
 ok() {
-    echo -e "${GREEN}[ OK ]${NC} $1"
+    echo -e "  ${GREEN}[ OK ]${RESET} $1"
 }
+
 
 warn() {
-    echo -e "${YELLOW}[WARN]${NC} $1"
+    echo -e "  ${YELLOW}[WARN]${RESET} $1"
 }
 
+
 fail() {
-    echo -e "${RED}[FAIL]${NC} $1"
+    echo -e "  ${RED}[FAIL]${RESET} $1"
     exit 1
 }
 
 
-# ============================================================
+# ==============================================================================
 # HEADER
-# ============================================================
+# ==============================================================================
+
+clear
 
 echo
-echo "============================================================"
-echo " VIRGOZKI 4-PROXY + gRPC | CLOUD RUN"
-echo "============================================================"
+echo -e "  ${BOLD}${WHITE}VIRGOZKI 4-PROXY + gRPC${RESET}"
+echo -e "  ${MAGENTA}CLOUD RUN • DEBIAN BOOKWORM${RESET}"
 echo
-echo "Project      : ${PROJECT_ID}"
-echo "Region       : ${REGION}"
-echo "Service      : ${SERVICE_NAME}"
-echo "Image        : ${IMAGE}"
-echo "Deploy       : ${DEPLOY}"
-echo
-echo "Public port  : 8080"
-echo "HAProxy HTTP : 8081"
-echo "Apache       : 8083"
-echo "OpenResty    : 8084"
-echo "HAProxy gRPC : 8086"
-echo "Xray         : 10000-10015"
+echo -e "  ${GREEN}PUBLIC: Envoy :8080${RESET}"
+echo -e "  ${GREEN}INTERNAL: HAProxy :8081/:8086 • OpenResty :8084 • Apache :8083${RESET}"
+echo -e "  ${GREEN}XRAY: :10000-10015${RESET}"
 echo
 
 
-# ============================================================
-# CHECK PROJECT
-# ============================================================
+# ==============================================================================
+# PROJECT CHECK
+# ==============================================================================
 
 if [[ -z "${PROJECT_ID}" || "${PROJECT_ID}" == "(unset)" ]]; then
-    fail "PROJECT_ID is not set."
+    fail "No active GCP project detected."
 fi
+
+echo -e "  ${CYAN}PROJECT:${RESET} ${GREEN}${PROJECT_ID}${RESET}"
+echo -e "  ${CYAN}REGION:${RESET}  ${GREEN}${REGION}${RESET}"
+echo -e "  ${CYAN}SERVICE:${RESET} ${GREEN}${SERVICE_NAME}${RESET}"
+echo -e "  ${CYAN}DEPLOY:${RESET}  ${GREEN}${DEPLOY}${RESET}"
+echo
 
 gcloud projects describe "${PROJECT_ID}" >/dev/null 2>&1 \
     || fail "Cannot access GCP project: ${PROJECT_ID}"
@@ -131,21 +157,25 @@ gcloud projects describe "${PROJECT_ID}" >/dev/null 2>&1 \
 ok "GCP project accessible"
 
 
-# ============================================================
-# CHECK REQUIRED COMMANDS
-# ============================================================
+# ==============================================================================
+# REQUIRED COMMANDS
+# ==============================================================================
 
 for cmd in gcloud curl python3; do
+
     command -v "${cmd}" >/dev/null 2>&1 \
         || fail "Required command not found: ${cmd}"
+
 done
 
-ok "Required local commands available"
+ok "Required commands available"
 
 
-# ============================================================
+# ==============================================================================
 # REQUIRED FILES
-# ============================================================
+# ==============================================================================
+
+loading "CHECKING REQUIRED FILES"
 
 REQUIRED_FILES=(
     "Dockerfile"
@@ -159,20 +189,20 @@ REQUIRED_FILES=(
     "anti_ddos.py"
 )
 
-info "Checking required files..."
-
 for file in "${REQUIRED_FILES[@]}"; do
+
     if [[ ! -f "${file}" ]]; then
         fail "Missing file: ${file}"
     fi
 
     ok "Found ${file}"
+
 done
 
 
-# ============================================================
-# CHECK CONFIG.JSON SYNTAX
-# ============================================================
+# ==============================================================================
+# CONFIG.JSON VALIDATION
+# ==============================================================================
 
 info "Checking config.json syntax..."
 
@@ -184,29 +214,29 @@ try:
     with open("config.json", "r", encoding="utf-8") as f:
         json.load(f)
 
-    print("[ OK ] config.json is valid JSON")
+    print("  [ OK ] config.json is valid JSON")
 
 except Exception as e:
-    print("[FAIL] config.json is invalid:")
+    print("  [FAIL] config.json is invalid:")
     print(e)
     sys.exit(1)
 PY
 
 
-# ============================================================
-# CHECK DOCKERFILE
-# ============================================================
+# ==============================================================================
+# DOCKERFILE VALIDATION
+# ==============================================================================
 
-info "Checking Dockerfile..."
+loading "CHECKING DOCKERFILE"
 
 grep -q '^FROM envoyproxy/envoy:v1.39.1 AS envoy' Dockerfile \
-    || fail "Envoy base stage missing"
+    || fail "Envoy base image missing"
 
 grep -q '^FROM ghcr.io/xtls/xray-core:25.12.8 AS xray' Dockerfile \
-    || fail "Xray base stage missing"
+    || fail "Xray base image missing"
 
 grep -q '^FROM openresty/openresty:1.31.1.1-bookworm-fat AS final' Dockerfile \
-    || fail "OpenResty final stage missing"
+    || fail "OpenResty base image missing"
 
 grep -q 'COPY supervisord.conf /etc/supervisord.conf' Dockerfile \
     || fail "supervisord.conf COPY missing"
@@ -232,72 +262,74 @@ grep -q 'COPY anti_ddos.py /usr/local/bin/anti_ddos.py' Dockerfile \
 ok "Dockerfile structure looks correct"
 
 
-# ============================================================
-# CHECK SUPERVISOR
-# ============================================================
+# ==============================================================================
+# SUPERVISOR VALIDATION
+# ==============================================================================
 
-info "Checking Supervisor configuration..."
+loading "CHECKING SUPERVISOR CONFIGURATION"
 
 grep -q 'xray run -c /etc/xray/config.json' supervisord.conf \
-    || fail "Supervisor Xray command missing"
+    || fail "Xray Supervisor command missing"
 
 grep -q 'apachectl -DFOREGROUND' supervisord.conf \
-    || fail "Supervisor Apache command missing"
+    || fail "Apache Supervisor command missing"
 
 grep -q 'haproxy -W -db -f /etc/haproxy/haproxy.cfg' supervisord.conf \
-    || fail "Supervisor HAProxy command missing"
+    || fail "HAProxy Supervisor command missing"
 
 grep -q 'openresty -c /etc/openresty/nginx.conf' supervisord.conf \
-    || fail "Supervisor OpenResty config path missing"
+    || fail "OpenResty config path missing"
 
 grep -q 'envoy -c /etc/envoy/envoy.yaml' supervisord.conf \
-    || fail "Supervisor Envoy command missing"
+    || fail "Envoy Supervisor command missing"
 
 ok "Supervisor configuration looks correct"
 
 
-# ============================================================
-# CHECK PORT ALIGNMENT
-# ============================================================
+# ==============================================================================
+# PORT VALIDATION
+# ==============================================================================
 
-info "Checking port alignment..."
+loading "CHECKING PORT ALIGNMENT"
 
 grep -q 'port_value: 8080' envoy.yaml \
-    || fail "Envoy is not listening on port 8080"
+    || fail "Envoy :8080 missing"
 
 grep -q 'Listen 127.0.0.1:8083' httpd.conf \
-    || fail "Apache is not configured for 127.0.0.1:8083"
+    || fail "Apache :8083 missing"
 
 grep -q 'bind 127.0.0.1:8081' haproxy.cfg \
-    || fail "HAProxy HTTP listener 8081 missing"
+    || fail "HAProxy HTTP :8081 missing"
 
 grep -q 'bind 127.0.0.1:8086' haproxy.cfg \
-    || fail "HAProxy gRPC listener 8086 missing"
+    || fail "HAProxy gRPC :8086 missing"
 
 grep -q 'listen 127.0.0.1:8084' nginx.conf \
-    || fail "OpenResty listener 8084 missing"
+    || fail "OpenResty :8084 missing"
 
 ok "Internal port alignment looks correct"
 
 
-# ============================================================
-# CHECK FOR OLD HAProxy 8084 COLLISION
-# ============================================================
+# ==============================================================================
+# CHECK OLD PORT COLLISION
+# ==============================================================================
 
-info "Checking old HAProxy/OpenResty port collision..."
+info "Checking HAProxy/OpenResty port collision..."
 
 if grep -Eq 'bind[[:space:]]+127\.0\.0\.1:8084' haproxy.cfg; then
-    fail "HAProxy still uses 8084. This conflicts with OpenResty."
+
+    fail "HAProxy still uses :8084. OpenResty also uses :8084."
+
 fi
 
-ok "No HAProxy 8084 collision found"
+ok "No HAProxy :8084 collision"
 
 
-# ============================================================
-# CHECK GRPC PATHS
-# ============================================================
+# ==============================================================================
+# gRPC PATH VALIDATION
+# ==============================================================================
 
-info "Checking gRPC paths..."
+loading "CHECKING gRPC PATHS"
 
 GRPC_PATHS=(
     "vless-grpc-virgozki"
@@ -317,16 +349,16 @@ for path in "${GRPC_PATHS[@]}"; do
     grep -q "${path}" nginx.conf \
         || fail "Missing gRPC path in nginx.conf: ${path}"
 
-    ok "gRPC path aligned: ${path}"
+    ok "gRPC aligned: ${path}"
 
 done
 
 
-# ============================================================
-# CHECK XRAY PORTS
-# ============================================================
+# ==============================================================================
+# XRAY PORT VALIDATION
+# ==============================================================================
 
-info "Checking Xray ports..."
+loading "CHECKING XRAY PORTS"
 
 for port in \
     10000 \
@@ -348,51 +380,51 @@ for port in \
 do
 
     grep -q "\"port\": ${port}" config.json \
-        || fail "Xray port missing from config.json: ${port}"
+        || fail "Xray port missing in config.json: ${port}"
 
     grep -q "port_value: ${port}" envoy.yaml \
-        || fail "Xray port missing from envoy.yaml: ${port}"
+        || fail "Xray port missing in envoy.yaml: ${port}"
 
 done
 
-ok "All Xray ports 10000-10015 are aligned"
+ok "Xray ports 10000-10015 aligned"
 
 
-# ============================================================
-# CHECK HEALTH ROUTES
-# ============================================================
+# ==============================================================================
+# HEALTH ROUTES
+# ==============================================================================
 
-info "Checking health endpoints..."
+loading "CHECKING HEALTH ROUTES"
 
 grep -q '/health' envoy.yaml \
-    || fail "Envoy /health route missing"
+    || fail "Envoy /health missing"
 
 grep -q '/health' nginx.conf \
-    || fail "OpenResty /health route missing"
+    || fail "OpenResty /health missing"
 
 grep -q '/health' httpd.conf \
-    || fail "Apache /health route missing"
+    || fail "Apache /health missing"
 
 ok "Health routes found"
 
 
-# ============================================================
-# CHECK PUBLIC LISTENER
-# ============================================================
+# ==============================================================================
+# PUBLIC LISTENER
+# ==============================================================================
 
 info "Checking public listener..."
 
 grep -q 'port_value: 8080' envoy.yaml \
-    || fail "Public Envoy listener 8080 not found"
+    || fail "Envoy public listener :8080 missing"
 
-ok "Envoy public listener is 8080"
+ok "Public Envoy listener is :8080"
 
 
-# ============================================================
-# ENABLE REQUIRED APIS
-# ============================================================
+# ==============================================================================
+# ENABLE GOOGLE CLOUD APIS
+# ==============================================================================
 
-info "Enabling required Google Cloud APIs..."
+loading "ENABLING REQUIRED GOOGLE CLOUD APIS"
 
 gcloud services enable \
     run.googleapis.com \
@@ -403,11 +435,11 @@ gcloud services enable \
 ok "Required APIs enabled"
 
 
-# ============================================================
-# CREATE ARTIFACT REGISTRY
-# ============================================================
+# ==============================================================================
+# ARTIFACT REGISTRY
+# ==============================================================================
 
-info "Checking Artifact Registry repository..."
+info "Checking Artifact Registry..."
 
 if ! gcloud artifacts repositories describe "${REPOSITORY}" \
     --location="${REGION}" \
@@ -431,9 +463,9 @@ else
 fi
 
 
-# ============================================================
+# ==============================================================================
 # BUILD IMAGE
-# ============================================================
+# ==============================================================================
 
 echo
 echo "============================================================"
@@ -449,34 +481,36 @@ gcloud builds submit \
 ok "Container image built successfully"
 
 
-# ============================================================
-# DO NOT DEPLOY BY DEFAULT
-# ============================================================
+# ==============================================================================
+# BUILD ONLY MODE
+# ==============================================================================
 
 if [[ "${DEPLOY}" != "true" ]]; then
 
     echo
     echo "============================================================"
-    echo " BUILD TEST COMPLETE"
+    echo " BUILD/VALIDATION COMPLETE"
     echo "============================================================"
     echo
-    echo "Image:"
+    echo -e "  ${GREEN}IMAGE:${RESET}"
     echo "  ${IMAGE}"
     echo
-    echo "Deployment was NOT performed."
+    echo -e "  ${YELLOW}CLOUD RUN DEPLOYMENT WAS NOT PERFORMED.${RESET}"
     echo
-    echo "To deploy later:"
+    echo "  Kapag ready na:"
     echo
-    echo "  DEPLOY=true ./deploy.sh"
+    echo "    DEPLOY=true ./deploy.sh"
     echo
     echo "============================================================"
+
     exit 0
+
 fi
 
 
-# ============================================================
-# CLOUD RUN DEPLOY
-# ============================================================
+# ==============================================================================
+# DEPLOY CLOUD RUN
+# ==============================================================================
 
 echo
 echo "============================================================"
@@ -495,15 +529,14 @@ gcloud run deploy "${SERVICE_NAME}" \
     --concurrency="${CONCURRENCY}" \
     --timeout="${TIMEOUT}" \
     --min-instances=0 \
-    --max-instances="${MAX_INST}" \
-    --session-affinity \
+    --max-instances="${MAX_INSTANCES}" \
     --allow-unauthenticated \
     --quiet
 
 
-# ============================================================
-# GET SERVICE URL
-# ============================================================
+# ==============================================================================
+# SERVICE URL
+# ==============================================================================
 
 SERVICE_URL="$(
     gcloud run services describe "${SERVICE_NAME}" \
@@ -517,21 +550,23 @@ if [[ -z "${SERVICE_URL}" ]]; then
     fail "Unable to obtain Cloud Run service URL"
 fi
 
+CLEAN_HOST="${SERVICE_URL#https://}"
+
 ok "Cloud Run URL: ${SERVICE_URL}"
 
 
-# ============================================================
-# WAIT FOR STARTUP
-# ============================================================
+# ==============================================================================
+# WAIT
+# ==============================================================================
 
 info "Waiting for Cloud Run startup..."
 
 sleep 8
 
 
-# ============================================================
+# ==============================================================================
 # HEALTH CHECK
-# ============================================================
+# ==============================================================================
 
 info "Checking /health..."
 
@@ -552,8 +587,13 @@ for i in {1..10}; do
     )"
 
     if [[ "${HTTP_CODE}" == "200" ]]; then
+
         HEALTH_OK=true
+
+        ok "Health check passed"
+
         break
+
     fi
 
     warn "Health attempt ${i}/10 failed: HTTP ${HTTP_CODE}"
@@ -570,6 +610,7 @@ if [[ "${HEALTH_OK}" != "true" ]]; then
 
     echo
     echo "Recent Cloud Run logs:"
+
     gcloud run services logs read "${SERVICE_NAME}" \
         --project="${PROJECT_ID}" \
         --region="${REGION}" \
@@ -577,12 +618,13 @@ if [[ "${HEALTH_OK}" != "true" ]]; then
         || true
 
     exit 1
+
 fi
 
 
-# ============================================================
-# ROOT / APACHE TEST
-# ============================================================
+# ==============================================================================
+# APACHE FALLBACK TEST
+# ==============================================================================
 
 info "Checking Envoy -> Apache fallback..."
 
@@ -598,41 +640,49 @@ ROOT_CODE="$(
     || true
 )"
 
-if [[ "${ROOT_CODE}" != "200" ]]; then
-    warn "Root path returned HTTP ${ROOT_CODE}"
-else
+if [[ "${ROOT_CODE}" == "200" ]]; then
+
     ok "Envoy -> Apache fallback is responding"
+
+else
+
+    warn "Root path returned HTTP ${ROOT_CODE}"
+
 fi
 
 
-# ============================================================
-# FINAL RESULT
-# ============================================================
+# ==============================================================================
+# FINAL
+# ==============================================================================
 
 echo
 echo "============================================================"
-echo " CLOUD RUN TEST COMPLETE"
+echo -e " ${GREEN}CLOUD RUN DEPLOYMENT COMPLETE${RESET}"
 echo "============================================================"
 echo
-echo "Service:"
-echo "  ${SERVICE_NAME}"
-echo
-echo "URL:"
-echo "  ${SERVICE_URL}"
+
+echo -e "  ${CYAN}SERVICE:${RESET} ${GREEN}${SERVICE_NAME}${RESET}"
+echo -e "  ${CYAN}REGION:${RESET}  ${GREEN}${REGION}${RESET}"
+echo -e "  ${CYAN}URL:${RESET}     ${GREEN}${SERVICE_URL}${RESET}"
+
 echo
 echo "Public:"
-echo "  Envoy :8080"
+echo "  Envoy       :8080"
+
 echo
 echo "Internal:"
 echo "  HAProxy HTTP :8081"
 echo "  Apache       :8083"
 echo "  OpenResty    :8084"
 echo "  HAProxy gRPC :8086"
+
 echo
 echo "Xray:"
-echo "  10000-10015"
+echo "  :10000-10015"
+
 echo
 echo "Health:"
 echo "  ${SERVICE_URL}/health"
+
 echo
 echo "============================================================"
