@@ -1,31 +1,72 @@
 # ============================================================
-# BASE IMAGES
+# VIRGOZKI 4-PROXY + gRPC | CLOUD RUN
+# DEBIAN BOOKWORM
+#
+# PUBLIC:
+#   Cloud Run -> Envoy :8080
+#
+# INTERNAL:
+#   HAProxy   :8081 / :8086
+#   Apache    :8083
+#   OpenResty :8084
+#   Xray      :10000-10015
 # ============================================================
+
+
+# ============================================================
+# STAGE 1 — ENVOY
+# ============================================================
+
 FROM envoyproxy/envoy:v1.39.1 AS envoy
+
+
+# ============================================================
+# STAGE 2 — XRAY
+# ============================================================
+
 FROM ghcr.io/xtls/xray-core:25.12.8 AS xray
+
+
+# ============================================================
+# STAGE 3 — FINAL IMAGE
+# ============================================================
+
 FROM openresty/openresty:1.31.1.1-bookworm-fat AS final
 
 ENV DEBIAN_FRONTEND=noninteractive
 
 # ============================================================
-# PORT ALIGNMENT (TUGMA SA ENVOY.YAML AT CLOUD RUN)
+# CLOUD RUN
 # ============================================================
+
 ENV PORT=8080
 ENV BIND_ADDR=0.0.0.0
+
+# ============================================================
+# XRAY
+# ============================================================
 
 ENV XRAY_LOCATION_ASSET=/usr/local/share/xray
 ENV XRAY_LOCATION_CONFIG=/etc/xray
 
-ENV HAPROXY_PORT=8081
+# ============================================================
+# INTERNAL PORTS
+# ============================================================
+
 ENV ENVOY_PORT=8080
+ENV HAPROXY_PORT=8081
 ENV APACHE_PORT=8083
 ENV OPENRESTY_PORT=8084
+ENV HAPROXY_GRPC_PORT=8086
+
 
 WORKDIR /opt/virgozki
 
+
 # ============================================================
-# INSTALL DEPENDENCIES
+# INSTALL REQUIRED PACKAGES
 # ============================================================
+
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         apache2 \
@@ -44,9 +85,14 @@ RUN apt-get update && \
         python3 \
         python3-pip \
         netcat-openbsd && \
-    # Enable Apache modules in correct order
-    a2enmod proxy proxy_http proxy_http2 proxy_wstunnel headers rewrite && \
-    a2enmod http2 && \
+    a2enmod \
+        proxy \
+        proxy_http \
+        proxy_http2 \
+        proxy_wstunnel \
+        headers \
+        rewrite \
+        http2 && \
     a2dissite 000-default && \
     mkdir -p \
         /etc/xray \
@@ -64,16 +110,33 @@ RUN apt-get update && \
         /var/log/apache2 && \
     rm -rf /var/lib/apt/lists/*
 
-# ============================================================
-# COPY BINARIES
-# ============================================================
-COPY --from=envoy /usr/local/bin/envoy /usr/local/bin/envoy
-COPY --from=xray /usr/local/bin/xray /usr/local/bin/xray
-COPY --from=xray /usr/local/share/xray/. /usr/local/share/xray/
 
 # ============================================================
-# COPY CONFIG FILES
+# COPY ENVOY
 # ============================================================
+
+COPY --from=envoy \
+    /usr/local/bin/envoy \
+    /usr/local/bin/envoy
+
+
+# ============================================================
+# COPY XRAY
+# ============================================================
+
+COPY --from=xray \
+    /usr/local/bin/xray \
+    /usr/local/bin/xray
+
+COPY --from=xray \
+    /usr/local/share/xray/. \
+    /usr/local/share/xray/
+
+
+# ============================================================
+# COPY CONFIGURATION FILES
+# ============================================================
+
 COPY supervisord.conf /etc/supervisord.conf
 COPY config.json /etc/xray/config.json
 COPY nginx.conf /etc/openresty/nginx.conf
@@ -83,9 +146,11 @@ COPY httpd.conf /etc/apache2/conf-available/virgozki.conf
 COPY index.html /usr/share/nginx/html/index.html
 COPY anti_ddos.py /usr/local/bin/anti_ddos.py
 
+
 # ============================================================
-# SET PERMISSIONS & PREP
+# BASIC FILE SETUP
 # ============================================================
+
 RUN printf 'ok\n' > /usr/share/nginx/html/health && \
     a2enconf virgozki && \
     chmod +x /usr/local/bin/anti_ddos.py && \
@@ -96,21 +161,55 @@ RUN printf 'ok\n' > /usr/share/nginx/html/health && \
     chmod 644 /etc/apache2/conf-available/virgozki.conf && \
     chmod 644 /usr/share/nginx/html/index.html
 
-# ============================================================
-# CONFIG VALIDATION (FAIL FAST IF WRONG)
-# ============================================================
-RUN /usr/local/bin/xray run -test -c /etc/xray/config.json && \
-    /usr/local/bin/envoy --mode validate -c /etc/envoy/envoy.yaml && \
-    haproxy -c -f /etc/haproxy/haproxy.cfg && \
-    apachectl -t && \
-    /usr/local/openresty/bin/openresty -t -c /etc/openresty/nginx.conf
 
 # ============================================================
-# EXPOSE & ENTRYPOINT
+# CONFIGURATION VALIDATION
 # ============================================================
-EXPOSE ${PORT}
+
+RUN /usr/local/bin/xray run \
+        -test \
+        -c /etc/xray/config.json && \
+    /usr/local/bin/envoy \
+        --mode validate \
+        -c /etc/envoy/envoy.yaml && \
+    haproxy \
+        -c \
+        -f /etc/haproxy/haproxy.cfg && \
+    apachectl \
+        -t && \
+    /usr/local/openresty/bin/openresty \
+        -t \
+        -c /etc/openresty/nginx.conf
+
+
+# ============================================================
+# CLOUD RUN PORT
+# ============================================================
+
+EXPOSE 8080
+
+
+# ============================================================
+# PROCESS SIGNAL
+# ============================================================
 
 STOPSIGNAL SIGTERM
 
+
+# ============================================================
+# INIT
+# ============================================================
+
 ENTRYPOINT ["/usr/bin/tini", "--"]
-CMD ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisord.conf"]
+
+
+# ============================================================
+# SUPERVISOR
+# ============================================================
+
+CMD [
+    "/usr/bin/supervisord",
+    "-n",
+    "-c",
+    "/etc/supervisord.conf"
+]
