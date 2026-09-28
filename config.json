@@ -119,8 +119,7 @@
         "security": "none",
         "xhttpSettings": {
           "path": "/virgozki-xhttp",
-          "mode": "packet-up",
-          "keepAlivePeriod": 30
+          "mode": "auto"
         }
       },
       "sniffing": {
@@ -205,8 +204,7 @@
         "security": "none",
         "xhttpSettings": {
           "path": "/vmess-virgozki-xhttp",
-          "mode": "packet-up",
-          "keepAlivePeriod": 30
+          "mode": "auto"
         }
       },
       "sniffing": {
@@ -291,8 +289,7 @@
         "security": "none",
         "xhttpSettings": {
           "path": "/vless-virgozki-xhttp",
-          "mode": "packet-up",
-          "keepAlivePeriod": 30
+          "mode": "auto"
         }
       },
       "sniffing": {
@@ -365,8 +362,7 @@
         "security": "none",
         "xhttpSettings": {
           "path": "/ss-virgozki-xhttp",
-          "mode": "packet-up",
-          "keepAlivePeriod": 30
+          "mode": "auto"
         }
       },
       "sniffing": {
