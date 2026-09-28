@@ -56,25 +56,25 @@ static_resources:
 
                         # gRPC
                         - match:
-                            prefix: /vless-grpc-virgozki/
+                            prefix: /vless-grpc-virgozki
                           route:
                             cluster: vless_grpc
                             timeout: 0s
 
                         - match:
-                            prefix: /vmess-grpc-virgozki/
+                            prefix: /vmess-grpc-virgozki
                           route:
                             cluster: vmess_grpc
                             timeout: 0s
 
                         - match:
-                            prefix: /trojan-grpc-virgozki/
+                            prefix: /trojan-grpc-virgozki
                           route:
                             cluster: trojan_grpc
                             timeout: 0s
 
                         - match:
-                            prefix: /ss-grpc-virgozki/
+                            prefix: /ss-grpc-virgozki
                           route:
                             cluster: ss_grpc
                             timeout: 0s
@@ -210,7 +210,11 @@ static_resources:
         envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
           "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
           explicit_http_config:
-            http2_protocol_options: {}
+            http2_protocol_options:
+              connection_keepalive:
+                interval: 30s
+                timeout: 10s
+              max_concurrent_streams: 1024
       load_assignment:
         cluster_name: trojan_xhttp
         endpoints:
@@ -258,7 +262,11 @@ static_resources:
         envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
           "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
           explicit_http_config:
-            http2_protocol_options: {}
+            http2_protocol_options:
+              connection_keepalive:
+                interval: 30s
+                timeout: 10s
+              max_concurrent_streams: 1024
       load_assignment:
         cluster_name: vmess_xhttp
         endpoints:
@@ -306,7 +314,11 @@ static_resources:
         envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
           "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
           explicit_http_config:
-            http2_protocol_options: {}
+            http2_protocol_options:
+              connection_keepalive:
+                interval: 30s
+                timeout: 10s
+              max_concurrent_streams: 1024
       load_assignment:
         cluster_name: vless_xhttp
         endpoints:
@@ -354,7 +366,11 @@ static_resources:
         envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
           "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
           explicit_http_config:
-            http2_protocol_options: {}
+            http2_protocol_options:
+              connection_keepalive:
+                interval: 30s
+                timeout: 10s
+              max_concurrent_streams: 1024
       load_assignment:
         cluster_name: ss_xhttp
         endpoints:
@@ -466,3 +482,4 @@ admin:
     socket_address:
       address: 127.0.0.1
       port_value: 9901
+
