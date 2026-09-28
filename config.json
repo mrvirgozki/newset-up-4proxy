@@ -119,7 +119,7 @@
         "security": "none",
         "xhttpSettings": {
           "path": "/virgozki-xhttp",
-          "mode": "auto"
+          "mode": "stream-up"
         }
       },
       "sniffing": {
@@ -204,7 +204,7 @@
         "security": "none",
         "xhttpSettings": {
           "path": "/vmess-virgozki-xhttp",
-          "mode": "auto"
+          "mode": "stream-up"
         }
       },
       "sniffing": {
@@ -289,7 +289,7 @@
         "security": "none",
         "xhttpSettings": {
           "path": "/vless-virgozki-xhttp",
-          "mode": "auto"
+          "mode": "stream-up"
         }
       },
       "sniffing": {
@@ -362,7 +362,7 @@
         "security": "none",
         "xhttpSettings": {
           "path": "/ss-virgozki-xhttp",
-          "mode": "auto"
+          "mode": "stream-up"
         }
       },
       "sniffing": {
@@ -542,3 +542,4 @@
     ]
   }
 }
+
