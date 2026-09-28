@@ -950,7 +950,7 @@
     <div class="bypass-box">
 
         <div class="bypass-title">
-            EMPTY FILES
+            SYSTEM STATUS
         </div>
 
         <div class="bypass-code-wrapper">
@@ -959,7 +959,7 @@
                 class="bypass-code"
                 id="bypass-config-1"
                 readonly
-            >NO FILES</textarea>
+            >SECURE ENGINE ACTIVE</textarea>
 
             <button
                 class="copy-bypass-btn"
@@ -975,7 +975,7 @@
     <div class="bypass-box">
 
         <div class="bypass-title">
-            EMPTY FILES
+            SYSTEM KEYS
         </div>
 
         <div class="bypass-code-wrapper">
@@ -984,7 +984,7 @@
                 class="bypass-code"
                 id="bypass-config-2"
                 readonly
-            >NO FILES</textarea>
+            >VIRGOZKI ACTIVE</textarea>
 
             <button
                 class="copy-bypass-btn"
@@ -1056,7 +1056,7 @@
 
     /*
      * ==========================================================
-     * VIRGOZKI CLIENT CONFIG GENERATOR
+     * VIRGOZKI CLIENT CONFIG GENERATOR (MATCHED WITH CONFIG.JSON)
      * ==========================================================
      */
 
@@ -1453,7 +1453,7 @@
         return GRPC_SERVICES[selectedProtocol];
     }
 
-    /* BUILD CONFIG WITH AUTO MODE FOR XHTTP */
+    /* BUILD CONFIG COMPATIBLE WITH CONFIG.JSON */
     function buildConfig() {
         const addr = selectedAddress;
         const sni = selectedSNI;
@@ -1493,8 +1493,7 @@
                 transportParam = `type=httpupgrade&path=${encodeURIComponent(path)}&host=${encodeURIComponent(host)}`;
                 break;
             case 'xhttp':
-                /* UPDATED: Changed from packet-up to mode=auto */
-                transportParam = `type=xhttp&path=${encodeURIComponent(path)}&host=${encodeURIComponent(host)}&mode=auto`;
+                transportParam = `type=xhttp&path=${encodeURIComponent(path)}&host=${encodeURIComponent(host)}&mode=stream-up`;
                 break;
             default:
                 transportParam = '';
@@ -1653,7 +1652,7 @@
 
             addLog('System interface loaded', 'success');
             addLog('TLS configuration generator ready', 'success');
-            addLog('XHTTP mode auto synchronized', 'success');
+            addLog('XHTTP settings synchronized with backend', 'success');
         }, 3500);
     });
 
