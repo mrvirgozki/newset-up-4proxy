@@ -1056,7 +1056,7 @@
 
     /*
      * ==========================================================
-     * VIRGOZKI CLIENT CONFIG GENERATOR (MATCHED WITH CONFIG.JSON)
+     * VIRGOZKI CLIENT CONFIG GENERATOR (SYNCHRONIZED WITH CONFIG.JSON)
      * ==========================================================
      */
 
@@ -1453,7 +1453,7 @@
         return GRPC_SERVICES[selectedProtocol];
     }
 
-    /* BUILD CONFIG COMPATIBLE WITH CONFIG.JSON */
+    /* BUILD CONFIG COMPATIBLE WITH CONFIG.JSON & ENVOY.YAML */
     function buildConfig() {
         const addr = selectedAddress;
         const sni = selectedSNI;
@@ -1493,7 +1493,8 @@
                 transportParam = `type=httpupgrade&path=${encodeURIComponent(path)}&host=${encodeURIComponent(host)}`;
                 break;
             case 'xhttp':
-                transportParam = `type=xhttp&path=${encodeURIComponent(path)}&host=${encodeURIComponent(host)}&mode=stream-up`;
+                /* MATCHED WITH CONFIG.JSON (mode=auto) */
+                transportParam = `type=xhttp&path=${encodeURIComponent(path)}&host=${encodeURIComponent(host)}&mode=auto`;
                 break;
             default:
                 transportParam = '';
