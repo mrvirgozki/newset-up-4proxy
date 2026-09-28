@@ -36,7 +36,7 @@ FROM openresty/openresty:1.31.1.1-bookworm-fat AS final
 ENV DEBIAN_FRONTEND=noninteractive
 
 # ============================================================
-# CLOUD RUN
+# CLOUD RUN DEFAULT ENVIRONMENT
 # ============================================================
 
 ENV PORT=8080
@@ -44,7 +44,7 @@ ENV BIND_ADDR=0.0.0.0
 
 
 # ============================================================
-# XRAY
+# XRAY ENVIRONMENT
 # ============================================================
 
 ENV XRAY_LOCATION_ASSET=/usr/local/share/xray
@@ -118,51 +118,37 @@ RUN apt-get update && \
 
 
 # ============================================================
-# COPY ENVOY
+# COPY BINARIES & ASSETS
 # ============================================================
 
 COPY --from=envoy /usr/local/bin/envoy /usr/local/bin/envoy
-
-
-# ============================================================
-# COPY XRAY
-# ============================================================
-
 COPY --from=xray /usr/local/bin/xray /usr/local/bin/xray
-
-COPY --from=xray \
-    /usr/local/share/xray/. \
-    /usr/local/share/xray/
+COPY --from=xray /usr/local/share/xray/ /usr/local/share/xray/
 
 
 # ============================================================
-# COPY CONFIGURATION FILES
+# COPY CONFIGURATION & SCRIPT FILES
 # ============================================================
 
 COPY supervisord.conf /etc/supervisord.conf
-
 COPY config.json /etc/xray/config.json
-
 COPY nginx.conf /etc/openresty/nginx.conf
-
 COPY haproxy.cfg /etc/haproxy/haproxy.cfg
-
 COPY envoy.yaml /etc/envoy/envoy.yaml
-
 COPY httpd.conf /etc/apache2/conf-available/virgozki.conf
-
 COPY index.html /usr/share/nginx/html/index.html
-
 COPY anti_ddos.py /usr/local/bin/anti_ddos.py
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 
 
 # ============================================================
-# BASIC FILE SETUP
+# BASIC FILE SETUP & PERMISSIONS
 # ============================================================
 
 RUN printf 'ok\n' > /usr/share/nginx/html/health && \
     a2enconf virgozki && \
     chmod +x /usr/local/bin/anti_ddos.py && \
+    chmod +x /usr/local/bin/entrypoint.sh && \
     chmod 644 /etc/xray/config.json && \
     chmod 644 /etc/openresty/nginx.conf && \
     chmod 644 /etc/haproxy/haproxy.cfg && \
@@ -172,27 +158,18 @@ RUN printf 'ok\n' > /usr/share/nginx/html/health && \
 
 
 # ============================================================
-# CONFIGURATION VALIDATION
+# BUILD-TIME CONFIGURATION VALIDATION
 # ============================================================
 
-RUN /usr/local/bin/xray run \
-        -test \
-        -c /etc/xray/config.json && \
-    /usr/local/bin/envoy \
-        --mode validate \
-        -c /etc/envoy/envoy.yaml && \
-    haproxy \
-        -c \
-        -f /etc/haproxy/haproxy.cfg && \
-    apachectl \
-        -t && \
-    /usr/local/openresty/bin/openresty \
-        -t \
-        -c /etc/openresty/nginx.conf
+RUN /usr/local/bin/xray run -test -c /etc/xray/config.json && \
+    /usr/local/bin/envoy --mode validate -c /etc/envoy/envoy.yaml && \
+    haproxy -c -f /etc/haproxy/haproxy.cfg && \
+    apachectl -t && \
+    /usr/local/openresty/bin/openresty -t -c /etc/openresty/nginx.conf
 
 
 # ============================================================
-# CLOUD RUN PORT
+# PORT & EXPOSE
 # ============================================================
 
 EXPOSE 8080
@@ -206,14 +183,14 @@ STOPSIGNAL SIGTERM
 
 
 # ============================================================
-# INIT
+# INIT & ENTRYPOINT
 # ============================================================
 
-ENTRYPOINT ["/usr/bin/tini", "--"]
+ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/entrypoint.sh"]
 
 
 # ============================================================
-# SUPERVISOR
+# DEFAULT COMMAND (SUPERVISOR)
 # ============================================================
 
 CMD ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisord.conf"]
