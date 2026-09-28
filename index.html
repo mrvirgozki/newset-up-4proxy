@@ -1057,282 +1057,81 @@
     /*
      * ==========================================================
      * VIRGOZKI CLIENT CONFIG GENERATOR
-     *
-     * PUBLIC FLOW:
-     *
-     * CLIENT
-     *   ↓
-     * TLS :443
-     *   ↓
-     * ENVOY
-     *   ↓
-     * HAPROXY
-     *   ↓
-     * OPENRESTY
-     *   ↓
-     * APACHE
-     *   ↓
-     * XRAY
-     *
-     * IMPORTANT:
-     * PROXY ENGINES ARE INTERNAL ONLY.
-     *
-     * NO PUBLIC:
-     * /openresty
-     * /haproxy
-     * /envoy
-     * /apache
      * ==========================================================
      */
 
-    const UUID =
-        'b831381d-6324-4d53-ad4f-8cda48b30811';
+    const UUID = 'b831381d-6324-4d53-ad4f-8cda48b30811';
+    const TROJAN_PASSWORD = 'virgozki';
+    const SS_METHOD = 'aes-256-gcm';
+    const SS_PASSWORD = 'virgozki';
 
-    const TROJAN_PASSWORD =
-        'virgozki';
+    let currentHost = window.location.hostname || '127.0.0.1';
 
-    const SS_METHOD =
-        'aes-256-gcm';
-
-    const SS_PASSWORD =
-        'virgozki';
-
-    let currentHost =
-        window.location.hostname || '127.0.0.1';
-
-
-    /*
-     * ==========================================================
-     * PROTOCOLS
-     * ==========================================================
-     */
-
-    const PROTOCOLS = [
-        'vless',
-        'trojan',
-        'vmess',
-        'shadowsocks'
-    ];
-
+    const PROTOCOLS = ['vless', 'trojan', 'vmess', 'shadowsocks'];
     const PROTOCOL_LABELS = {
-
         vless: 'VLESS',
-
         trojan: 'TROJAN',
-
         vmess: 'VMESS',
-
         shadowsocks: 'SHADOWSOCKS'
-
     };
 
-
-    /*
-     * ==========================================================
-     * INTERNAL PROXY ENGINES
-     *
-     * IMPORTANT:
-     * These are only selectors.
-     *
-     * They MUST NOT modify public paths.
-     * ==========================================================
-     */
-
-    const PROXY_ENGINES = [
-        'openresty',
-        'haproxy',
-        'envoy',
-        'apache'
-    ];
-
+    const PROXY_ENGINES = ['openresty', 'haproxy', 'envoy', 'apache'];
     const PROXY_LABELS = {
-
         openresty: 'OPENRESTY',
-
         haproxy: 'HAPROXY',
-
         envoy: 'ENVOY',
-
         apache: 'APACHE'
-
     };
 
-
-    /*
-     * ==========================================================
-     * TRANSPORTS
-     * ==========================================================
-     */
-
-    const TRANSPORTS = [
-        'ws',
-        'httpupgrade',
-        'xhttp',
-        'grpc'
-    ];
-
+    const TRANSPORTS = ['ws', 'httpupgrade', 'xhttp', 'grpc'];
     const TRANSPORT_LABELS = {
-
         ws: 'WEBSOCKET',
-
         httpupgrade: 'HTTP UPGRADE',
-
         xhttp: 'XHTTP',
-
         grpc: 'gRPC'
-
     };
-
-
-    /*
-     * ==========================================================
-     * PUBLIC PATHS
-     *
-     * These MUST match nginx/OpenResty/Xray.
-     *
-     * NO PROXY PREFIXES.
-     * ==========================================================
-     */
 
     const PATHS = {
-
         vless: {
-
-            ws:
-                '/vless-virgozki',
-
-            httpupgrade:
-                '/vless-virgozki-hu',
-
-            xhttp:
-                '/vless-virgozki-xhttp'
-
+            ws: '/vless-virgozki',
+            httpupgrade: '/vless-virgozki-hu',
+            xhttp: '/vless-virgozki-xhttp'
         },
-
         trojan: {
-
-            ws:
-                '/virgozki',
-
-            httpupgrade:
-                '/virgozki-hu',
-
-            xhttp:
-                '/virgozki-xhttp'
-
+            ws: '/virgozki',
+            httpupgrade: '/virgozki-hu',
+            xhttp: '/virgozki-xhttp'
         },
-
         vmess: {
-
-            ws:
-                '/vmess-virgozki',
-
-            httpupgrade:
-                '/vmess-virgozki-hu',
-
-            xhttp:
-                '/vmess-virgozki-xhttp'
-
+            ws: '/vmess-virgozki',
+            httpupgrade: '/vmess-virgozki-hu',
+            xhttp: '/vmess-virgozki-xhttp'
         },
-
         shadowsocks: {
-
-            ws:
-                '/ss-virgozki',
-
-            httpupgrade:
-                '/ss-virgozki-hu',
-
-            xhttp:
-                '/ss-virgozki-xhttp'
-
+            ws: '/ss-virgozki',
+            httpupgrade: '/ss-virgozki-hu',
+            xhttp: '/ss-virgozki-xhttp'
         }
-
     };
-
-
-    /*
-     * ==========================================================
-     * gRPC SERVICE NAMES
-     *
-     * IMPORTANT:
-     *
-     * These are SERVICE NAMES,
-     * NOT URL PATHS.
-     *
-     * They MUST match config.json.
-     *
-     * VLESS:
-     * vless-grpc-virgozki
-     *
-     * VMESS:
-     * vmess-grpc-virgozki
-     *
-     * TROJAN:
-     * trojan-grpc-virgozki
-     *
-     * SHADOWSOCKS:
-     * ss-grpc-virgozki
-     * ==========================================================
-     */
 
     const GRPC_SERVICES = {
-
-        vless:
-            'vless-grpc-virgozki',
-
-        trojan:
-            'trojan-grpc-virgozki',
-
-        vmess:
-            'vmess-grpc-virgozki',
-
-        shadowsocks:
-            'ss-grpc-virgozki'
-
+        vless: 'vless-grpc-virgozki',
+        trojan: 'trojan-grpc-virgozki',
+        vmess: 'vmess-grpc-virgozki',
+        shadowsocks: 'ss-grpc-virgozki'
     };
 
-
-    /*
-     * ==========================================================
-     * STATE
-     * ==========================================================
-     */
-
-    let selectedProxy =
-        'openresty';
-
-    let selectedProtocol =
-        'vless';
-
-    let selectedTransport =
-        'ws';
-
-    let selectedAddress =
-        currentHost;
-
-    let selectedSNI =
-        currentHost;
-
-    let isProcessing =
-        false;
-
-    let startTime =
-        Date.now();
-
-
-    /*
-     * ==========================================================
-     * ADDRESS LIST
-     * ==========================================================
-     */
+    let selectedProxy = 'openresty';
+    let selectedProtocol = 'vless';
+    let selectedTransport = 'ws';
+    let selectedAddress = currentHost;
+    let selectedSNI = currentHost;
+    let isProcessing = false;
+    let startTime = Date.now();
 
     const addressList = [
-
         currentHost,
-
         '--- STS NO LOAD ---',
-
         'firebase.googleapis.com',
         'google.com',
         'firebase-settings.googleapis.com',
@@ -1352,27 +1151,14 @@
         'mt0.googleapis.com',
         'redirector.gvt1.com',
         'firebaseremoteconfigrealtime.googleapis.com',
-
         '--- YOUTUBE ---',
-
         'youtube.com',
         'googlevideo.com'
-
     ];
 
-
-    /*
-     * ==========================================================
-     * SNI LIST
-     * ==========================================================
-     */
-
     const sniList = [
-
         currentHost,
-
         '--- STS NO LOAD ---',
-
         'fcmtoken.googleapis.com',
         'api.paymaya.com',
         'support.maya.ph',
@@ -1384,2107 +1170,492 @@
         'benefits-client-production.voyagerapis.com',
         'cdn-settings.appsflyersdk.com',
         'app-analytics-services.com',
-
         '--- IWANTTFC ---',
-
         'qa.iwanttfc.com',
         'help.iwanttfc.com',
         'support.iwanttfc.com',
         'api.iwanttfc.com',
         'iwant-trailer.akamaized.net',
-
         '--- YOUTUBE ---',
-
         'youtube.com',
         'googlevideo.com',
-
         '--- TIKTOK ---',
-
         'api24-normal.tiktokv.com',
         'api24-normal-alisg.tiktokv.com',
         'api24-normal-useast1a.tiktokv.com',
         'tiktok.com',
         'www.tiktok.com',
         'm.tiktok.com'
-
     ];
 
+    const systemLog = document.getElementById('system-log');
+    const logTime = document.getElementById('log-time');
+    const sysGraph = document.getElementById('sys-graph');
+    const copyBypassBtn1 = document.getElementById('copy-bypass-1');
+    const bypassConfig1 = document.getElementById('bypass-config-1');
+    const copyBypassBtn2 = document.getElementById('copy-bypass-2');
+    const bypassConfig2 = document.getElementById('bypass-config-2');
 
-    /*
-     * ==========================================================
-     * DOM
-     * ==========================================================
-     */
-
-    const systemLog =
-        document.getElementById(
-            'system-log'
-        );
-
-    const logTime =
-        document.getElementById(
-            'log-time'
-        );
-
-    const sysGraph =
-        document.getElementById(
-            'sys-graph'
-        );
-
-    const copyBypassBtn1 =
-        document.getElementById(
-            'copy-bypass-1'
-        );
-
-    const bypassConfig1 =
-        document.getElementById(
-            'bypass-config-1'
-        );
-
-    const copyBypassBtn2 =
-        document.getElementById(
-            'copy-bypass-2'
-        );
-
-    const bypassConfig2 =
-        document.getElementById(
-            'bypass-config-2'
-        );
-
-
-    /*
-     * ==========================================================
-     * MUSIC PLAYER
-     * ==========================================================
-     */
-
-    const audio =
-        new Audio();
-
-    audio.volume =
-        0.7;
-
-    audio.preload =
-        'none';
-
-    audio.crossOrigin =
-        'anonymous';
+    /* MUSIC PLAYER */
+    const audio = new Audio();
+    audio.volume = 0.7;
+    audio.preload = 'none';
+    audio.crossOrigin = 'anonymous';
 
     const songs = [
-
-        {
-            name:
-                'NEFFEX - Control',
-
-            url:
-                'https://dl.dropboxusercontent.com/scl/fi/5qeqe89ibmyikcj7dmgie/NEFFEX-Control-Official-Lyric-Video-Copyright-Free-No.242-MP3_160K.mp3?rlkey=8mec522bb0mycbgeiw3b2p1st&st=n3xggf1g&dl=1'
-        },
-
-        {
-            name:
-                'NEFFEX - Crown',
-
-            url:
-                'https://dl.dropboxusercontent.com/scl/fi/z4sbip8lthzy5piuolpn2/NEFFEX-Crown-Copyright-Free-No.15-MP3_160K.mp3?rlkey=7gf528zikfyrxeav2blxh2ixl&st=b3diiygv&dl=1'
-        },
-
-        {
-            name:
-                'NEFFEX - Fight Back',
-
-            url:
-                'https://dl.dropboxusercontent.com/scl/fi/3pjn86px04k8mq7q5q3h6/NEFFEX-Fight-Back-Official-Video-No.37-MP3_160K.mp3?rlkey=k1j7x2woagxujekwxano6n4ge&st=bcl0xd7o&dl=1'
-        },
-
-        {
-            name:
-                'NEFFEX - Purpose',
-
-            url:
-                'https://dl.dropboxusercontent.com/scl/fi/ixhlx1kiw3gqnij817rz7/NEFFEX-Purpose-Copyright-Free-No.177-MP3_160K.mp3?rlkey=civmcmnzols7yy2b64dduiq8y&st=j6kqivoc&dl=1'
-        },
-
-        {
-            name:
-                'NEFFEX - Rumors',
-
-            url:
-                'https://dl.dropboxusercontent.com/scl/fi/6trrxr9mcu9mhbl061dkj/NEFFEX-Rumors-Lyrics-MP3_160K.mp3?rlkey=fh14ss4axvmt4up01c467nrxk&st=dvsyyzsd&dl=1'
-        },
-
-        {
-            name:
-                'NEFFEX - Best of Me',
-
-            url:
-                'https://dl.dropboxusercontent.com/scl/fi/rypimhnwa3f0sc7becgz8/NEFFEX-Best-of-Me-Copyright-Free-No.23-MP3_160K.mp3?rlkey=l6fqcjlklv2f08g8v9du23fb3&st=nguyidh9&dl=1'
-        },
-
-        {
-            name:
-                'NEFFEX - Chance',
-
-            url:
-                'https://dl.dropboxusercontent.com/scl/fi/cyxhytondpo74u1mbqdl5/NEFFEX-Chance-Copyright-Free-No.65-MP3_160K.mp3?rlkey=ha1km8kbvg6f8va6sozefdw96&st=v0eg4i31&dl=1'
-        },
-
-        {
-            name:
-                'NEFFEX - Cold',
-
-            url:
-                'https://dl.dropboxusercontent.com/scl/fi/3sxfjqb6ph9tfv6k1cz0h/NEFFEX-Cold-Copyright-Free-No.60-MP3_160K.mp3?rlkey=2wxp3ofoq9v26vxd9fh3iq9er&st=ghcd60wa&dl=1'
-        },
-
-        {
-            name:
-                'NEFFEX - Grateful',
-
-            url:
-                'https://dl.dropboxusercontent.com/scl/fi/v5419s2y2klq6ookxpzrd/NEFFEX-Grateful-Copyright-Free-No.54-MP3_160K.mp3?rlkey=6to3htylrlnxsru26ik2neds1&st=q47h5sgq&dl=1'
-        },
-
-        {
-            name:
-                'NEFFEX - Life',
-
-            url:
-                'https://dl.dropboxusercontent.com/scl/fi/uw1f789tb9v4i2k4xyw42/NEFFEX-Life-Copyright-Free-No.42-MP3_160K.mp3?rlkey=y9y56c3ui6f8kx8ar6l2f9pzv&st=9sgmxut6&dl=1'
-        }
-
+        { name: 'NEFFEX - Control', url: 'https://dl.dropboxusercontent.com/scl/fi/5qeqe89ibmyikcj7dmgie/NEFFEX-Control-Official-Lyric-Video-Copyright-Free-No.242-MP3_160K.mp3?rlkey=8mec522bb0mycbgeiw3b2p1st&st=n3xggf1g&dl=1' },
+        { name: 'NEFFEX - Crown', url: 'https://dl.dropboxusercontent.com/scl/fi/z4sbip8lthzy5piuolpn2/NEFFEX-Crown-Copyright-Free-No.15-MP3_160K.mp3?rlkey=7gf528zikfyrxeav2blxh2ixl&st=b3diiygv&dl=1' },
+        { name: 'NEFFEX - Fight Back', url: 'https://dl.dropboxusercontent.com/scl/fi/3pjn86px04k8mq7q5q3h6/NEFFEX-Fight-Back-Official-Video-No.37-MP3_160K.mp3?rlkey=k1j7x2woagxujekwxano6n4ge&st=bcl0xd7o&dl=1' },
+        { name: 'NEFFEX - Purpose', url: 'https://dl.dropboxusercontent.com/scl/fi/ixhlx1kiw3gqnij817rz7/NEFFEX-Purpose-Copyright-Free-No.177-MP3_160K.mp3?rlkey=civmcmnzols7yy2b64dduiq8y&st=j6kqivoc&dl=1' },
+        { name: 'NEFFEX - Rumors', url: 'https://dl.dropboxusercontent.com/scl/fi/6trrxr9mcu9mhbl061dkj/NEFFEX-Rumors-Lyrics-MP3_160K.mp3?rlkey=fh14ss4axvmt4up01c467nrxk&st=dvsyyzsd&dl=1' },
+        { name: 'NEFFEX - Best of Me', url: 'https://dl.dropboxusercontent.com/scl/fi/rypimhnwa3f0sc7becgz8/NEFFEX-Best-of-Me-Copyright-Free-No.23-MP3_160K.mp3?rlkey=l6fqcjlklv2f08g8v9du23fb3&st=nguyidh9&dl=1' },
+        { name: 'NEFFEX - Chance', url: 'https://dl.dropboxusercontent.com/scl/fi/cyxhytondpo74u1mbqdl5/NEFFEX-Chance-Copyright-Free-No.65-MP3_160K.mp3?rlkey=ha1km8kbvg6f8va6sozefdw96&st=v0eg4i31&dl=1' },
+        { name: 'NEFFEX - Cold', url: 'https://dl.dropboxusercontent.com/scl/fi/3sxfjqb6ph9tfv6k1cz0h/NEFFEX-Cold-Copyright-Free-No.60-MP3_160K.mp3?rlkey=2wxp3ofoq9v26vxd9fh3iq9er&st=ghcd60wa&dl=1' },
+        { name: 'NEFFEX - Grateful', url: 'https://dl.dropboxusercontent.com/scl/fi/v5419s2y2klq6ookxpzrd/NEFFEX-Grateful-Copyright-Free-No.54-MP3_160K.mp3?rlkey=6to3htylrlnxsru26ik2neds1&st=q47h5sgq&dl=1' },
+        { name: 'NEFFEX - Life', url: 'https://dl.dropboxusercontent.com/scl/fi/uw1f789tb9v4i2k4xyw42/NEFFEX-Life-Copyright-Free-No.42-MP3_160K.mp3?rlkey=y9y56c3ui6f8kx8ar6l2f9pzv&st=9sgmxut6&dl=1' }
     ];
 
-    let currentSongIndex =
-        0;
+    let currentSongIndex = 0;
+    let isPlaying = false;
 
-    let isPlaying =
-        false;
-
-    const playBtn =
-        document.getElementById(
-            'play'
-        );
-
-    const songName =
-        document.getElementById(
-            'song-name'
-        );
+    const playBtn = document.getElementById('play');
+    const songName = document.getElementById('song-name');
 
     function loadSong(index) {
-
-        if (!songs[index]) {
-            return;
-        }
-
-        songName.textContent =
-            songs[index].name;
-
-        audio.src =
-            songs[index].url;
-
-        audio.preload =
-            'metadata';
+        if (!songs[index]) return;
+        songName.textContent = songs[index].name;
+        audio.src = songs[index].url;
+        audio.preload = 'metadata';
     }
 
-    audio.addEventListener(
-        'ended',
-        function () {
+    audio.addEventListener('ended', function () {
+        addLog('Music track finished', 'info');
+        nextSong();
+    });
 
-            addLog(
-                'Music track finished',
-                'info'
-            );
-
-            nextSong();
-        }
-    );
-
-    audio.addEventListener(
-        'error',
-        function () {
-
-            addLog(
-                'Music error - skipping track',
-                'info'
-            );
-
-            isPlaying =
-                false;
-
-            playBtn.textContent =
-                '▶';
-
-            nextSong();
-        }
-    );
+    audio.addEventListener('error', function () {
+        addLog('Music error - skipping track', 'info');
+        isPlaying = false;
+        playBtn.textContent = '▶';
+        nextSong();
+    });
 
     function togglePlay() {
-
         if (isPlaying) {
-
             audio.pause();
-
-            isPlaying =
-                false;
-
-            playBtn.textContent =
-                '▶';
-
-            addLog(
-                'Music paused',
-                'info'
-            );
-
+            isPlaying = false;
+            playBtn.textContent = '▶';
+            addLog('Music paused', 'info');
             return;
         }
 
-        audio.play()
-            .then(function () {
-
-                isPlaying =
-                    true;
-
-                playBtn.textContent =
-                    '⏸';
-
-                addLog(
-                    'Music playing',
-                    'success'
-                );
-
-            })
-            .catch(function () {
-
-                addLog(
-                    'Music playback blocked or unavailable',
-                    'info'
-                );
-
-            });
+        audio.play().then(function () {
+            isPlaying = true;
+            playBtn.textContent = '⏸';
+            addLog('Music playing', 'success');
+        }).catch(function () {
+            addLog('Music playback blocked or unavailable', 'info');
+        });
     }
 
     function nextSong() {
-
-        currentSongIndex =
-            (currentSongIndex + 1) %
-            songs.length;
-
-        loadSong(
-            currentSongIndex
-        );
-
-        if (isPlaying) {
-
-            audio.play()
-                .catch(function () {});
-
-        }
+        currentSongIndex = (currentSongIndex + 1) % songs.length;
+        loadSong(currentSongIndex);
+        if (isPlaying) audio.play().catch(function () {});
     }
 
     function prevSong() {
-
-        currentSongIndex =
-            (currentSongIndex - 1 + songs.length) %
-            songs.length;
-
-        loadSong(
-            currentSongIndex
-        );
-
-        if (isPlaying) {
-
-            audio.play()
-                .catch(function () {});
-
-        }
+        currentSongIndex = (currentSongIndex - 1 + songs.length) % songs.length;
+        loadSong(currentSongIndex);
+        if (isPlaying) audio.play().catch(function () {});
     }
 
     function stopMusic() {
-
         audio.pause();
-
-        audio.currentTime =
-            0;
-
-        isPlaying =
-            false;
-
-        playBtn.textContent =
-            '▶';
-
-        addLog(
-            'Music stopped',
-            'info'
-        );
+        audio.currentTime = 0;
+        isPlaying = false;
+        playBtn.textContent = '▶';
+        addLog('Music stopped', 'info');
     }
 
-    playBtn.addEventListener(
-        'click',
-        togglePlay
-    );
+    playBtn.addEventListener('click', togglePlay);
+    document.getElementById('prev').addEventListener('click', prevSong);
+    document.getElementById('next').addEventListener('click', nextSong);
+    document.getElementById('stop').addEventListener('click', stopMusic);
 
-    document
-        .getElementById('prev')
-        .addEventListener(
-            'click',
-            prevSong
-        );
-
-    document
-        .getElementById('next')
-        .addEventListener(
-            'click',
-            nextSong
-        );
-
-    document
-        .getElementById('stop')
-        .addEventListener(
-            'click',
-            stopMusic
-        );
-
-
-    /*
-     * ==========================================================
-     * FETCH HELPER
-     * ==========================================================
-     */
-
-    async function fetchWithTimeout(
-        url,
-        options = {},
-        timeout = 10000
-    ) {
-
-        const controller =
-            new AbortController();
-
-        const timer =
-            setTimeout(
-                function () {
-
-                    controller.abort();
-
-                },
-                timeout
-            );
-
+    async function fetchWithTimeout(url, options = {}, timeout = 10000) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeout);
         try {
-
-            const response =
-                await fetch(
-                    url,
-                    {
-                        ...options,
-
-                        signal:
-                            controller.signal,
-
-                        cache:
-                            'no-cache'
-                    }
-                );
-
-            clearTimeout(
-                timer
-            );
-
+            const response = await fetch(url, { ...options, signal: controller.signal, cache: 'no-cache' });
+            clearTimeout(timer);
             return response;
-
         } catch (error) {
-
-            clearTimeout(
-                timer
-            );
-
+            clearTimeout(timer);
             throw error;
-
         }
     }
-
-
-    /*
-     * ==========================================================
-     * USER INFORMATION
-     *
-     * MONITORING ONLY.
-     *
-     * NOT PART OF PROXY ROUTING.
-     * ==========================================================
-     */
 
     async function fetchUserInfo() {
-
         try {
-
-            const response =
-                await fetchWithTimeout(
-                    'https://ipapi.co/json/',
-                    {},
-                    8000
-                );
-
-            if (!response.ok) {
-
-                throw new Error(
-                    'IP information service error'
-                );
-
-            }
-
-            const data =
-                await response.json();
-
-            document
-                .getElementById(
-                    'user-ip'
-                )
-                .textContent =
-                data.ip ||
-                'UNAVAILABLE';
-
-            document
-                .getElementById(
-                    'user-country'
-                )
-                .textContent =
-                data.country_name ||
-                'UNAVAILABLE';
-
-            document
-                .getElementById(
-                    'user-city'
-                )
-                .textContent =
-                `${data.city || 'UNAVAILABLE'}, ${data.region || ''}`;
-
-            document
-                .getElementById(
-                    'user-isp'
-                )
-                .textContent =
-                data.org ||
-                'UNAVAILABLE';
-
-            addLog(
-                'Connection information loaded',
-                'success'
-            );
-
+            const response = await fetchWithTimeout('https://ipapi.co/json/', {}, 8000);
+            if (!response.ok) throw new Error('IP information service error');
+            const data = await response.json();
+            document.getElementById('user-ip').textContent = data.ip || 'UNAVAILABLE';
+            document.getElementById('user-country').textContent = data.country_name || 'UNAVAILABLE';
+            document.getElementById('user-city').textContent = `${data.city || 'UNAVAILABLE'}, ${data.region || ''}`;
+            document.getElementById('user-isp').textContent = data.org || 'UNAVAILABLE';
+            addLog('Connection information loaded', 'success');
         } catch (error) {
-
-            document
-                .getElementById(
-                    'user-ip'
-                )
-                .textContent =
-                'UNAVAILABLE';
-
-            document
-                .getElementById(
-                    'user-country'
-                )
-                .textContent =
-                'UNAVAILABLE';
-
-            document
-                .getElementById(
-                    'user-city'
-                )
-                .textContent =
-                'UNAVAILABLE';
-
-            document
-                .getElementById(
-                    'user-isp'
-                )
-                .textContent =
-                'UNAVAILABLE';
-
-            addLog(
-                'Connection information unavailable',
-                'info'
-            );
+            document.getElementById('user-ip').textContent = 'UNAVAILABLE';
+            document.getElementById('user-country').textContent = 'UNAVAILABLE';
+            document.getElementById('user-city').textContent = 'UNAVAILABLE';
+            document.getElementById('user-isp').textContent = 'UNAVAILABLE';
+            addLog('Connection information unavailable', 'info');
         }
     }
-
-
-    /*
-     * ==========================================================
-     * PING
-     *
-     * MONITORING ONLY.
-     * ==========================================================
-     */
 
     async function measurePing() {
-
-        const start =
-            performance.now();
-
-        const pingEl =
-            document.getElementById(
-                'user-ping'
-            );
-
+        const start = performance.now();
+        const pingEl = document.getElementById('user-ping');
         try {
-
-            await fetchWithTimeout(
-                'https://1.1.1.1/cdn-cgi/trace',
-                {
-                    mode:
-                        'no-cors',
-
-                    cache:
-                        'no-store'
-                },
-                5000
-            );
-
-            const ping =
-                Math.round(
-                    performance.now() -
-                    start
-                );
-
-            pingEl.textContent =
-                `${ping} MS`;
-
-            pingEl.className =
-                ping < 100
-                    ? 'monitor-value success'
-                    : 'monitor-value';
-
+            await fetchWithTimeout('https://1.1.1.1/cdn-cgi/trace', { mode: 'no-cors', cache: 'no-store' }, 5000);
+            const ping = Math.round(performance.now() - start);
+            pingEl.textContent = `${ping} MS`;
+            pingEl.className = ping < 100 ? 'monitor-value success' : 'monitor-value';
         } catch (error) {
-
-            pingEl.textContent =
-                'TIMEOUT';
-
-            pingEl.className =
-                'monitor-value';
-
+            pingEl.textContent = 'TIMEOUT';
+            pingEl.className = 'monitor-value';
         }
     }
-
-
-    /*
-     * ==========================================================
-     * UPTIME
-     * ==========================================================
-     */
 
     function updateMonitorUptime() {
-
-        const seconds =
-            Math.floor(
-                (Date.now() -
-                startTime) /
-                1000
-            );
-
-        const hours =
-            Math.floor(
-                seconds / 3600
-            );
-
-        const minutes =
-            Math.floor(
-                (seconds % 3600) / 60
-            );
-
-        const secs =
-            seconds % 60;
-
-        const uptime =
-            [
-                hours,
-                minutes,
-                secs
-            ]
-            .map(function (value) {
-
-                return String(value)
-                    .padStart(2, '0');
-
-            })
-            .join(':');
-
-        document
-            .getElementById(
-                'runtime-display'
-            )
-            .textContent =
-            uptime;
-
-        document
-            .getElementById(
-                'monitor-uptime'
-            )
-            .textContent =
-            uptime;
+        const seconds = Math.floor((Date.now() - startTime) / 1000);
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const secs = seconds % 60;
+        const uptime = [hours, minutes, secs].map(v => String(v).padStart(2, '0')).join(':');
+        document.getElementById('runtime-display').textContent = uptime;
+        document.getElementById('monitor-uptime').textContent = uptime;
     }
 
+    function addLog(message, type = 'info') {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('en-US', { hour12: false });
+        logTime.textContent = timeString;
 
-    /*
-     * ==========================================================
-     * SYSTEM LOG
-     * ==========================================================
-     */
+        const entry = document.createElement('div');
+        entry.className = `log-entry log-${type}`;
 
-    function addLog(
-        message,
-        type = 'info'
-    ) {
+        const timeSpan = document.createElement('span');
+        timeSpan.className = 'log-time';
+        timeSpan.textContent = `[${timeString}]`;
 
-        const now =
-            new Date();
-
-        const timeString =
-            now.toLocaleTimeString(
-                'en-US',
-                {
-                    hour12:
-                        false
-                }
-            );
-
-        logTime.textContent =
-            timeString;
-
-        const entry =
-            document.createElement(
-                'div'
-            );
-
-        entry.className =
-            `log-entry log-${type}`;
-
-        const timeSpan =
-            document.createElement(
-                'span'
-            );
-
-        timeSpan.className =
-            'log-time';
-
-        timeSpan.textContent =
-            `[${timeString}]`;
-
-        entry.appendChild(
-            timeSpan
-        );
-
-        entry.appendChild(
-            document.createTextNode(
-                ` ${message}`
-            )
-        );
-
-        systemLog.appendChild(
-            entry
-        );
-
-        systemLog.scrollTop =
-            systemLog.scrollHeight;
+        entry.appendChild(timeSpan);
+        entry.appendChild(document.createTextNode(` ${message}`));
+        systemLog.appendChild(entry);
+        systemLog.scrollTop = systemLog.scrollHeight;
     }
 
-
-    /*
-     * ==========================================================
-     * GRAPH
-     * ==========================================================
-     */
-
-    const graphBars =
-        12;
-
-    const graphPoints =
-        Array(
-            graphBars
-        ).fill(0);
-
-    for (
-        let i = 0;
-        i < graphBars;
-        i++
-    ) {
-
-        const bar =
-            document.createElement(
-                'div'
-            );
-
-        bar.className =
-            'graph-dot';
-
-        bar.style.left =
-            `${(i / graphBars) * 100}%`;
-
-        bar.style.height =
-            '0%';
-
-        sysGraph.appendChild(
-            bar
-        );
+    const graphBars = 12;
+    const graphPoints = Array(graphBars).fill(0);
+    for (let i = 0; i < graphBars; i++) {
+        const bar = document.createElement('div');
+        bar.className = 'graph-dot';
+        bar.style.left = `${(i / graphBars) * 100}%`;
+        bar.style.height = '0%';
+        sysGraph.appendChild(bar);
     }
-
-    const graphBarsEl =
-        sysGraph.querySelectorAll(
-            '.graph-dot'
-        );
+    const graphBarsEl = sysGraph.querySelectorAll('.graph-dot');
 
     function updateGraph() {
-
         graphPoints.shift();
-
-        graphPoints.push(
-            Math.floor(
-                Math.random() * 70
-            ) + 20
-        );
-
-        graphPoints.forEach(
-            function (
-                value,
-                index
-            ) {
-
-                graphBarsEl[index]
-                    .style.height =
-                    `${value}%`;
-
-            }
-        );
+        graphPoints.push(Math.floor(Math.random() * 70) + 20);
+        graphPoints.forEach((value, index) => {
+            graphBarsEl[index].style.height = `${value}%`;
+        });
     }
 
+    const loadingScreen = document.getElementById('loading-screen');
+    const mainContent = document.getElementById('main-content');
+    const infoHost = document.getElementById('info-host');
+    const infoSni = document.getElementById('info-sni');
+    const infoProto = document.getElementById('info-proto');
+    const infoTransport = document.getElementById('info-transport');
+    const infoProxy = document.getElementById('info-proxy');
+    const configDisplay = document.getElementById('config-display');
+    const copyBtn = document.getElementById('copy-btn');
+    const addressBtn = document.getElementById('address-btn');
+    const addressBtnTxt = document.getElementById('address-btn-txt');
+    const addressSelected = document.getElementById('address-selected');
+    const addressModal = document.getElementById('address-modal');
+    const addressListEl = document.getElementById('address-list');
+    const addressClose = document.getElementById('address-close');
+    const sniBtn = document.getElementById('sni-btn');
+    const sniBtnTxt = document.getElementById('sni-btn-txt');
+    const sniSelected = document.getElementById('sni-selected');
+    const sniModal = document.getElementById('sni-modal');
+    const sniListEl = document.getElementById('sni-list');
+    const sniClose = document.getElementById('sni-close');
+    const proxyButtons = document.getElementById('proxy-buttons');
+    const protoButtons = document.getElementById('proto-buttons');
+    const transButtons = document.getElementById('trans-buttons');
+    const player = document.getElementById('floating-player');
 
-    /*
-     * ==========================================================
-     * DOM REFERENCES
-     * ==========================================================
-     */
-
-    const loadingScreen =
-        document.getElementById(
-            'loading-screen'
-        );
-
-    const mainContent =
-        document.getElementById(
-            'main-content'
-        );
-
-    const infoHost =
-        document.getElementById(
-            'info-host'
-        );
-
-    const infoSni =
-        document.getElementById(
-            'info-sni'
-        );
-
-    const infoProto =
-        document.getElementById(
-            'info-proto'
-        );
-
-    const infoTransport =
-        document.getElementById(
-            'info-transport'
-        );
-
-    const infoProxy =
-        document.getElementById(
-            'info-proxy'
-        );
-
-    const configDisplay =
-        document.getElementById(
-            'config-display'
-        );
-
-    const copyBtn =
-        document.getElementById(
-            'copy-btn'
-        );
-
-    const addressBtn =
-        document.getElementById(
-            'address-btn'
-        );
-
-    const addressBtnTxt =
-        document.getElementById(
-            'address-btn-txt'
-        );
-
-    const addressSelected =
-        document.getElementById(
-            'address-selected'
-        );
-
-    const addressModal =
-        document.getElementById(
-            'address-modal'
-        );
-
-    const addressListEl =
-        document.getElementById(
-            'address-list'
-        );
-
-    const addressClose =
-        document.getElementById(
-            'address-close'
-        );
-
-    const sniBtn =
-        document.getElementById(
-            'sni-btn'
-        );
-
-    const sniBtnTxt =
-        document.getElementById(
-            'sni-btn-txt'
-        );
-
-    const sniSelected =
-        document.getElementById(
-            'sni-selected'
-        );
-
-    const sniModal =
-        document.getElementById(
-            'sni-modal'
-        );
-
-    const sniListEl =
-        document.getElementById(
-            'sni-list'
-        );
-
-    const sniClose =
-        document.getElementById(
-            'sni-close'
-        );
-
-    const proxyButtons =
-        document.getElementById(
-            'proxy-buttons'
-        );
-
-    const protoButtons =
-        document.getElementById(
-            'proto-buttons'
-        );
-
-    const transButtons =
-        document.getElementById(
-            'trans-buttons'
-        );
-
-    const player =
-        document.getElementById(
-            'floating-player'
-        );
-
-
-    /*
-     * ==========================================================
-     * DRAG PLAYER
-     * ==========================================================
-     */
-
-    let isDragging =
-        false;
-
-    let offsetX =
-        0;
-
-    let offsetY =
-        0;
+    let isDragging = false;
+    let offsetX = 0;
+    let offsetY = 0;
 
     function dragStart(event) {
-
-        if (
-            event.target.closest(
-                '.ctrl-btn'
-            )
-        ) {
-            return;
-        }
-
-        isDragging =
-            true;
-
-        const rect =
-            player.getBoundingClientRect();
-
-        const clientX =
-            event.touches
-                ? event.touches[0].clientX
-                : event.clientX;
-
-        const clientY =
-            event.touches
-                ? event.touches[0].clientY
-                : event.clientY;
-
-        offsetX =
-            clientX -
-            rect.left;
-
-        offsetY =
-            clientY -
-            rect.top;
-
-        player.style.transition =
-            'none';
+        if (event.target.closest('.ctrl-btn')) return;
+        isDragging = true;
+        const rect = player.getBoundingClientRect();
+        const clientX = event.touches ? event.touches[0].clientX : event.clientX;
+        const clientY = event.touches ? event.touches[0].clientY : event.clientY;
+        offsetX = clientX - rect.left;
+        offsetY = clientY - rect.top;
+        player.style.transition = 'none';
     }
 
     function dragMove(event) {
-
-        if (!isDragging) {
-            return;
-        }
-
+        if (!isDragging) return;
         event.preventDefault();
-
-        const clientX =
-            event.touches
-                ? event.touches[0].clientX
-                : event.clientX;
-
-        const clientY =
-            event.touches
-                ? event.touches[0].clientY
-                : event.clientY;
-
-        const newX =
-            Math.max(
-                0,
-                Math.min(
-                    window.innerWidth -
-                    player.offsetWidth,
-                    clientX -
-                    offsetX
-                )
-            );
-
-        const newY =
-            Math.max(
-                0,
-                Math.min(
-                    window.innerHeight -
-                    player.offsetHeight,
-                    clientY -
-                    offsetY
-                )
-            );
-
-        player.style.left =
-            `${newX}px`;
-
-        player.style.top =
-            `${newY}px`;
-
-        player.style.right =
-            'auto';
-
-        player.style.bottom =
-            'auto';
+        const clientX = event.touches ? event.touches[0].clientX : event.clientX;
+        const clientY = event.touches ? event.touches[0].clientY : event.clientY;
+        const newX = Math.max(0, Math.min(window.innerWidth - player.offsetWidth, clientX - offsetX));
+        const newY = Math.max(0, Math.min(window.innerHeight - player.offsetHeight, clientY - offsetY));
+        player.style.left = `${newX}px`;
+        player.style.top = `${newY}px`;
+        player.style.right = 'auto';
+        player.style.bottom = 'auto';
     }
 
     function dragEnd() {
-
-        isDragging =
-            false;
-
-        player.style.transition =
-            'all 0.2s ease';
+        isDragging = false;
+        player.style.transition = 'all 0.2s ease';
     }
 
-    player.addEventListener(
-        'mousedown',
-        dragStart
-    );
-
-    player.addEventListener(
-        'touchstart',
-        dragStart,
-        {
-            passive: true
-        }
-    );
-
-    document.addEventListener(
-        'mousemove',
-        dragMove
-    );
-
-    document.addEventListener(
-        'touchmove',
-        dragMove,
-        {
-            passive: false
-        }
-    );
-
-    document.addEventListener(
-        'mouseup',
-        dragEnd
-    );
-
-    document.addEventListener(
-        'touchend',
-        dragEnd
-    );
-
-
-    /*
-     * ==========================================================
-     * PATH FUNCTIONS
-     * ==========================================================
-     */
+    player.addEventListener('mousedown', dragStart);
+    player.addEventListener('touchstart', dragStart, { passive: true });
+    document.addEventListener('mousemove', dragMove);
+    document.addEventListener('touchmove', dragMove, { passive: false });
+    document.addEventListener('mouseup', dragEnd);
+    document.addEventListener('touchend', dragEnd);
 
     function getPublicPath() {
-
-        if (
-            selectedTransport ===
-            'grpc'
-        ) {
-
-            return '';
-
-        }
-
-        const protocolPaths =
-            PATHS[
-                selectedProtocol
-            ];
-
-        if (
-            !protocolPaths ||
-            !protocolPaths[
-                selectedTransport
-            ]
-        ) {
-
-            return '';
-
-        }
-
-        return protocolPaths[
-            selectedTransport
-        ];
+        if (selectedTransport === 'grpc') return '';
+        const protocolPaths = PATHS[selectedProtocol];
+        if (!protocolPaths || !protocolPaths[selectedTransport]) return '';
+        return protocolPaths[selectedTransport];
     }
-
-
-    /*
-     * ==========================================================
-     * gRPC SERVICE
-     * ==========================================================
-     */
 
     function getGrpcService() {
-
-        return GRPC_SERVICES[
-            selectedProtocol
-        ];
+        return GRPC_SERVICES[selectedProtocol];
     }
 
-
-    /*
-     * ==========================================================
-     * CONFIG GENERATOR
-     * ==========================================================
-     */
-
+    /* BUILD CONFIG WITH AUTO MODE FOR XHTTP */
     function buildConfig() {
+        const addr = selectedAddress;
+        const sni = selectedSNI;
+        const host = currentHost;
 
-        const addr =
-            selectedAddress;
+        if (selectedTransport === 'grpc') {
+            const grpcService = getGrpcService();
+            if (!grpcService) return '';
 
-        const sni =
-            selectedSNI;
-
-        const host =
-            currentHost;
-
-
-        /*
-         * ======================================================
-         * gRPC
-         * ======================================================
-         */
-
-        if (
-            selectedTransport ===
-            'grpc'
-        ) {
-
-            const grpcService =
-                getGrpcService();
-
-            if (!grpcService) {
-                return '';
-            }
-
-            switch (
-                selectedProtocol
-            ) {
-
+            switch (selectedProtocol) {
                 case 'vless':
-
-                    return (
-                        `vless://${UUID}@${addr}:443` +
-                        `?encryption=none` +
-                        `&security=tls` +
-                        `&type=grpc` +
-                        `&serviceName=${encodeURIComponent(grpcService)}` +
-                        `&authority=${encodeURIComponent(host)}` +
-                        `&sni=${encodeURIComponent(sni)}` +
-                        `&alpn=h2` +
-                        `&fp=chrome` +
-                        `#VLESS-GRPC-${PROXY_LABELS[selectedProxy]}`
-                    );
-
-
+                    return `vless://${UUID}@${addr}:443?encryption=none&security=tls&type=grpc&serviceName=${encodeURIComponent(grpcService)}&authority=${encodeURIComponent(host)}&sni=${encodeURIComponent(sni)}&alpn=h2&fp=chrome#VLESS-GRPC-${PROXY_LABELS[selectedProxy]}`;
                 case 'trojan':
-
-                    return (
-                        `trojan://${encodeURIComponent(TROJAN_PASSWORD)}@${addr}:443` +
-                        `?security=tls` +
-                        `&type=grpc` +
-                        `&serviceName=${encodeURIComponent(grpcService)}` +
-                        `&authority=${encodeURIComponent(host)}` +
-                        `&sni=${encodeURIComponent(sni)}` +
-                        `&alpn=h2` +
-                        `&fp=chrome` +
-                        `#TROJAN-GRPC-${PROXY_LABELS[selectedProxy]}`
-                    );
-
-
+                    return `trojan://${encodeURIComponent(TROJAN_PASSWORD)}@${addr}:443?security=tls&type=grpc&serviceName=${encodeURIComponent(grpcService)}&authority=${encodeURIComponent(host)}&sni=${encodeURIComponent(sni)}&alpn=h2&fp=chrome#TROJAN-GRPC-${PROXY_LABELS[selectedProxy]}`;
                 case 'vmess': {
-
                     const vmessObject = {
-
-                        v:
-                            '2',
-
-                        ps:
-                            `VMESS-GRPC-${PROXY_LABELS[selectedProxy]}`,
-
-                        add:
-                            addr,
-
-                        port:
-                            '443',
-
-                        id:
-                            UUID,
-
-                        aid:
-                            '0',
-
-                        scy:
-                            'auto',
-
-                        net:
-                            'grpc',
-
-                        type:
-                            'none',
-
-                        host:
-                            host,
-
-                        path:
-                            grpcService,
-
-                        tls:
-                            'tls',
-
-                        sni:
-                            sni,
-
-                        fp:
-                            'chrome',
-
-                        alpn:
-                            'h2'
-
+                        v: '2', ps: `VMESS-GRPC-${PROXY_LABELS[selectedProxy]}`, add: addr, port: '443', id: UUID, aid: '0', scy: 'auto', net: 'grpc', type: 'none', host: host, path: grpcService, tls: 'tls', sni: sni, fp: 'chrome', alpn: 'h2'
                     };
-
-                    return (
-                        `vmess://${btoa(
-                            JSON.stringify(
-                                vmessObject
-                            )
-                        ).replace(
-                            /=+$/,
-                            ''
-                        )}`
-                    );
+                    return `vmess://${btoa(JSON.stringify(vmessObject)).replace(/=+$/, '')}`;
                 }
-
-
                 case 'shadowsocks': {
-
-                    const ssGrpcCred =
-                        btoa(
-                            `${SS_METHOD}:${SS_PASSWORD}`
-                        ).replace(
-                            /=+$/,
-                            ''
-                        );
-
-                    return (
-                        `ss://${ssGrpcCred}@${addr}:443` +
-                        `?type=grpc` +
-                        `&serviceName=${encodeURIComponent(grpcService)}` +
-                        `&security=tls` +
-                        `&sni=${encodeURIComponent(sni)}` +
-                        `&alpn=h2` +
-                        `#SS-GRPC-${PROXY_LABELS[selectedProxy]}`
-                    );
+                    const ssGrpcCred = btoa(`${SS_METHOD}:${SS_PASSWORD}`).replace(/=+$/, '');
+                    return `ss://${ssGrpcCred}@${addr}:443?type=grpc&serviceName=${encodeURIComponent(grpcService)}&security=tls&sni=${encodeURIComponent(sni)}&alpn=h2#SS-GRPC-${PROXY_LABELS[selectedProxy]}`;
                 }
-
-
-                default:
-
-                    return '';
+                default: return '';
             }
         }
 
+        const path = getPublicPath();
+        let transportParam = '';
 
-        /*
-         * ======================================================
-         * HTTP / WS / HTTPUPGRADE / XHTTP
-         * ======================================================
-         */
-
-        const path =
-            getPublicPath();
-
-        let transportParam =
-            '';
-
-
-        switch (
-            selectedTransport
-        ) {
-
+        switch (selectedTransport) {
             case 'ws':
-
-                transportParam =
-                    `type=ws` +
-                    `&path=${encodeURIComponent(path)}` +
-                    `&host=${encodeURIComponent(host)}`;
-
+                transportParam = `type=ws&path=${encodeURIComponent(path)}&host=${encodeURIComponent(host)}`;
                 break;
-
-
             case 'httpupgrade':
-
-                transportParam =
-                    `type=httpupgrade` +
-                    `&path=${encodeURIComponent(path)}` +
-                    `&host=${encodeURIComponent(host)}`;
-
+                transportParam = `type=httpupgrade&path=${encodeURIComponent(path)}&host=${encodeURIComponent(host)}`;
                 break;
-
-
             case 'xhttp':
-
-                /*
-                 * IMPORTANT:
-                 *
-                 * packet-up
-                 *
-                 * NOT:
-                 *
-                 * packet-upstream
-                 */
-
-                transportParam =
-                    `type=xhttp` +
-                    `&path=${encodeURIComponent(path)}` +
-                    `&host=${encodeURIComponent(host)}` +
-                    `&mode=packet-up`;
-
+                /* UPDATED: Changed from packet-up to mode=auto */
+                transportParam = `type=xhttp&path=${encodeURIComponent(path)}&host=${encodeURIComponent(host)}&mode=auto`;
                 break;
-
-
             default:
-
-                transportParam =
-                    '';
-
+                transportParam = '';
         }
 
-
-        switch (
-            selectedProtocol
-        ) {
-
+        switch (selectedProtocol) {
             case 'vless': {
-
-                const alpn =
-                    selectedTransport ===
-                    'xhttp'
-                        ? 'h2%2Chttp%2F1.1'
-                        : 'http%2F1.1';
-
-                return (
-                    `vless://${UUID}@${addr}:443` +
-                    `?encryption=none` +
-                    `&${transportParam}` +
-                    `&security=tls` +
-                    `&fp=chrome` +
-                    `&sni=${encodeURIComponent(sni)}` +
-                    `&alpn=${alpn}` +
-                    `#VLESS-${selectedTransport.toUpperCase()}-${PROXY_LABELS[selectedProxy]}`
-                );
+                const alpn = selectedTransport === 'xhttp' ? 'h2%2Chttp%2F1.1' : 'http%2F1.1';
+                return `vless://${UUID}@${addr}:443?encryption=none&${transportParam}&security=tls&fp=chrome&sni=${encodeURIComponent(sni)}&alpn=${alpn}#VLESS-${selectedTransport.toUpperCase()}-${PROXY_LABELS[selectedProxy]}`;
             }
-
-
             case 'trojan': {
-
-                const alpn =
-                    selectedTransport ===
-                    'xhttp'
-                        ? 'h2%2Chttp%2F1.1'
-                        : 'http%2F1.1';
-
-                return (
-                    `trojan://${encodeURIComponent(TROJAN_PASSWORD)}@${addr}:443` +
-                    `?${transportParam}` +
-                    `&security=tls` +
-                    `&fp=chrome` +
-                    `&sni=${encodeURIComponent(sni)}` +
-                    `&alpn=${alpn}` +
-                    `#TROJAN-${selectedTransport.toUpperCase()}-${PROXY_LABELS[selectedProxy]}`
-                );
+                const alpn = selectedTransport === 'xhttp' ? 'h2%2Chttp%2F1.1' : 'http%2F1.1';
+                return `trojan://${encodeURIComponent(TROJAN_PASSWORD)}@${addr}:443?${transportParam}&security=tls&fp=chrome&sni=${encodeURIComponent(sni)}&alpn=${alpn}#TROJAN-${selectedTransport.toUpperCase()}-${PROXY_LABELS[selectedProxy]}`;
             }
-
-
             case 'vmess': {
-
-                const alpn =
-                    selectedTransport ===
-                    'xhttp'
-                        ? 'h2,http/1.1'
-                        : 'http/1.1';
-
+                const alpn = selectedTransport === 'xhttp' ? 'h2,http/1.1' : 'http/1.1';
                 const vmessObject = {
-
-                    v:
-                        '2',
-
-                    ps:
-                        `VMESS-${selectedTransport.toUpperCase()}-${PROXY_LABELS[selectedProxy]}`,
-
-                    add:
-                        addr,
-
-                    port:
-                        '443',
-
-                    id:
-                        UUID,
-
-                    aid:
-                        '0',
-
-                    scy:
-                        'auto',
-
-                    net:
-                        selectedTransport,
-
-                    type:
-                        'none',
-
-                    host:
-                        host,
-
-                    path:
-                        path,
-
-                    tls:
-                        'tls',
-
-                    sni:
-                        sni,
-
-                    fp:
-                        'chrome',
-
-                    alpn:
-                        alpn
-
+                    v: '2', ps: `VMESS-${selectedTransport.toUpperCase()}-${PROXY_LABELS[selectedProxy]}`, add: addr, port: '443', id: UUID, aid: '0', scy: 'auto', net: selectedTransport, type: 'none', host: host, path: path, tls: 'tls', sni: sni, fp: 'chrome', alpn: alpn
                 };
-
-                return (
-                    `vmess://${btoa(
-                        JSON.stringify(
-                            vmessObject
-                        )
-                    ).replace(
-                        /=+$/,
-                        ''
-                    )}`
-                );
+                return `vmess://${btoa(JSON.stringify(vmessObject)).replace(/=+$/, '')}`;
             }
-
-
             case 'shadowsocks': {
-
-                const ssCred =
-                    btoa(
-                        `${SS_METHOD}:${SS_PASSWORD}`
-                    ).replace(
-                        /=+$/,
-                        ''
-                    );
-
-                return (
-                    `ss://${ssCred}@${addr}:443` +
-                    `?${transportParam}` +
-                    `&security=tls` +
-                    `&sni=${encodeURIComponent(sni)}` +
-                    `#SS-${selectedTransport.toUpperCase()}-${PROXY_LABELS[selectedProxy]}`
-                );
+                const ssCred = btoa(`${SS_METHOD}:${SS_PASSWORD}`).replace(/=+$/, '');
+                return `ss://${ssCred}@${addr}:443?${transportParam}&security=tls&sni=${encodeURIComponent(sni)}#SS-${selectedTransport.toUpperCase()}-${PROXY_LABELS[selectedProxy]}`;
             }
-
-
-            default:
-
-                return '';
+            default: return '';
         }
     }
 
-
-    /*
-     * ==========================================================
-     * MODAL LIST
-     * ==========================================================
-     */
-
-    function buildList(
-        container,
-        items,
-        type
-    ) {
-
-        container.innerHTML =
-            '';
-
-        items.forEach(
-            function (item) {
-
-                const el =
-                    document.createElement(
-                        'div'
-                    );
-
-                el.className =
-                    'modal-item';
-
-
-                if (
-                    item.startsWith('---')
-                ) {
-
-                    el.style.color =
-                        'var(--neon-purple)';
-
-                    el.style.cursor =
-                        'default';
-
-                    el.style.fontWeight =
-                        '700';
-
-                    el.addEventListener(
-                        'click',
-                        function (
-                            event
-                        ) {
-
-                            event.preventDefault();
-
-                        }
-                    );
-
-                } else {
-
-                    el.addEventListener(
-                        'click',
-                        function () {
-
-                            if (
-                                type ===
-                                'address'
-                            ) {
-
-                                selectedAddress =
-                                    item;
-
-                                addressSelected
-                                    .textContent =
-                                    'TARGET SET: ' +
-                                    item;
-
-                                addressBtnTxt
-                                    .textContent =
-                                    item;
-
-                                addLog(
-                                    'Target address selected',
-                                    'success'
-                                );
-
-                                addressModal
-                                    .classList
-                                    .remove(
-                                        'show'
-                                    );
-
-                            } else {
-
-                                selectedSNI =
-                                    item;
-
-                                sniSelected
-                                    .textContent =
-                                    'SNI SET: ' +
-                                    item;
-
-                                sniBtnTxt
-                                    .textContent =
-                                    item;
-
-                                addLog(
-                                    'SNI selected',
-                                    'success'
-                                );
-
-                                sniModal
-                                    .classList
-                                    .remove(
-                                        'show'
-                                    );
-                            }
-
-                            updateUI();
-
-                        }
-                    );
-                }
-
-                el.textContent =
-                    item;
-
-                container.appendChild(
-                    el
-                );
-
-            }
-        );
-    }
-
-
-    /*
-     * ==========================================================
-     * OPTION BUTTONS
-     * ==========================================================
-     */
-
-    function buildOptions(
-        container,
-        items,
-        activeItem,
-        labels
-    ) {
-
-        container.innerHTML =
-            '';
-
-        items.forEach(
-            function (item) {
-
-                const button =
-                    document.createElement(
-                        'button'
-                    );
-
-                button.className =
-                    'switch-btn' +
-                    (
-                        item ===
-                        activeItem
-                            ? ' active'
-                            : ''
-                    );
-
-                button.textContent =
-                    labels[item] ||
-                    item;
-
-                button.addEventListener(
-                    'click',
-                    function () {
-
-                        if (
-                            isProcessing
-                        ) {
-                            return;
-                        }
-
-                        isProcessing =
-                            true;
-
-                        container
-                            .querySelectorAll(
-                                '.switch-btn'
-                            )
-                            .forEach(
-                                function (btn) {
-
-                                    btn.classList
-                                        .remove(
-                                            'active'
-                                        );
-
-                                }
-                            );
-
-                        button.classList
-                            .add(
-                                'active'
-                            );
-
-
-                        if (
-                            container ===
-                            proxyButtons
-                        ) {
-
-                            selectedProxy =
-                                item;
-                        }
-
-
-                        if (
-                            container ===
-                            protoButtons
-                        ) {
-
-                            selectedProtocol =
-                                item;
-                        }
-
-
-                        if (
-                            container ===
-                            transButtons
-                        ) {
-
-                            selectedTransport =
-                                item;
-                        }
-
-
-                        addLog(
-                            'Selected: ' +
-                            (
-                                labels[item] ||
-                                item
-                            ),
-                            'success'
-                        );
-
-                        updateUI();
-
-                        setTimeout(
-                            function () {
-
-                                isProcessing =
-                                    false;
-
-                            },
-                            200
-                        );
-
+    function buildList(container, items, type) {
+        container.innerHTML = '';
+        items.forEach(function (item) {
+            const el = document.createElement('div');
+            el.className = 'modal-item';
+
+            if (item.startsWith('---')) {
+                el.style.color = 'var(--neon-purple)';
+                el.style.cursor = 'default';
+                el.style.fontWeight = '700';
+                el.addEventListener('click', e => e.preventDefault());
+            } else {
+                el.addEventListener('click', function () {
+                    if (type === 'address') {
+                        selectedAddress = item;
+                        addressSelected.textContent = 'TARGET SET: ' + item;
+                        addressBtnTxt.textContent = item;
+                        addLog('Target address selected', 'success');
+                        addressModal.classList.remove('show');
+                    } else {
+                        selectedSNI = item;
+                        sniSelected.textContent = 'SNI SET: ' + item;
+                        sniBtnTxt.textContent = item;
+                        addLog('SNI selected', 'success');
+                        sniModal.classList.remove('show');
                     }
-                );
-
-                container.appendChild(
-                    button
-                );
-
+                    updateUI();
+                });
             }
-        );
+            el.textContent = item;
+            container.appendChild(el);
+        });
     }
 
+    function buildOptions(container, items, activeItem, labels) {
+        container.innerHTML = '';
+        items.forEach(function (item) {
+            const button = document.createElement('button');
+            button.className = 'switch-btn' + (item === activeItem ? ' active' : '');
+            button.textContent = labels[item] || item;
 
-    /*
-     * ==========================================================
-     * UPDATE UI
-     * ==========================================================
-     */
+            button.addEventListener('click', function () {
+                if (isProcessing) return;
+                isProcessing = true;
+
+                container.querySelectorAll('.switch-btn').forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+
+                if (container === proxyButtons) selectedProxy = item;
+                if (container === protoButtons) selectedProtocol = item;
+                if (container === transButtons) selectedTransport = item;
+
+                addLog('Selected: ' + (labels[item] || item), 'success');
+                updateUI();
+
+                setTimeout(() => { isProcessing = false; }, 200);
+            });
+            container.appendChild(button);
+        });
+    }
 
     function updateUI() {
+        infoHost.textContent = selectedAddress;
+        infoSni.textContent = selectedSNI;
+        infoProto.textContent = PROTOCOL_LABELS[selectedProtocol];
+        infoTransport.textContent = TRANSPORT_LABELS[selectedTransport];
+        infoProxy.textContent = PROXY_LABELS[selectedProxy];
+        configDisplay.value = buildConfig();
 
-        infoHost.textContent =
-            selectedAddress;
-
-        infoSni.textContent =
-            selectedSNI;
-
-        infoProto.textContent =
-            PROTOCOL_LABELS[
-                selectedProtocol
-            ];
-
-        infoTransport.textContent =
-            TRANSPORT_LABELS[
-                selectedTransport
-            ];
-
-        infoProxy.textContent =
-            PROXY_LABELS[
-                selectedProxy
-            ];
-
-        configDisplay.value =
-            buildConfig();
-
-
-        buildOptions(
-            proxyButtons,
-            PROXY_ENGINES,
-            selectedProxy,
-            PROXY_LABELS
-        );
-
-
-        buildOptions(
-            protoButtons,
-            PROTOCOLS,
-            selectedProtocol,
-            PROTOCOL_LABELS
-        );
-
-
-        buildOptions(
-            transButtons,
-            TRANSPORTS,
-            selectedTransport,
-            TRANSPORT_LABELS
-        );
+        buildOptions(proxyButtons, PROXY_ENGINES, selectedProxy, PROXY_LABELS);
+        buildOptions(protoButtons, PROTOCOLS, selectedProtocol, PROTOCOL_LABELS);
+        buildOptions(transButtons, TRANSPORTS, selectedTransport, TRANSPORT_LABELS);
     }
 
-
-    /*
-     * ==========================================================
-     * COPY BUTTONS
-     * ==========================================================
-     */
-
-    async function copyText(
-        text,
-        button,
-        originalLabel,
-        successLabel
-    ) {
-
+    async function copyText(text, button, originalLabel, successLabel) {
         try {
-
-            await navigator
-                .clipboard
-                .writeText(
-                    text
-                );
-
-            button.textContent =
-                successLabel;
-
-            setTimeout(
-                function () {
-
-                    button.textContent =
-                        originalLabel;
-
-                },
-                2000
-            );
-
-            addLog(
-                'Configuration copied',
-                'success'
-            );
-
+            await navigator.clipboard.writeText(text);
+            button.textContent = successLabel;
+            setTimeout(() => { button.textContent = originalLabel; }, 2000);
+            addLog('Configuration copied', 'success');
         } catch (error) {
-
-            addLog(
-                'Copy permission denied',
-                'info'
-            );
-
+            addLog('Copy permission denied', 'info');
         }
     }
 
-    copyBtn.addEventListener(
-        'click',
-        function () {
+    copyBtn.addEventListener('click', () => copyText(configDisplay.value, copyBtn, 'COPY', 'COPIED ✓'));
+    copyBypassBtn1.addEventListener('click', () => copyText(bypassConfig1.value, copyBypassBtn1, 'COPY', 'COPIED ✓'));
+    copyBypassBtn2.addEventListener('click', () => copyText(bypassConfig2.value, copyBypassBtn2, 'COPY', 'COPIED ✓'));
 
-            copyText(
-                configDisplay.value,
-                copyBtn,
-                'COPY',
-                'COPIED ✓'
-            );
+    addressBtn.addEventListener('click', () => {
+        buildList(addressListEl, addressList, 'address');
+        addressModal.classList.add('show');
+        addLog('Opening address list', 'info');
+    });
 
+    addressClose.addEventListener('click', () => addressModal.classList.remove('show'));
+
+    sniBtn.addEventListener('click', () => {
+        buildList(sniListEl, sniList, 'sni');
+        sniModal.classList.add('show');
+        addLog('Opening SNI list', 'info');
+    });
+
+    sniClose.addEventListener('click', () => sniModal.classList.remove('show'));
+
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') {
+            addressModal.classList.remove('show');
+            sniModal.classList.remove('show');
         }
-    );
+    });
 
-    copyBypassBtn1.addEventListener(
-        'click',
-        function () {
+    window.addEventListener('load', function () {
+        loadSong(currentSongIndex);
 
-            copyText(
-                bypassConfig1.value,
-                copyBypassBtn1,
-                'COPY',
-                'COPIED ✓'
-            );
+        setTimeout(function () {
+            loadingScreen.classList.add('hidden');
+            mainContent.style.display = 'flex';
 
-        }
-    );
+            updateUI();
+            fetchUserInfo();
+            measurePing();
 
-    copyBypassBtn2.addEventListener(
-        'click',
-        function () {
+            setInterval(updateMonitorUptime, 1000);
+            setInterval(updateGraph, 1200);
+            setInterval(measurePing, 10000);
 
-            copyText(
-                bypassConfig2.value,
-                copyBypassBtn2,
-                'COPY',
-                'COPIED ✓'
-            );
-
-        }
-    );
-
-
-    /*
-     * ==========================================================
-     * ADDRESS MODAL
-     * ==========================================================
-     */
-
-    addressBtn.addEventListener(
-        'click',
-        function () {
-
-            buildList(
-                addressListEl,
-                addressList,
-                'address'
-            );
-
-            addressModal.classList
-                .add(
-                    'show'
-                );
-
-            addLog(
-                'Opening address list',
-                'info'
-            );
-
-        }
-    );
-
-    addressClose.addEventListener(
-        'click',
-        function () {
-
-            addressModal.classList
-                .remove(
-                    'show'
-                );
-
-        }
-    );
-
-
-    /*
-     * ==========================================================
-     * SNI MODAL
-     * ==========================================================
-     */
-
-    sniBtn.addEventListener(
-        'click',
-        function () {
-
-            buildList(
-                sniListEl,
-                sniList,
-                'sni'
-            );
-
-            sniModal.classList
-                .add(
-                    'show'
-                );
-
-            addLog(
-                'Opening SNI list',
-                'info'
-            );
-
-        }
-    );
-
-    sniClose.addEventListener(
-        'click',
-        function () {
-
-            sniModal.classList
-                .remove(
-                    'show'
-                );
-
-        }
-    );
-
-
-    /*
-     * ==========================================================
-     * ESC
-     * ==========================================================
-     */
-
-    document.addEventListener(
-        'keydown',
-        function (event) {
-
-            if (
-                event.key ===
-                'Escape'
-            ) {
-
-                addressModal
-                    .classList
-                    .remove(
-                        'show'
-                    );
-
-                sniModal
-                    .classList
-                    .remove(
-                        'show'
-                    );
-
-            }
-
-        }
-    );
-
-
-    /*
-     * ==========================================================
-     * STARTUP
-     * ==========================================================
-     */
-
-    window.addEventListener(
-        'load',
-        function () {
-
-            loadSong(
-                currentSongIndex
-            );
-
-            setTimeout(
-                function () {
-
-                    loadingScreen
-                        .classList
-                        .add(
-                            'hidden'
-                        );
-
-                    mainContent.style.display =
-                        'flex';
-
-                    updateUI();
-
-                    fetchUserInfo();
-
-                    measurePing();
-
-                    setInterval(
-                        updateMonitorUptime,
-                        1000
-                    );
-
-                    setInterval(
-                        updateGraph,
-                        1200
-                    );
-
-                    setInterval(
-                        measurePing,
-                        10000
-                    );
-
-                    addLog(
-                        'System interface loaded',
-                        'success'
-                    );
-
-                    addLog(
-                        'TLS configuration generator ready',
-                        'success'
-                    );
-
-                    addLog(
-                        '4 internal proxy layers detected',
-                        'success'
-                    );
-
-                    addLog(
-                        'Public proxy prefixes disabled',
-                        'success'
-                    );
-
-                    addLog(
-                        'gRPC service names synchronized',
-                        'success'
-                    );
-
-                    addLog(
-                        'XHTTP mode packet-up synchronized',
-                        'success'
-                    );
-
-                    addLog(
-                        'Ready for configuration generation',
-                        'info'
-                    );
-
-                },
-                3500
-            );
-        }
-    );
+            addLog('System interface loaded', 'success');
+            addLog('TLS configuration generator ready', 'success');
+            addLog('XHTTP mode auto synchronized', 'success');
+        }, 3500);
+    });
 
 })();
 </script>
