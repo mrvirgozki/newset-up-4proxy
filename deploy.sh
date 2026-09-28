@@ -83,40 +83,30 @@ TIMEOUT="${TIMEOUT:-3600}"
 # ============================================================
 
 loading() {
-
     local text="$1"
     local spinner='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
 
     for ((i=0; i<2; i++)); do
-
         for ((j=0; j<${#spinner}; j++)); do
-
             echo -ne "\r  ${CYAN}${spinner:$j:1} ${text}...${RESET}"
-
             sleep 0.05
-
         done
-
     done
 
     echo -ne "\r  ${GREEN}DONE: ${text}${RESET}\n"
 }
 
-
 info() {
     echo -e "  ${CYAN}[INFO]${RESET} $1"
 }
-
 
 ok() {
     echo -e "  ${GREEN}[ OK ]${RESET} $1"
 }
 
-
 warn() {
     echo -e "  ${YELLOW}[WARN]${RESET} $1"
 }
-
 
 fail() {
     echo -e "  ${RED}[FAIL]${RESET} $1"
@@ -179,12 +169,10 @@ ok "GCP project accessible"
 loading "CHECKING REQUIRED COMMANDS"
 
 for cmd in gcloud curl python3; do
-
     command -v "${cmd}" >/dev/null 2>&1 \
         || fail "Required command not found: ${cmd}"
 
     ok "${cmd} available"
-
 done
 
 
@@ -193,9 +181,7 @@ done
 # ============================================================
 
 if [[ "${DEPLOY}" != "true" && "${DEPLOY}" != "false" ]]; then
-
     fail "DEPLOY must be either true or false."
-
 fi
 
 
@@ -207,6 +193,7 @@ loading "CHECKING REQUIRED FILES"
 
 REQUIRED_FILES=(
     "Dockerfile"
+    "entrypoint.sh"
     "supervisord.conf"
     "config.json"
     "nginx.conf"
@@ -218,13 +205,11 @@ REQUIRED_FILES=(
 )
 
 for file in "${REQUIRED_FILES[@]}"; do
-
     if [[ ! -f "${file}" ]]; then
         fail "Missing file: ${file}"
     fi
 
     ok "Found ${file}"
-
 done
 
 
@@ -241,9 +226,7 @@ import sys
 try:
     with open("config.json", "r", encoding="utf-8") as f:
         json.load(f)
-
     print("  [ OK ] config.json is valid JSON")
-
 except Exception as e:
     print("  [FAIL] config.json is invalid")
     print(e)
@@ -286,6 +269,9 @@ grep -q 'COPY httpd.conf /etc/apache2/conf-available/virgozki.conf' Dockerfile \
 
 grep -q 'COPY anti_ddos.py /usr/local/bin/anti_ddos.py' Dockerfile \
     || fail "anti_ddos.py COPY missing"
+
+grep -q 'COPY entrypoint.sh /usr/local/bin/entrypoint.sh' Dockerfile \
+    || fail "entrypoint.sh COPY missing"
 
 ok "Dockerfile structure looks correct"
 
@@ -345,9 +331,7 @@ ok "Internal port alignment looks correct"
 info "Checking HAProxy/OpenResty port collision..."
 
 if grep -Eq '^[[:space:]]*bind[[:space:]]+127\.0\.0\.1:8084' haproxy.cfg; then
-
     fail "HAProxy still uses :8084. OpenResty also uses :8084."
-
 fi
 
 ok "No HAProxy/OpenResty :8084 collision"
@@ -367,7 +351,6 @@ GRPC_PATHS=(
 )
 
 for path in "${GRPC_PATHS[@]}"; do
-
     grep -q "${path}" envoy.yaml \
         || fail "Missing gRPC path in envoy.yaml: ${path}"
 
@@ -378,7 +361,6 @@ for path in "${GRPC_PATHS[@]}"; do
         || fail "Missing gRPC path in nginx.conf: ${path}"
 
     ok "gRPC aligned: ${path}"
-
 done
 
 
@@ -389,30 +371,14 @@ done
 loading "CHECKING XRAY PORTS"
 
 for port in \
-    10000 \
-    10001 \
-    10002 \
-    10003 \
-    10004 \
-    10005 \
-    10006 \
-    10007 \
-    10008 \
-    10009 \
-    10010 \
-    10011 \
-    10012 \
-    10013 \
-    10014 \
-    10015
+    10000 10001 10002 10003 10004 10005 10006 10007 \
+    10008 10009 10010 10011 10012 10013 10014 10015
 do
-
     grep -q "\"port\": ${port}" config.json \
         || fail "Xray port missing in config.json: ${port}"
 
     grep -q "port_value: ${port}" envoy.yaml \
         || fail "Xray port missing in envoy.yaml: ${port}"
-
 done
 
 ok "Xray ports 10000-10015 aligned"
@@ -473,7 +439,6 @@ if ! gcloud artifacts repositories describe "${REPOSITORY}" \
     --location="${REGION}" \
     --project="${PROJECT_ID}" >/dev/null 2>&1
 then
-
     info "Creating Artifact Registry repository..."
 
     gcloud artifacts repositories create "${REPOSITORY}" \
@@ -483,11 +448,8 @@ then
         --project="${PROJECT_ID}"
 
     ok "Artifact Registry repository created"
-
 else
-
     ok "Artifact Registry repository already exists"
-
 fi
 
 
@@ -514,7 +476,6 @@ ok "Container image built successfully"
 # ============================================================
 
 if [[ "${DEPLOY}" != "true" ]]; then
-
     echo
     echo "============================================================"
     echo -e " ${GREEN}BUILD / VALIDATION COMPLETE${RESET}"
@@ -529,19 +490,14 @@ if [[ "${DEPLOY}" != "true" ]]; then
 
     echo
     echo "  This is intentional because:"
-    echo
     echo "    DEPLOY=${DEPLOY}"
     echo
-
-    echo "  Kapag ready ka na:"
-    echo
+    echo "  Kapag ready ka na para sa totoong deployment:"
     echo "    DEPLOY=true ./deploy.sh"
     echo
-
     echo "============================================================"
 
     exit 0
-
 fi
 
 
@@ -611,7 +567,6 @@ info "Checking /health..."
 HEALTH_OK=false
 
 for i in {1..10}; do
-
     HTTP_CODE="$(
         curl \
             --silent \
@@ -625,19 +580,13 @@ for i in {1..10}; do
     )"
 
     if [[ "${HTTP_CODE}" == "200" ]]; then
-
         HEALTH_OK=true
-
         ok "Cloud Run -> Envoy /health passed"
-
         break
-
     fi
 
     warn "Health attempt ${i}/10 failed: HTTP ${HTTP_CODE}"
-
     sleep 5
-
 done
 
 
@@ -646,10 +595,8 @@ done
 # ============================================================
 
 if [[ "${HEALTH_OK}" != "true" ]]; then
-
     echo
     warn "Cloud Run /health did not return HTTP 200."
-
     echo
     echo "Recent Cloud Run logs:"
 
@@ -660,7 +607,6 @@ if [[ "${HEALTH_OK}" != "true" ]]; then
         || true
 
     exit 1
-
 fi
 
 
@@ -683,13 +629,9 @@ ROOT_CODE="$(
 )"
 
 if [[ "${ROOT_CODE}" == "200" ]]; then
-
     ok "Envoy -> Apache fallback is responding"
-
 else
-
     warn "Root path returned HTTP ${ROOT_CODE}"
-
 fi
 
 
