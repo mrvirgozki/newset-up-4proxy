@@ -1,31 +1,43 @@
-============================================================
-VIRGOZKI 4-PROXY + gRPC | CLOUD RUN
-DEBIAN BOOKWORM
+# ============================================================
+# VIRGOZKI 4-PROXY + gRPC | CLOUD RUN
+# DEBIAN BOOKWORM
+#
+# PUBLIC:
+#   Cloud Run -> Envoy :8080
+#
+# INTERNAL:
+#   HAProxy   :8081 / :8086
+#   Apache    :8083
+#   OpenResty :8084
+#   Xray      :10000-10015
+# ============================================================
 
-PUBLIC: Cloud Run -> Envoy :8080
-INTERNAL: HAProxy :8081/:8086 | Apache :8083 | OpenResty :8084 | Xray :10000-10015
-============================================================
-
+# ============================================================
 # STAGE 1 — ENVOY
+# ============================================================
 FROM envoyproxy/envoy:v1.39.1 AS envoy
 
+# ============================================================
 # STAGE 2 — XRAY
+# ============================================================
 FROM ghcr.io/xtls/xray-core:25.12.8 AS xray
 
+# ============================================================
 # STAGE 3 — FINAL IMAGE
+# ============================================================
 FROM openresty/openresty:1.31.1.1-bookworm-fat AS final
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# CLOUD RUN DEFAULT ENV
+# CLOUD RUN DEFAULT ENVIRONMENT
 ENV PORT=8080
 ENV BIND_ADDR=0.0.0.0
 
-# XRAY ENV
+# XRAY ENVIRONMENT
 ENV XRAY_LOCATION_ASSET=/usr/local/share/xray
 ENV XRAY_LOCATION_CONFIG=/etc/xray
 
-# INTERNAL Ports
+# INTERNAL PORTS
 ENV ENVOY_PORT=8080
 ENV HAPROXY_PORT=8081
 ENV APACHE_PORT=8083
@@ -34,26 +46,56 @@ ENV HAPROXY_GRPC_PORT=8086
 
 WORKDIR /opt/virgozki
 
-# Install Packages
-RUN apt-get update && apt-get upgrade -y && \
-apt-get install -y --no-install-recommends \
-apache2 apache2-utils haproxy supervisor ca-certificates \
-curl wget unzip tini procps iproute2 net-tools openssl \
-python3 python3-pip netcat-openbsd && \
-a2enmod proxy proxy_http proxy_http2 proxy_wstunnel headers rewrite http2 && \
-a2dissite 000-default && \
-mkdir -p /etc/xray /etc/haproxy /etc/envoy /etc/apache2/conf-available \
-/etc/apache2/conf-enabled /tmp/virgozki /tmp/virgozki-logs \
-/usr/share/nginx/html /usr/local/share/xray /var/run/apache2 /run/haproxy \
-/var/log/xray /var/log/apache2 && \
-rm -rf /var/lib/apt/lists/*
+# INSTALL REQUIRED PACKAGES
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+      apache2 \
+      apache2-utils \
+      haproxy \
+      supervisor \
+      ca-certificates \
+      curl \
+      wget \
+      unzip \
+      tini \
+      procps \
+      iproute2 \
+      net-tools \
+      openssl \
+      python3 \
+      python3-pip \
+      netcat-openbsd && \
+    a2enmod \
+      proxy \
+      proxy_http \
+      proxy_http2 \
+      proxy_wstunnel \
+      headers \
+      rewrite \
+      http2 && \
+    a2dissite 000-default && \
+    mkdir -p \
+      /etc/xray \
+      /etc/haproxy \
+      /etc/envoy \
+      /etc/apache2/conf-available \
+      /etc/apache2/conf-enabled \
+      /tmp/virgozki \
+      /tmp/virgozki-logs \
+      /usr/share/nginx/html \
+      /usr/local/share/xray \
+      /var/run/apache2 \
+      /run/haproxy \
+      /var/log/xray \
+      /var/log/apache2 && \
+    rm -rf /var/lib/apt/lists/*
 
-# Copy Binaries
+# COPY BINARIES & ASSETS
 COPY --from=envoy /usr/local/bin/envoy /usr/local/bin/envoy
 COPY --from=xray /usr/local/bin/xray /usr/local/bin/xray
 COPY --from=xray /usr/local/share/xray/ /usr/local/share/xray/
 
-# Copy Configs
+# COPY CONFIGURATION & SCRIPT FILES
 COPY supervisord.conf /etc/supervisord.conf
 COPY config.json /etc/xray/config.json
 COPY nginx.conf /etc/openresty/nginx.conf
@@ -64,23 +106,29 @@ COPY index.html /usr/share/nginx/html/index.html
 COPY anti_ddos.py /usr/local/bin/anti_ddos.py
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 
-# Permissions
+# BASIC FILE SETUP & PERMISSIONS
 RUN printf 'ok\n' > /usr/share/nginx/html/health && \
-a2enconf virgozki && \
-chmod +x /usr/local/bin/anti_ddos.py /usr/local/bin/entrypoint.sh && \
-chmod 644 /etc/xray/config.json /etc/openresty/nginx.conf \
-/etc/haproxy/haproxy.cfg /etc/envoy/envoy.yaml \
-/etc/apache2/conf-available/virgozki.conf /usr/share/nginx/html/index.html
+    a2enconf virgozki && \
+    chmod +x /usr/local/bin/anti_ddos.py && \
+    chmod +x /usr/local/bin/entrypoint.sh && \
+    chmod 644 /etc/xray/config.json && \
+    chmod 644 /etc/openresty/nginx.conf && \
+    chmod 644 /etc/haproxy/haproxy.cfg && \
+    chmod 644 /etc/envoy/envoy.yaml && \
+    chmod 644 /etc/apache2/conf-available/virgozki.conf && \
+    chmod 644 /usr/share/nginx/html/index.html
 
-# Pre-Validation
+# BUILD-TIME CONFIGURATION VALIDATION
 RUN /usr/local/bin/xray run -test -c /etc/xray/config.json && \
-/usr/local/bin/envoy --mode validate -c /etc/envoy/envoy.yaml && \
-haproxy -c -f /etc/haproxy/haproxy.cfg && \
-apachectl -t && \
-/usr/local/openresty/bin/openresty -t -c /etc/openresty/nginx.conf
+    /usr/local/bin/envoy --mode validate -c /etc/envoy/envoy.yaml && \
+    haproxy -c -f /etc/haproxy/haproxy.cfg && \
+    apachectl -t && \
+    /usr/local/openresty/bin/openresty -t -c /etc/openresty/nginx.conf
 
 EXPOSE 8080
+
 STOPSIGNAL SIGTERM
 
 ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/entrypoint.sh"]
+
 CMD ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisord.conf"]
