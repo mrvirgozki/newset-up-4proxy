@@ -46,7 +46,7 @@ ENV HAPROXY_GRPC_PORT=8086
 
 WORKDIR /opt/virgozki
 
-# INSTALL REQUIRED PACKAGES
+# INSTALL REQUIRED PACKAGES & CONFIGURE APACHE
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
       apache2 \
@@ -74,6 +74,8 @@ RUN apt-get update && \
       rewrite \
       http2 && \
     a2dissite 000-default && \
+    echo "ServerName localhost" >> /etc/apache2/apache2.conf && \
+    echo "" > /etc/apache2/ports.conf && \
     mkdir -p \
       /etc/xray \
       /etc/haproxy \
@@ -109,20 +111,19 @@ COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 # BASIC FILE SETUP & PERMISSIONS
 RUN printf 'ok\n' > /usr/share/nginx/html/health && \
     a2enconf virgozki && \
-    chmod +x /usr/local/bin/anti_ddos.py && \
-    chmod +x /usr/local/bin/entrypoint.sh && \
-    chmod 644 /etc/xray/config.json && \
-    chmod 644 /etc/openresty/nginx.conf && \
-    chmod 644 /etc/haproxy/haproxy.cfg && \
-    chmod 644 /etc/envoy/envoy.yaml && \
-    chmod 644 /etc/apache2/conf-available/virgozki.conf && \
-    chmod 644 /usr/share/nginx/html/index.html
+    chmod +x /usr/local/bin/anti_ddos.py /usr/local/bin/entrypoint.sh && \
+    chmod 644 /etc/xray/config.json \
+              /etc/openresty/nginx.conf \
+              /etc/haproxy/haproxy.cfg \
+              /etc/envoy/envoy.yaml \
+              /etc/apache2/conf-available/virgozki.conf \
+              /usr/share/nginx/html/index.html
 
 # BUILD-TIME CONFIGURATION VALIDATION
 RUN /usr/local/bin/xray run -test -c /etc/xray/config.json && \
     /usr/local/bin/envoy --mode validate -c /etc/envoy/envoy.yaml && \
     haproxy -c -f /etc/haproxy/haproxy.cfg && \
-    apachectl -t && \
+    apachectl configtest && \
     /usr/local/openresty/bin/openresty -t -c /etc/openresty/nginx.conf
 
 EXPOSE 8080
