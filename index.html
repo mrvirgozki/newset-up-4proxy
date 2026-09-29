@@ -1453,7 +1453,7 @@
         return GRPC_SERVICES[selectedProtocol];
     }
 
-    /* BUILD CONFIG COMPATIBLE WITH CONFIG.JSON & ENVOY.YAML */
+    /* BUILD CONFIG COMPATIBLE WITH CONFIG.JSON & ENVOY.YAML (UPDATED FOR XHTTP) */
     function buildConfig() {
         const addr = selectedAddress;
         const sni = selectedSNI;
@@ -1493,8 +1493,8 @@
                 transportParam = `type=httpupgrade&path=${encodeURIComponent(path)}&host=${encodeURIComponent(host)}`;
                 break;
             case 'xhttp':
-                /* MATCHED WITH CONFIG.JSON (mode=auto) */
-                transportParam = `type=xhttp&path=${encodeURIComponent(path)}&host=${encodeURIComponent(host)}&mode=auto`;
+                /* MATCHED WITH CONFIG.JSON (mode=auto & extra={"mode":"auto"}) */
+                transportParam = `type=xhttp&path=${encodeURIComponent(path)}&host=${encodeURIComponent(host)}&mode=auto&extra=%7B%22mode%22%3A%22auto%22%7D`;
                 break;
             default:
                 transportParam = '';
@@ -1512,8 +1512,26 @@
             case 'vmess': {
                 const alpn = selectedTransport === 'xhttp' ? 'h2,http/1.1' : 'http/1.1';
                 const vmessObject = {
-                    v: '2', ps: `VMESS-${selectedTransport.toUpperCase()}-${PROXY_LABELS[selectedProxy]}`, add: addr, port: '443', id: UUID, aid: '0', scy: 'auto', net: selectedTransport, type: 'none', host: host, path: path, tls: 'tls', sni: sni, fp: 'chrome', alpn: alpn
+                    v: '2',
+                    ps: `VMESS-${selectedTransport.toUpperCase()}-${PROXY_LABELS[selectedProxy]}`,
+                    add: addr,
+                    port: '443',
+                    id: UUID,
+                    aid: '0',
+                    scy: 'auto',
+                    net: selectedTransport,
+                    type: 'none',
+                    host: host,
+                    path: path,
+                    tls: 'tls',
+                    sni: sni,
+                    fp: 'chrome',
+                    alpn: alpn
                 };
+                if (selectedTransport === 'xhttp') {
+                    vmessObject.mode = 'auto';
+                    vmessObject.extra = { mode: 'auto' };
+                }
                 return `vmess://${btoa(JSON.stringify(vmessObject)).replace(/=+$/, '')}`;
             }
             case 'shadowsocks': {
