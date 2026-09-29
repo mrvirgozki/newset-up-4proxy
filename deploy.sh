@@ -14,21 +14,7 @@ set -euo pipefail
 #   OpenResty    :8084
 #   Apache       :8083
 #   Xray         :10000-10015
-#
-# IMPORTANT:
-#   DEPLOY=false by default
-#
-#   BUILD / VALIDATION ONLY:
-#       ./deploy.sh
-#
-#   ACTUAL DEPLOYMENT:
-#       DEPLOY=true ./deploy.sh
-#
-# NOTE:
-#   No --use-http2 is forced at Cloud Run level because
-#   this service also supports WebSocket / HTTPUpgrade / XHTTP.
 # ============================================================
-
 
 # ============================================================
 # COLORS
@@ -44,39 +30,21 @@ YELLOW='\033[1;33m'
 MAGENTA='\033[1;35m'
 WHITE='\033[1;37m'
 
-
 # ============================================================
 # CONFIGURATION
 # ============================================================
 
 PROJECT_ID="${PROJECT_ID:-$(gcloud config get-value project 2>/dev/null | tr -d '[:space:]')}"
-
 REGION="${REGION:-us-central1}"
-
 SERVICE_NAME="${SERVICE_NAME:-virgozki-4proxy}"
-
 REPOSITORY="${REPOSITORY:-virgozki}"
-
 IMAGE_NAME="${IMAGE_NAME:-virgozki}"
-
 IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/${IMAGE_NAME}:latest"
-
 DEPLOY="${DEPLOY:-false}"
 
-
-# ============================================================
-# CLOUD RUN RESOURCES
-# ============================================================
-
-CPU="${CPU:-2}"
-RAM="${RAM:-4Gi}"
-
 MAX_INSTANCES="${MAX_INSTANCES:-4}"
-
 CONCURRENCY="${CONCURRENCY:-80}"
-
 TIMEOUT="${TIMEOUT:-3600}"
-
 
 # ============================================================
 # FUNCTIONS
@@ -96,23 +64,10 @@ loading() {
     echo -ne "\r  ${GREEN}DONE: ${text}${RESET}\n"
 }
 
-info() {
-    echo -e "  ${CYAN}[INFO]${RESET} $1"
-}
-
-ok() {
-    echo -e "  ${GREEN}[ OK ]${RESET} $1"
-}
-
-warn() {
-    echo -e "  ${YELLOW}[WARN]${RESET} $1"
-}
-
-fail() {
-    echo -e "  ${RED}[FAIL]${RESET} $1"
-    exit 1
-}
-
+info() { echo -e "  ${CYAN}[INFO]${RESET} $1"; }
+ok() { echo -e "  ${GREEN}[ OK ]${RESET} $1"; }
+warn() { echo -e "  ${YELLOW}[WARN]${RESET} $1"; }
+fail() { echo -e "  ${RED}[FAIL]${RESET} $1"; exit 1; }
 
 # ============================================================
 # HEADER
@@ -138,9 +93,49 @@ echo -e "    Apache       :8083"
 echo
 echo -e "  ${GREEN}XRAY:${RESET}"
 echo -e "    :10000-10015"
-
 echo
 
+# ============================================================
+# INTERACTIVE RESOURCE SELECTOR (CPU & RAM)
+# ============================================================
+
+echo -e "  ${BOLD}${YELLOW}SELECT RESOURCE SPECIFICATION (CPU / RAM):${RESET}"
+echo -e "  ------------------------------------------"
+echo -e "  ${CYAN}[1]${RESET} Low Profile    : 1 CPU, 1Gi RAM  ${WHITE}(Mababa / Economical)${RESET}"
+echo -e "  ${CYAN}[2]${RESET} Mid Profile    : 1 CPU, 2Gi RAM"
+echo -e "  ${CYAN}[3]${RESET} Standard       : 2 CPU, 4Gi RAM  ${WHITE}(Default Recommended)${RESET}"
+echo -e "  ${CYAN}[4]${RESET} High Profile   : 4 CPU, 8Gi RAM"
+echo -e "  ${CYAN}[5]${RESET} Ultra Profile  : 8 CPU, 16Gi RAM ${WHITE}(Mataas / Heavy Load)${RESET}"
+echo -e "  ------------------------------------------"
+
+read -rp "  Pumili ng option [1-5] (Default: 3): " RESOURCE_OPT
+
+case "${RESOURCE_OPT}" in
+    1)
+        CPU="1"
+        RAM="1Gi"
+        ;;
+    2)
+        CPU="1"
+        RAM="2Gi"
+        ;;
+    4)
+        CPU="4"
+        RAM="8Gi"
+        ;;
+    5)
+        CPU="8"
+        RAM="16Gi"
+        ;;
+    *)
+        CPU="2"
+        RAM="4Gi"
+        ;;
+esac
+
+echo
+ok "Selected Specs: CPU=${CPU}, RAM=${RAM}"
+echo
 
 # ============================================================
 # PROJECT CHECK
@@ -161,7 +156,6 @@ gcloud projects describe "${PROJECT_ID}" >/dev/null 2>&1 \
 
 ok "GCP project accessible"
 
-
 # ============================================================
 # COMMAND CHECK
 # ============================================================
@@ -175,7 +169,6 @@ for cmd in gcloud curl python3; do
     ok "${cmd} available"
 done
 
-
 # ============================================================
 # DEPLOY VALUE CHECK
 # ============================================================
@@ -183,7 +176,6 @@ done
 if [[ "${DEPLOY}" != "true" && "${DEPLOY}" != "false" ]]; then
     fail "DEPLOY must be either true or false."
 fi
-
 
 # ============================================================
 # REQUIRED FILES
@@ -212,7 +204,6 @@ for file in "${REQUIRED_FILES[@]}"; do
     ok "Found ${file}"
 done
 
-
 # ============================================================
 # CONFIG.JSON VALIDATION
 # ============================================================
@@ -232,7 +223,6 @@ except Exception as e:
     print(e)
     sys.exit(1)
 PY
-
 
 # ============================================================
 # DOCKERFILE VALIDATION
@@ -275,7 +265,6 @@ grep -q 'COPY entrypoint.sh /usr/local/bin/entrypoint.sh' Dockerfile \
 
 ok "Dockerfile structure looks correct"
 
-
 # ============================================================
 # SUPERVISOR VALIDATION
 # ============================================================
@@ -298,7 +287,6 @@ grep -q 'envoy -c /etc/envoy/envoy.yaml' supervisord.conf \
     || fail "Envoy Supervisor command missing"
 
 ok "Supervisor configuration looks correct"
-
 
 # ============================================================
 # PORT ALIGNMENT
@@ -323,7 +311,6 @@ grep -q 'listen 127.0.0.1:8084' nginx.conf \
 
 ok "Internal port alignment looks correct"
 
-
 # ============================================================
 # OLD PORT COLLISION CHECK
 # ============================================================
@@ -335,7 +322,6 @@ if grep -Eq '^[[:space:]]*bind[[:space:]]+127\.0\.0\.1:8084' haproxy.cfg; then
 fi
 
 ok "No HAProxy/OpenResty :8084 collision"
-
 
 # ============================================================
 # gRPC PATH VALIDATION
@@ -363,7 +349,6 @@ for path in "${GRPC_PATHS[@]}"; do
     ok "gRPC aligned: ${path}"
 done
 
-
 # ============================================================
 # XRAY PORT VALIDATION
 # ============================================================
@@ -383,7 +368,6 @@ done
 
 ok "Xray ports 10000-10015 aligned"
 
-
 # ============================================================
 # HEALTH ROUTES
 # ============================================================
@@ -401,7 +385,6 @@ grep -q '/health' httpd.conf \
 
 ok "Health routes found"
 
-
 # ============================================================
 # PUBLIC LISTENER
 # ============================================================
@@ -412,7 +395,6 @@ grep -q 'port_value: 8080' envoy.yaml \
     || fail "Envoy public listener :8080 missing"
 
 ok "Public Envoy listener is :8080"
-
 
 # ============================================================
 # ENABLE GOOGLE CLOUD APIS
@@ -427,7 +409,6 @@ gcloud services enable \
     --project="${PROJECT_ID}"
 
 ok "Required APIs enabled"
-
 
 # ============================================================
 # ARTIFACT REGISTRY
@@ -452,7 +433,6 @@ else
     ok "Artifact Registry repository already exists"
 fi
 
-
 # ============================================================
 # BUILD IMAGE
 # ============================================================
@@ -469,7 +449,6 @@ gcloud builds submit \
     --region="${REGION}"
 
 ok "Container image built successfully"
-
 
 # ============================================================
 # BUILD ONLY MODE
@@ -500,14 +479,13 @@ if [[ "${DEPLOY}" != "true" ]]; then
     exit 0
 fi
 
-
 # ============================================================
 # CLOUD RUN DEPLOYMENT
 # ============================================================
 
 echo
 echo "============================================================"
-echo " DEPLOYING TO CLOUD RUN"
+echo " DEPLOYING TO CLOUD RUN (CPU: ${CPU} | RAM: ${RAM})"
 echo "============================================================"
 echo
 
@@ -527,7 +505,6 @@ gcloud run deploy "${SERVICE_NAME}" \
     --allow-unauthenticated \
     --quiet
 
-
 # ============================================================
 # GET SERVICE URL
 # ============================================================
@@ -544,10 +521,7 @@ if [[ -z "${SERVICE_URL}" ]]; then
     fail "Unable to obtain Cloud Run service URL"
 fi
 
-CLEAN_HOST="${SERVICE_URL#https://}"
-
 ok "Cloud Run URL: ${SERVICE_URL}"
-
 
 # ============================================================
 # WAIT FOR STARTUP
@@ -556,7 +530,6 @@ ok "Cloud Run URL: ${SERVICE_URL}"
 info "Waiting for Cloud Run startup..."
 
 sleep 8
-
 
 # ============================================================
 # HEALTH CHECK
@@ -589,7 +562,6 @@ for i in {1..10}; do
     sleep 5
 done
 
-
 # ============================================================
 # HEALTH FAILURE
 # ============================================================
@@ -608,7 +580,6 @@ if [[ "${HEALTH_OK}" != "true" ]]; then
 
     exit 1
 fi
-
 
 # ============================================================
 # APACHE FALLBACK TEST
@@ -634,7 +605,6 @@ else
     warn "Root path returned HTTP ${ROOT_CODE}"
 fi
 
-
 # ============================================================
 # FINAL
 # ============================================================
@@ -648,6 +618,7 @@ echo
 echo -e "  ${CYAN}SERVICE:${RESET} ${GREEN}${SERVICE_NAME}${RESET}"
 echo -e "  ${CYAN}REGION:${RESET}  ${GREEN}${REGION}${RESET}"
 echo -e "  ${CYAN}URL:${RESET}     ${GREEN}${SERVICE_URL}${RESET}"
+echo -e "  ${CYAN}SPECS:${RESET}   ${GREEN}CPU: ${CPU} | RAM: ${RAM}${RESET}"
 
 echo
 echo "Public:"
