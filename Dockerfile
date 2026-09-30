@@ -53,7 +53,7 @@ RUN apt-get update && \
     a2enmod \
       proxy \
       proxy_http \
-      proxy_h2 \
+      proxy_http2 \
       proxy_wstunnel \
       headers \
       rewrite \
