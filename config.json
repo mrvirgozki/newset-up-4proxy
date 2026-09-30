@@ -307,7 +307,8 @@
       "tag": "ss-ws",
       "settings": {
         "method": "aes-256-gcm",
-        "password": "virgozki"
+        "password": "virgozki",
+        "network": "tcp,udp"
       },
       "streamSettings": {
         "network": "ws",
@@ -331,7 +332,8 @@
       "tag": "ss-httpupgrade",
       "settings": {
         "method": "aes-256-gcm",
-        "password": "virgozki"
+        "password": "virgozki",
+        "network": "tcp,udp"
       },
       "streamSettings": {
         "network": "httpupgrade",
@@ -355,7 +357,8 @@
       "tag": "ss-xhttp",
       "settings": {
         "method": "aes-256-gcm",
-        "password": "virgozki"
+        "password": "virgozki",
+        "network": "tcp,udp"
       },
       "streamSettings": {
         "network": "xhttp",
@@ -466,7 +469,8 @@
       "tag": "ss-grpc",
       "settings": {
         "method": "aes-256-gcm",
-        "password": "virgozki"
+        "password": "virgozki",
+        "network": "tcp,udp"
       },
       "streamSettings": {
         "network": "grpc",
