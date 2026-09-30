@@ -53,7 +53,7 @@ RUN apt-get update && \
     a2enmod \
       proxy \
       proxy_http \
-      proxy_http2 \
+      proxy_h2 \
       proxy_wstunnel \
       headers \
       rewrite \
@@ -71,18 +71,22 @@ RUN apt-get update && \
       /tmp/virgozki-logs \
       /usr/share/nginx/html \
       /usr/local/share/xray \
+      /usr/share/xray \
       /var/run/apache2 \
       /run/haproxy \
       /var/log/xray \
       /var/log/apache2 && \
     rm -rf /var/lib/apt/lists/*
 
-# COPY BINARIES & ASSETS
+# COPY BINARIES & ASSETS (FIXED PATHS FOR BUILDX)
 COPY --from=envoy /usr/local/bin/envoy /usr/local/bin/envoy
 COPY --from=xray /usr/local/bin/xray /usr/local/bin/xray
-# Siguraduhing kopyahin ang parehong posibleng asset locations
-COPY --from=xray /usr/share/xray/ /usr/local/share/xray/
+
+# Kopyahin ang opisyal na Xray assets mula sa source image
 COPY --from=xray /usr/local/share/xray/ /usr/local/share/xray/
+
+# Maglagay ng symlink papuntang /usr/share/xray para sa backward compatibility
+RUN ln -s /usr/local/share/xray/* /usr/share/xray/ || true
 
 # COPY CONFIGURATION & SCRIPT FILES
 COPY supervisord.conf /etc/supervisord.conf
