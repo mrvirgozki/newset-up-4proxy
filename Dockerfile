@@ -1,30 +1,15 @@
 # ============================================================
-# VIRGOZKI 4-PROXY + gRPC | CLOUD RUN
+# VIRGOZKI 4-PROXY + gRPC + XHTTP | CLOUD RUN
 # DEBIAN BOOKWORM
-#
-# PUBLIC:
-#   Cloud Run -> Envoy :8080
-#
-# INTERNAL:
-#   HAProxy   :8081 / :8086
-#   Apache    :8083
-#   OpenResty :8084
-#   Xray      :10000-10015
 # ============================================================
 
-# ============================================================
 # STAGE 1 — ENVOY
-# ============================================================
 FROM envoyproxy/envoy:v1.39.1 AS envoy
 
-# ============================================================
 # STAGE 2 — XRAY
-# ============================================================
 FROM ghcr.io/xtls/xray-core:25.12.8 AS xray
 
-# ============================================================
 # STAGE 3 — FINAL IMAGE
-# ============================================================
 FROM openresty/openresty:1.31.1.1-bookworm-fat AS final
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -95,6 +80,8 @@ RUN apt-get update && \
 # COPY BINARIES & ASSETS
 COPY --from=envoy /usr/local/bin/envoy /usr/local/bin/envoy
 COPY --from=xray /usr/local/bin/xray /usr/local/bin/xray
+# Siguraduhing kopyahin ang parehong posibleng asset locations
+COPY --from=xray /usr/share/xray/ /usr/local/share/xray/
 COPY --from=xray /usr/local/share/xray/ /usr/local/share/xray/
 
 # COPY CONFIGURATION & SCRIPT FILES
