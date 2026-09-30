@@ -19,153 +19,158 @@ static_resources:
           stat_prefix: virgozki_http
           codec_type: AUTO
 
-          # TIMEOUTS  
-          request_timeout: 0s  
-          stream_idle_timeout: 3600s  
-          request_headers_timeout: 30s  
+          # HTTP/2 DOWNSTREAM PROTOCOL OPTIONS (FOR XHTTP & gRPC)
+          http2_protocol_options:
+            max_concurrent_streams: 1024
+            allow_connect: true
 
-          # PATH HANDLING  
-          normalize_path: true  
-          merge_slashes: true  
+          # TIMEOUTS
+          request_timeout: 0s
+          stream_idle_timeout: 3600s
+          request_headers_timeout: 30s
 
-          # ACCESS LOG  
-          access_log:  
-            - name: envoy.access_loggers.stdout  
-              typed_config:  
-                "@type": type.googleapis.com/envoy.extensions.access_loggers.stream.v3.StdoutAccessLog  
+          # PATH HANDLING
+          normalize_path: true
+          merge_slashes: true
 
-          # WEBSOCKET / HTTP UPGRADE  
-          upgrade_configs:  
-            - upgrade_type: websocket  
-            - upgrade_type: httpupgrade  
+          # ACCESS LOG
+          access_log:
+            - name: envoy.access_loggers.stdout
+              typed_config:
+                "@type": type.googleapis.com/envoy.extensions.access_loggers.stream.v3.StdoutAccessLog
 
-          # ROUTES  
-          route_config:  
-            name: virgozki_routes  
-            virtual_hosts:  
-              - name: local_service  
-                domains: ["*"]  
-                routes:  
-                  # HEALTH  
-                  - match:  
-                      path: /health  
-                    direct_response:  
-                      status: 200  
-                      body:  
-                        inline_string: "ok\n"  
+          # WEBSOCKET / HTTP UPGRADE
+          upgrade_configs:
+            - upgrade_type: websocket
+            - upgrade_type: httpupgrade
 
-                  # gRPC  
-                  - match:  
-                      prefix: /vless-grpc-virgozki  
-                    route:  
-                      cluster: vless_grpc  
-                      timeout: 0s  
+          # ROUTES
+          route_config:
+            name: virgozki_routes
+            virtual_hosts:
+              - name: local_service
+                domains: ["*"]
+                routes:
+                  # HEALTH
+                  - match:
+                      path: /health
+                    direct_response:
+                      status: 200
+                      body:
+                        inline_string: "ok\n"
 
-                  - match:  
-                      prefix: /vmess-grpc-virgozki  
-                    route:  
-                      cluster: vmess_grpc  
-                      timeout: 0s  
+                  # gRPC
+                  - match:
+                      prefix: /vless-grpc-virgozki
+                    route:
+                      cluster: vless_grpc
+                      timeout: 0s
 
-                  - match:  
-                      prefix: /trojan-grpc-virgozki  
-                    route:  
-                      cluster: trojan_grpc  
-                      timeout: 0s  
+                  - match:
+                      prefix: /vmess-grpc-virgozki
+                    route:
+                      cluster: vmess_grpc
+                      timeout: 0s
 
-                  - match:  
-                      prefix: /ss-grpc-virgozki  
-                    route:  
-                      cluster: ss_grpc  
-                      timeout: 0s  
+                  - match:
+                      prefix: /trojan-grpc-virgozki
+                    route:
+                      cluster: trojan_grpc
+                      timeout: 0s
 
-                  # TROJAN  
-                  - match:  
-                      prefix: /virgozki-xhttp  
-                    route:  
-                      cluster: trojan_xhttp  
-                      timeout: 0s  
+                  - match:
+                      prefix: /ss-grpc-virgozki
+                    route:
+                      cluster: ss_grpc
+                      timeout: 0s
 
-                  - match:  
-                      prefix: /virgozki-hu  
-                    route:  
-                      cluster: trojan_hu  
-                      timeout: 0s  
+                  # TROJAN
+                  - match:
+                      prefix: /virgozki-xhttp
+                    route:
+                      cluster: trojan_xhttp
+                      timeout: 0s
 
-                  - match:  
-                      prefix: /virgozki  
-                    route:  
-                      cluster: trojan_ws  
-                      timeout: 0s  
+                  - match:
+                      prefix: /virgozki-hu
+                    route:
+                      cluster: trojan_hu
+                      timeout: 0s
 
-                  # VMESS  
-                  - match:  
-                      prefix: /vmess-virgozki-xhttp  
-                    route:  
-                      cluster: vmess_xhttp  
-                      timeout: 0s  
+                  - match:
+                      prefix: /virgozki
+                    route:
+                      cluster: trojan_ws
+                      timeout: 0s
 
-                  - match:  
-                      prefix: /vmess-virgozki-hu  
-                    route:  
-                      cluster: vmess_hu  
-                      timeout: 0s  
+                  # VMESS
+                  - match:
+                      prefix: /vmess-virgozki-xhttp
+                    route:
+                      cluster: vmess_xhttp
+                      timeout: 0s
 
-                  - match:  
-                      prefix: /vmess-virgozki  
-                    route:  
-                      cluster: vmess_ws  
-                      timeout: 0s  
+                  - match:
+                      prefix: /vmess-virgozki-hu
+                    route:
+                      cluster: vmess_hu
+                      timeout: 0s
 
-                  # VLESS  
-                  - match:  
-                      prefix: /vless-virgozki-xhttp  
-                    route:  
-                      cluster: vless_xhttp  
-                      timeout: 0s  
+                  - match:
+                      prefix: /vmess-virgozki
+                    route:
+                      cluster: vmess_ws
+                      timeout: 0s
 
-                  - match:  
-                      prefix: /vless-virgozki-hu  
-                    route:  
-                      cluster: vless_hu  
-                      timeout: 0s  
+                  # VLESS
+                  - match:
+                      prefix: /vless-virgozki-xhttp
+                    route:
+                      cluster: vless_xhttp
+                      timeout: 0s
 
-                  - match:  
-                      prefix: /vless-virgozki  
-                    route:  
-                      cluster: vless_ws  
-                      timeout: 0s  
+                  - match:
+                      prefix: /vless-virgozki-hu
+                    route:
+                      cluster: vless_hu
+                      timeout: 0s
 
-                  # SHADOWSOCKS  
-                  - match:  
-                      prefix: /ss-virgozki-xhttp  
-                    route:  
-                      cluster: ss_xhttp  
-                      timeout: 0s  
+                  - match:
+                      prefix: /vless-virgozki
+                    route:
+                      cluster: vless_ws
+                      timeout: 0s
 
-                  - match:  
-                      prefix: /ss-virgozki-hu  
-                    route:  
-                      cluster: ss_hu  
-                      timeout: 0s  
+                  # SHADOWSOCKS
+                  - match:
+                      prefix: /ss-virgozki-xhttp
+                    route:
+                      cluster: ss_xhttp
+                      timeout: 0s
 
-                  - match:  
-                      prefix: /ss-virgozki  
-                    route:  
-                      cluster: ss_ws  
-                      timeout: 0s  
+                  - match:
+                      prefix: /ss-virgozki-hu
+                    route:
+                      cluster: ss_hu
+                      timeout: 0s
 
-                  # DEFAULT / PANEL  
-                  - match:  
-                      prefix: /  
-                    route:  
-                      cluster: apache_web  
-                      timeout: 60s  
+                  - match:
+                      prefix: /ss-virgozki
+                    route:
+                      cluster: ss_ws
+                      timeout: 0s
 
-          # HTTP ROUTER  
-          http_filters:  
-            - name: envoy.filters.http.router  
-              typed_config:  
+                  # DEFAULT / PANEL
+                  - match:
+                      prefix: /
+                    route:
+                      cluster: apache_web
+                      timeout: 60s
+
+          # HTTP ROUTER
+          http_filters:
+            - name: envoy.filters.http.router
+              typed_config:
                 "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
 
 # ============================================================
@@ -173,304 +178,316 @@ static_resources:
 # ============================================================
   clusters:
 
-  # TROJAN  
-  - name: trojan_ws  
-    connect_timeout: 5s  
-    type: STATIC  
-    lb_policy: ROUND_ROBIN  
-    load_assignment:  
-      cluster_name: trojan_ws  
-      endpoints:  
-        - lb_endpoints:  
-            - endpoint:  
-                address:  
-                  socket_address:  
-                    address: 127.0.0.1  
-                    port_value: 10000  
+  # TROJAN
+  - name: trojan_ws
+    connect_timeout: 5s
+    type: STATIC
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: trojan_ws
+      endpoints:
+        - lb_endpoints:
+            - endpoint:
+                address:
+                  socket_address:
+                    address: 127.0.0.1
+                    port_value: 10000
 
-  - name: trojan_hu  
-    connect_timeout: 5s  
-    type: STATIC  
-    lb_policy: ROUND_ROBIN  
-    load_assignment:  
-      cluster_name: trojan_hu  
-      endpoints:  
-        - lb_endpoints:  
-            - endpoint:  
-                address:  
-                  socket_address:  
-                    address: 127.0.0.1  
-                    port_value: 10001  
+  - name: trojan_hu
+    connect_timeout: 5s
+    type: STATIC
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: trojan_hu
+      endpoints:
+        - lb_endpoints:
+            - endpoint:
+                address:
+                  socket_address:
+                    address: 127.0.0.1
+                    port_value: 10001
 
-  - name: trojan_xhttp  
-    connect_timeout: 5s  
-    type: STATIC  
-    lb_policy: ROUND_ROBIN  
-    typed_extension_protocol_options:  
-      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:  
-        "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions  
-        explicit_http_config:  
-          http2_protocol_options:  
-            connection_keepalive:  
-              interval: 30s  
-              timeout: 10s  
-            max_concurrent_streams: 1024  
-    load_assignment:  
-      cluster_name: trojan_xhttp  
-      endpoints:  
-        - lb_endpoints:  
-            - endpoint:  
-                address:  
-                  socket_address:  
-                    address: 127.0.0.1  
-                    port_value: 10002  
+  - name: trojan_xhttp
+    connect_timeout: 5s
+    type: STATIC
+    lb_policy: ROUND_ROBIN
+    typed_extension_protocol_options:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicit_http_config:
+          http2_protocol_options:
+            connection_keepalive:
+              interval: 30s
+              timeout: 10s
+            max_concurrent_streams: 1024
+    load_assignment:
+      cluster_name: trojan_xhttp
+      endpoints:
+        - lb_endpoints:
+            - endpoint:
+                address:
+                  socket_address:
+                    address: 127.0.0.1
+                    port_value: 10002
 
-  # VMESS  
-  - name: vmess_ws  
-    connect_timeout: 5s  
-    type: STATIC  
-    lb_policy: ROUND_ROBIN  
-    load_assignment:  
-      cluster_name: vmess_ws  
-      endpoints:  
-        - lb_endpoints:  
-            - endpoint:  
-                address:  
-                  socket_address:  
-                    address: 127.0.0.1  
-                    port_value: 10003  
+  # VMESS
+  - name: vmess_ws
+    connect_timeout: 5s
+    type: STATIC
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: vmess_ws
+      endpoints:
+        - lb_endpoints:
+            - endpoint:
+                address:
+                  socket_address:
+                    address: 127.0.0.1
+                    port_value: 10003
 
-  - name: vmess_hu  
-    connect_timeout: 5s  
-    type: STATIC  
-    lb_policy: ROUND_ROBIN  
-    load_assignment:  
-      cluster_name: vmess_hu  
-      endpoints:  
-        - lb_endpoints:  
-            - endpoint:  
-                address:  
-                  socket_address:  
-                    address: 127.0.0.1  
-                    port_value: 10004  
+  - name: vmess_hu
+    connect_timeout: 5s
+    type: STATIC
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: vmess_hu
+      endpoints:
+        - lb_endpoints:
+            - endpoint:
+                address:
+                  socket_address:
+                    address: 127.0.0.1
+                    port_value: 10004
 
-  - name: vmess_xhttp  
-    connect_timeout: 5s  
-    type: STATIC  
-    lb_policy: ROUND_ROBIN  
-    typed_extension_protocol_options:  
-      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:  
-        "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions  
-        explicit_http_config:  
-          http2_protocol_options:  
-            connection_keepalive:  
-              interval: 30s  
-              timeout: 10s  
-            max_concurrent_streams: 1024  
-    load_assignment:  
-      cluster_name: vmess_xhttp  
-      endpoints:  
-        - lb_endpoints:  
-            - endpoint:  
-                address:  
-                  socket_address:  
-                    address: 127.0.0.1  
-                    port_value: 10005  
+  - name: vmess_xhttp
+    connect_timeout: 5s
+    type: STATIC
+    lb_policy: ROUND_ROBIN
+    typed_extension_protocol_options:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicit_http_config:
+          http2_protocol_options:
+            connection_keepalive:
+              interval: 30s
+              timeout: 10s
+            max_concurrent_streams: 1024
+    load_assignment:
+      cluster_name: vmess_xhttp
+      endpoints:
+        - lb_endpoints:
+            - endpoint:
+                address:
+                  socket_address:
+                    address: 127.0.0.1
+                    port_value: 10005
 
-  # VLESS  
-  - name: vless_ws  
-    connect_timeout: 5s  
-    type: STATIC  
-    lb_policy: ROUND_ROBIN  
-    load_assignment:  
-      cluster_name: vless_ws  
-      endpoints:  
-        - lb_endpoints:  
-            - endpoint:  
-                address:  
-                  socket_address:  
-                    address: 127.0.0.1  
-                    port_value: 10006  
+  # VLESS
+  - name: vless_ws
+    connect_timeout: 5s
+    type: STATIC
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: vless_ws
+      endpoints:
+        - lb_endpoints:
+            - endpoint:
+                address:
+                  socket_address:
+                    address: 127.0.0.1
+                    port_value: 10006
 
-  - name: vless_hu  
-    connect_timeout: 5s  
-    type: STATIC  
-    lb_policy: ROUND_ROBIN  
-    load_assignment:  
-      cluster_name: vless_hu  
-      endpoints:  
-        - lb_endpoints:  
-            - endpoint:  
-                address:  
-                  socket_address:  
-                    address: 127.0.0.1  
-                    port_value: 10007  
+  - name: vless_hu
+    connect_timeout: 5s
+    type: STATIC
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: vless_hu
+      endpoints:
+        - lb_endpoints:
+            - endpoint:
+                address:
+                  socket_address:
+                    address: 127.0.0.1
+                    port_value: 10007
 
-  - name: vless_xhttp  
-    connect_timeout: 5s  
-    type: STATIC  
-    lb_policy: ROUND_ROBIN  
-    typed_extension_protocol_options:  
-      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:  
-        "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions  
-        explicit_http_config:  
-          http2_protocol_options:  
-            connection_keepalive:  
-              interval: 30s  
-              timeout: 10s  
-            max_concurrent_streams: 1024  
-    load_assignment:  
-      cluster_name: vless_xhttp  
-      endpoints:  
-        - lb_endpoints:  
-            - endpoint:  
-                address:  
-                  socket_address:  
-                    address: 127.0.0.1  
-                    port_value: 10008  
+  - name: vless_xhttp
+    connect_timeout: 5s
+    type: STATIC
+    lb_policy: ROUND_ROBIN
+    typed_extension_protocol_options:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicit_http_config:
+          http2_protocol_options:
+            connection_keepalive:
+              interval: 30s
+              timeout: 10s
+            max_concurrent_streams: 1024
+    load_assignment:
+      cluster_name: vless_xhttp
+      endpoints:
+        - lb_endpoints:
+            - endpoint:
+                address:
+                  socket_address:
+                    address: 127.0.0.1
+                    port_value: 10008
 
-  # SHADOWSOCKS  
-  - name: ss_ws  
-    connect_timeout: 5s  
-    type: STATIC  
-    lb_policy: ROUND_ROBIN  
-    load_assignment:  
-      cluster_name: ss_ws  
-      endpoints:  
-        - lb_endpoints:  
-            - endpoint:  
-                address:  
-                  socket_address:  
-                    address: 127.0.0.1  
-                    port_value: 10009  
+  # SHADOWSOCKS
+  - name: ss_ws
+    connect_timeout: 5s
+    type: STATIC
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: ss_ws
+      endpoints:
+        - lb_endpoints:
+            - endpoint:
+                address:
+                  socket_address:
+                    address: 127.0.0.1
+                    port_value: 10009
 
-  - name: ss_hu  
-    connect_timeout: 5s  
-    type: STATIC  
-    lb_policy: ROUND_ROBIN  
-    load_assignment:  
-      cluster_name: ss_hu  
-      endpoints:  
-        - lb_endpoints:  
-            - endpoint:  
-                address:  
-                  socket_address:  
-                    address: 127.0.0.1  
-                    port_value: 10010  
+  - name: ss_hu
+    connect_timeout: 5s
+    type: STATIC
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: ss_hu
+      endpoints:
+        - lb_endpoints:
+            - endpoint:
+                address:
+                  socket_address:
+                    address: 127.0.0.1
+                    port_value: 10010
 
-  - name: ss_xhttp  
-    connect_timeout: 5s  
-    type: STATIC  
-    lb_policy: ROUND_ROBIN  
-    typed_extension_protocol_options:  
-      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:  
-        "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions  
-        explicit_http_config:  
-          http2_protocol_options:  
-            connection_keepalive:  
-              interval: 30s  
-              timeout: 10s  
-            max_concurrent_streams: 1024  
-    load_assignment:  
-      cluster_name: ss_xhttp  
-      endpoints:  
-        - lb_endpoints:  
-            - endpoint:  
-                address:  
-                  socket_address:  
-                    address: 127.0.0.1  
-                    port_value: 10011  
+  - name: ss_xhttp
+    connect_timeout: 5s
+    type: STATIC
+    lb_policy: ROUND_ROBIN
+    typed_extension_protocol_options:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicit_http_config:
+          http2_protocol_options:
+            connection_keepalive:
+              interval: 30s
+              timeout: 10s
+            max_concurrent_streams: 1024
+    load_assignment:
+      cluster_name: ss_xhttp
+      endpoints:
+        - lb_endpoints:
+            - endpoint:
+                address:
+                  socket_address:
+                    address: 127.0.0.1
+                    port_value: 10011
 
-  # gRPC CLUSTERS  
-  - name: vless_grpc  
-    connect_timeout: 5s  
-    type: STATIC  
-    lb_policy: ROUND_ROBIN  
-    typed_extension_protocol_options:  
-      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:  
-        "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions  
-        explicit_http_config:  
-          http2_protocol_options: {}  
-    load_assignment:  
-      cluster_name: vless_grpc  
-      endpoints:  
-        - lb_endpoints:  
-            - endpoint:  
-                address:  
-                  socket_address:  
-                    address: 127.0.0.1  
-                    port_value: 10012  
+  # gRPC CLUSTERS
+  - name: vless_grpc
+    connect_timeout: 5s
+    type: STATIC
+    lb_policy: ROUND_ROBIN
+    typed_extension_protocol_options:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicit_http_config:
+          http2_protocol_options:
+            connection_keepalive:
+              interval: 30s
+              timeout: 10s
+    load_assignment:
+      cluster_name: vless_grpc
+      endpoints:
+        - lb_endpoints:
+            - endpoint:
+                address:
+                  socket_address:
+                    address: 127.0.0.1
+                    port_value: 10012
 
-  - name: vmess_grpc  
-    connect_timeout: 5s  
-    type: STATIC  
-    lb_policy: ROUND_ROBIN  
-    typed_extension_protocol_options:  
-      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:  
-        "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions  
-        explicit_http_config:  
-          http2_protocol_options: {}  
-    load_assignment:  
-      cluster_name: vmess_grpc  
-      endpoints:  
-        - lb_endpoints:  
-            - endpoint:  
-                address:  
-                  socket_address:  
-                    address: 127.0.0.1  
-                    port_value: 10013  
+  - name: vmess_grpc
+    connect_timeout: 5s
+    type: STATIC
+    lb_policy: ROUND_ROBIN
+    typed_extension_protocol_options:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicit_http_config:
+          http2_protocol_options:
+            connection_keepalive:
+              interval: 30s
+              timeout: 10s
+    load_assignment:
+      cluster_name: vmess_grpc
+      endpoints:
+        - lb_endpoints:
+            - endpoint:
+                address:
+                  socket_address:
+                    address: 127.0.0.1
+                    port_value: 10013
 
-  - name: trojan_grpc  
-    connect_timeout: 5s  
-    type: STATIC  
-    lb_policy: ROUND_ROBIN  
-    typed_extension_protocol_options:  
-      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:  
-        "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions  
-        explicit_http_config:  
-          http2_protocol_options: {}  
-    load_assignment:  
-      cluster_name: trojan_grpc  
-      endpoints:  
-        - lb_endpoints:  
-            - endpoint:  
-                address:  
-                  socket_address:  
-                    address: 127.0.0.1  
-                    port_value: 10014  
+  - name: trojan_grpc
+    connect_timeout: 5s
+    type: STATIC
+    lb_policy: ROUND_ROBIN
+    typed_extension_protocol_options:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicit_http_config:
+          http2_protocol_options:
+            connection_keepalive:
+              interval: 30s
+              timeout: 10s
+    load_assignment:
+      cluster_name: trojan_grpc
+      endpoints:
+        - lb_endpoints:
+            - endpoint:
+                address:
+                  socket_address:
+                    address: 127.0.0.1
+                    port_value: 10014
 
-  - name: ss_grpc  
-    connect_timeout: 5s  
-    type: STATIC  
-    lb_policy: ROUND_ROBIN  
-    typed_extension_protocol_options:  
-      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:  
-        "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions  
-        explicit_http_config:  
-          http2_protocol_options: {}  
-    load_assignment:  
-      cluster_name: ss_grpc  
-      endpoints:  
-        - lb_endpoints:  
-            - endpoint:  
-                address:  
-                  socket_address:  
-                    address: 127.0.0.1  
-                    port_value: 10015  
+  - name: ss_grpc
+    connect_timeout: 5s
+    type: STATIC
+    lb_policy: ROUND_ROBIN
+    typed_extension_protocol_options:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicit_http_config:
+          http2_protocol_options:
+            connection_keepalive:
+              interval: 30s
+              timeout: 10s
+    load_assignment:
+      cluster_name: ss_grpc
+      endpoints:
+        - lb_endpoints:
+            - endpoint:
+                address:
+                  socket_address:
+                    address: 127.0.0.1
+                    port_value: 10015
 
-  # APACHE PANEL  
-  - name: apache_web  
-    connect_timeout: 5s  
-    type: STATIC  
-    lb_policy: ROUND_ROBIN  
-    load_assignment:  
-      cluster_name: apache_web  
-      endpoints:  
-        - lb_endpoints:  
-            - endpoint:  
-                address:  
-                  socket_address:  
-                    address: 127.0.0.1  
+  # APACHE PANEL
+  - name: apache_web
+    connect_timeout: 5s
+    type: STATIC
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: apache_web
+      endpoints:
+        - lb_endpoints:
+            - endpoint:
+                address:
+                  socket_address:
+                    address: 127.0.0.1
                     port_value: 8083
 
 # ============================================================
