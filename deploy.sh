@@ -35,7 +35,7 @@ WHITE='\033[1;37m'
 # ============================================================
 
 PROJECT_ID="${PROJECT_ID:-$(gcloud config get-value project 2>/dev/null | tr -d '[:space:]')}"
-REGION="${REGION:-us-central1}"
+REGION="${REGION:-us-east4}"
 SERVICE_NAME="${SERVICE_NAME:-virgozki-4proxy}"
 REPOSITORY="${REPOSITORY:-virgozki}"
 IMAGE_NAME="${IMAGE_NAME:-virgozki}"
