@@ -35,12 +35,10 @@ WHITE='\033[1;37m'
 # ============================================================
 
 PROJECT_ID="${PROJECT_ID:-$(gcloud config get-value project 2>/dev/null | tr -d '[:space:]')}"
-REGION="${REGION:-us-west1}"
 SERVICE_NAME="${SERVICE_NAME:-virgozki-4proxy}"
 REPOSITORY="${REPOSITORY:-virgozki}"
 IMAGE_NAME="${IMAGE_NAME:-virgozki}"
-IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/${IMAGE_NAME}:latest"
-DEPLOY="${DEPLOY:-false}"
+DEPLOY="true"
 
 MAX_INSTANCES="${MAX_INSTANCES:-4}"
 CONCURRENCY="${CONCURRENCY:-80}"
@@ -96,6 +94,65 @@ echo -e "    :10000-10015"
 echo
 
 # ============================================================
+# INTERACTIVE REGION SELECTOR
+# ============================================================
+
+echo -e "  ${BOLD}${YELLOW}PILI NG CLOUD RUN REGION:${RESET}"
+echo -e "  --------------------------------------------------"
+echo -e "  ${MAGENTA}[ ASIA / PACIFIC ]${RESET}"
+echo -e "  ${CYAN}[1]${RESET} asia-southeast1   (Singapore) ${WHITE}[Recommended for PH]${RESET}"
+echo -e "  ${CYAN}[2]${RESET} asia-east1        (Taiwan)"
+echo -e "  ${CYAN}[3]${RESET} asia-northeast1   (Tokyo, Japan)"
+echo -e "  ${CYAN}[4]${RESET} asia-northeast2   (Osaka, Japan)"
+echo -e "  ${CYAN}[5]${RESET} asia-northeast3   (Seoul, South Korea)"
+echo -e "  ${CYAN}[6]${RESET} asia-south1       (Mumbai, India)"
+echo -e "  ${CYAN}[7]${RESET} asia-southeast2   (Jakarta, Indonesia)"
+echo -e "  ${CYAN}[8]${RESET} australia-southeast1 (Sydney, Australia)"
+echo -e ""
+echo -e "  ${MAGENTA}[ UNITED STATES ]${RESET}"
+echo -e "  ${CYAN}[9]${RESET} us-central1       (Iowa)"
+echo -e "  ${CYAN}[10]${RESET} us-west1          (Oregon) ${WHITE}[Default]${RESET}"
+echo -e "  ${CYAN}[11]${RESET} us-west2          (Los Angeles, California)"
+echo -e "  ${CYAN}[12]${RESET} us-west4          (Las Vegas, Nevada)"
+echo -e "  ${CYAN}[13]${RESET} us-east1          (South Carolina)"
+echo -e "  ${CYAN}[14]${RESET} us-east4          (Northern Virginia)"
+echo -e ""
+echo -e "  ${MAGENTA}[ EUROPE ]${RESET}"
+echo -e "  ${CYAN}[15]${RESET} europe-west1      (Belgium)"
+echo -e "  ${CYAN}[16]${RESET} europe-west3      (Frankfurt, Germany)"
+echo -e "  ${CYAN}[17]${RESET} europe-west4      (Eemshaven, Netherlands)"
+echo -e "  ${CYAN}[18]${RESET} europe-west9      (Paris, France)"
+echo -e "  --------------------------------------------------"
+
+read -rp "  Pumili ng region [1-18] (Default: 1 - Singapore): " REGION_OPT
+
+case "${REGION_OPT}" in
+    1) REGION="asia-southeast1" ;;
+    2) REGION="asia-east1" ;;
+    3) REGION="asia-northeast1" ;;
+    4) REGION="asia-northeast2" ;;
+    5) REGION="asia-northeast3" ;;
+    6) REGION="asia-south1" ;;
+    7) REGION="asia-southeast2" ;;
+    8) REGION="australia-southeast1" ;;
+    9) REGION="us-central1" ;;
+    10) REGION="us-west1" ;;
+    11) REGION="us-west2" ;;
+    12) REGION="us-west4" ;;
+    13) REGION="us-east1" ;;
+    14) REGION="us-east4" ;;
+    15) REGION="europe-west1" ;;
+    16) REGION="europe-west3" ;;
+    17) REGION="europe-west4" ;;
+    18) REGION="europe-west9" ;;
+    *) REGION="asia-southeast1" ;;
+esac
+
+echo
+ok "Selected Region: ${REGION}"
+echo
+
+# ============================================================
 # INTERACTIVE RESOURCE SELECTOR (CPU & RAM)
 # ============================================================
 
@@ -137,6 +194,9 @@ echo
 ok "Selected Specs: CPU=${CPU}, RAM=${RAM}"
 echo
 
+# Set image variable after region is selected
+IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/${IMAGE_NAME}:latest"
+
 # ============================================================
 # PROJECT CHECK
 # ============================================================
@@ -168,14 +228,6 @@ for cmd in gcloud curl python3; do
 
     ok "${cmd} available"
 done
-
-# ============================================================
-# DEPLOY VALUE CHECK
-# ============================================================
-
-if [[ "${DEPLOY}" != "true" && "${DEPLOY}" != "false" ]]; then
-    fail "DEPLOY must be either true or false."
-fi
 
 # ============================================================
 # REQUIRED FILES
@@ -414,13 +466,13 @@ ok "Required APIs enabled"
 # ARTIFACT REGISTRY
 # ============================================================
 
-info "Checking Artifact Registry..."
+info "Checking Artifact Registry in ${REGION}..."
 
 if ! gcloud artifacts repositories describe "${REPOSITORY}" \
     --location="${REGION}" \
     --project="${PROJECT_ID}" >/dev/null 2>&1
 then
-    info "Creating Artifact Registry repository..."
+    info "Creating Artifact Registry repository in ${REGION}..."
 
     gcloud artifacts repositories create "${REPOSITORY}" \
         --repository-format=docker \
@@ -451,41 +503,12 @@ gcloud builds submit \
 ok "Container image built successfully"
 
 # ============================================================
-# BUILD ONLY MODE
-# ============================================================
-
-if [[ "${DEPLOY}" != "true" ]]; then
-    echo
-    echo "============================================================"
-    echo -e " ${GREEN}BUILD / VALIDATION COMPLETE${RESET}"
-    echo "============================================================"
-    echo
-
-    echo -e "  ${CYAN}IMAGE:${RESET}"
-    echo "  ${IMAGE}"
-
-    echo
-    echo -e "  ${YELLOW}CLOUD RUN DEPLOYMENT WAS NOT PERFORMED.${RESET}"
-
-    echo
-    echo "  This is intentional because:"
-    echo "    DEPLOY=${DEPLOY}"
-    echo
-    echo "  Kapag ready ka na para sa totoong deployment:"
-    echo "    DEPLOY=true ./deploy.sh"
-    echo
-    echo "============================================================"
-
-    exit 0
-fi
-
-# ============================================================
 # CLOUD RUN DEPLOYMENT
 # ============================================================
 
 echo
 echo "============================================================"
-echo " DEPLOYING TO CLOUD RUN (CPU: ${CPU} | RAM: ${RAM})"
+echo " DEPLOYING TO CLOUD RUN (${REGION} | CPU: ${CPU} | RAM: ${RAM})"
 echo "============================================================"
 echo
 
